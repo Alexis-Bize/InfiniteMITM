@@ -14,7 +14,7 @@
 -   Install Root Certificate
 -   [Override Requests](/docs/Override-Requests.md)
 -   Force Kill Proxy
--   Fix Bookmarked Films
+-   [Fix Bookmarked Films](/docs/Fix-Bookmarked-Films.md)
 
 ## Known Issues
 

@@ -1,0 +1,44 @@
+blobs: # blobs-infiniteugc.svc.halowaypoint.com
+  - path: /:path*
+    methods:
+        - GET
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+    response:
+        headers:
+          x-infinite-mitm: :infinite-mitm-version
+authoring: # authoring-infiniteugc.svc.halowaypoint.com
+  - path: /:path*
+    methods:
+        - GET
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+    response:
+        headers:
+          x-infinite-mitm: :infinite-mitm-version
+discovery: # discovery-infiniteugc.svc.halowaypoint.com
+  - path: /:path*
+    methods:
+        - GET
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+    response:
+        headers:
+          x-infinite-mitm: :infinite-mitm-version
+settings: # settings.svc.halowaypoint.com
+  - path: /:path*
+    methods:
+        - GET
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+    response:
+        headers:
+          x-infinite-mitm: :infinite-mitm-version

@@ -11,7 +11,9 @@
 
 ## Documentation
 
+-   Install Root Certificate
 -   [Override Requests](/docs/Override-Requests.md)
+-   Force Kill Proxy
 
 ## Licence
 

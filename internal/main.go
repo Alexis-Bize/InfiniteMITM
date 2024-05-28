@@ -16,10 +16,20 @@ package InfiniteMITM
 
 import (
 	"embed"
+	"infinite-mitm/configs"
 	InfiniteMITMApplicationService "infinite-mitm/internal/application/services/mitm"
 	InfiniteMITMApplicationServiceModule "infinite-mitm/internal/application/services/mitm/modules"
+	"infinite-mitm/pkg/modules/proxy"
+	"log"
 )
 
-func Start(f embed.FS) {
-	InfiniteMITMApplicationService.StartServer(f, []InfiniteMITMApplicationServiceModule.HandlerStruct{})
+func Start(f embed.FS) error {
+	err := proxy.ToggleProxy("on")
+	if err != nil {
+		return err
+	}
+
+	server := InfiniteMITMApplicationService.InitializeServer(f, []InfiniteMITMApplicationServiceModule.HandlerStruct{})
+	log.Printf("%s - Starting proxy server on port %d\n", configs.GetConfig().Name, configs.GetConfig().Proxy.Port)
+	return server.ListenAndServe()
 }

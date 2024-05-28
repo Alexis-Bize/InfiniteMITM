@@ -18,8 +18,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"embed"
-	"fmt"
-	"infinite-mitm/configs"
 	InfiniteMITMApplicationServiceModule "infinite-mitm/internal/application/services/mitm/modules"
 	"log"
 	"net/http"
@@ -27,7 +25,7 @@ import (
 	"gopkg.in/elazarl/goproxy.v1"
 )
 
-func StartServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceModule.HandlerStruct) {
+func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceModule.HandlerStruct) *http.Server {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
 		log.Fatalf("failed to read root CA certificate: %v", err)
@@ -72,8 +70,7 @@ func StartServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceModule
 		},
 	}
 
-	fmt.Printf("%s - Starting proxy server on port 8888\n", configs.GetConfig().Name)
-	log.Fatal(server.ListenAndServe())
+	return server
 }
 
 func internalHandlers() []InfiniteMITMApplicationServiceModule.HandlerStruct {

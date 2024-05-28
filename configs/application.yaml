@@ -3,4 +3,6 @@ description: A MITM (man-in-the-middle) CLI for Halo Infinite
 version: 0.1.0
 author: Alexis Bize
 repository: https://github.com/Alexis-Bize/InfiniteMITM
-port: 1337
+proxy:
+  host: 127.0.0.1
+  port: 1337

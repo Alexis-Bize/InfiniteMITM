@@ -31,6 +31,10 @@ type Config struct {
 	Version     string `yaml:"version"`
 	Author      string `yaml:"author"`
 	Repository  string `yaml:"repository"`
+	Proxy       struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+	} `yaml:"proxy"`
 }
 
 func GetConfig() *Config {

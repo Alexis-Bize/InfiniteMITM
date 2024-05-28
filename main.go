@@ -17,13 +17,16 @@ package main
 import (
 	"embed"
 	InfiniteMITM "infinite-mitm/internal"
+	"log"
 )
 
 //go:embed cert/*
-//go:embed scripts/proxy/*
 //go:embed assets/resource/mitm.yaml
 var f embed.FS
 
 func main() {
-	InfiniteMITM.Start(f)
+	err := InfiniteMITM.Start(f)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }

@@ -14,6 +14,11 @@
 -   Install Root Certificate
 -   [Override Requests](/docs/Override-Requests.md)
 -   Force Kill Proxy
+-   Fix Bookmarked Films
+
+## Known Issues
+
+-   **Windows** may flag the application as a threat or virus due to a **false positive** (https://go.dev/doc/faq#virus)
 
 ## Licence
 

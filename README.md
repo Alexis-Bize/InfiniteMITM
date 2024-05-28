@@ -8,3 +8,7 @@
 </p>
 
 **InfiniteMITM** is a MITM (man-in-the-middle) CLI for **Halo Infinite** which enables you to intercept and modify the game's requests and responses on the fly.
+
+## Documentation
+
+-   [Override Requests](/docs/Override-Requests.md)

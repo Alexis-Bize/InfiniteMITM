@@ -1,6 +1,6 @@
-# Overrides
+# Overrides Requests
 
-**InfiniteMITM** enables you to intercept and modify the game's requests and responses. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `settings`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
+**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `settings`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
 
 **Note:** When changing the `body`, the `Content-Length` header will be automatically calculated.
 

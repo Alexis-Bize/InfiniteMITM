@@ -12,3 +12,7 @@
 ## Documentation
 
 -   [Override Requests](/docs/Override-Requests.md)
+
+## Licence
+
+[Apache Version 2.0](/LICENCE)

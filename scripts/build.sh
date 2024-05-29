@@ -38,6 +38,7 @@ package_name="${name}-${version}"
 
 target_platforms=(
 	"windows/amd64"
+	"darwin/amd64"
 )
 
 IFS='.' read -r major minor patch <<< "$version"

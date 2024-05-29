@@ -35,7 +35,7 @@ func (l CustomLogger) Printf(format string, v ...interface{}) {
 
 const overrideLogger = true
 
-func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct) (*http.Server, error) {
+func InitializeServer(f embed.FS) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
 		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
@@ -66,12 +66,12 @@ func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceM
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
-	for _, handler := range userHandlers {
+	for _, handler := range internalRequestHandlers() {
 		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
 	}
 
-	for _, handler := range internalHandlers() {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
+	for _, handler := range internalResponseHandlers() {
+		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
 
 	server := &http.Server{
@@ -87,11 +87,19 @@ func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceM
 	return server, nil
 }
 
-func internalHandlers() []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct {
-	handlers := []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct{
+func internalRequestHandlers() []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct {
+	handlers := []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct{
+		InfiniteMITMApplicationServiceMITMHandlers.Dirty__CacheUserFavoriteFilms(),
 		InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointRequests(),
-		InfiniteMITMApplicationServiceMITMHandlers.CacheBookmarkedFilms(),
-		InfiniteMITMApplicationServiceMITMHandlers.DirtyFixInvalidMatchSpectateID(),
+	}
+
+	return handlers
+}
+
+func internalResponseHandlers() []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct {
+	handlers := []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct{
+		InfiniteMITMApplicationServiceMITMHandlers.Dirty__Force200OnInvalidMatchSpectateID(),
+		InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointResponses(),
 	}
 
 	return handlers

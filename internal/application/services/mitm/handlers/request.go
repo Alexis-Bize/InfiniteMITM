@@ -22,7 +22,6 @@ import (
 	ErrorsModule "infinite-mitm/pkg/modules/errors"
 	UtilitiesRequestModule "infinite-mitm/pkg/modules/utilities/request"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"sync"
@@ -30,43 +29,42 @@ import (
 	"github.com/elazarl/goproxy"
 )
 
-type HandlerStruct struct {
+type RequestHandlerStruct struct {
 	Match goproxy.ReqConditionFunc
 	Fn    func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response)
 }
 
+type ResponseHandlerStruct struct {
+	Match goproxy.ReqConditionFunc
+	Fn    func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
+}
+
 var (
-	favoriteFilmsJSONCache     = HaloWaypointLibRequestModuleDomains.FavoriteFilmsResult{}
-	spectateFilmEstimatedIndex = -1
-	favoriteFilmsSyncMutex     sync.Mutex
-	spectateFilmSyncMutex      sync.Mutex
+	cacheUserFavoriteFilmsMutex sync.Mutex
+	userFavoriteFilms = HaloWaypointLibRequestModuleDomains.FavoriteFilmsResult{}
 )
 
-func HandleHaloWaypointRequests() HandlerStruct {
+func HandleHaloWaypointRequests() RequestHandlerStruct {
 	target := regexp.MustCompile(`(?i)` + InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Root)
 
-	return HandlerStruct{
+	return RequestHandlerStruct{
 		Match: goproxy.UrlMatches(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			if req.Method != http.MethodOptions {
-				log.Printf("[%s] %s", req.Method, req.URL.String())
-			}
-
 			return req, nil
 		},
 	}
 }
 
-func CacheBookmarkedFilms() HandlerStruct {
+func Dirty__CacheUserFavoriteFilms() RequestHandlerStruct {
 	target := regexp.MustCompile(`(?i)` + InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Authoring + `/hi/players/xuid\(\d+\)/favorites/films`)
 
-	return HandlerStruct{
+	return RequestHandlerStruct{
 		Match: goproxy.UrlMatches(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			favoriteFilmsSyncMutex.Lock()
-			defer favoriteFilmsSyncMutex.Unlock()
+			cacheUserFavoriteFilmsMutex.Lock()
+			defer cacheUserFavoriteFilmsMutex.Unlock()
 
-			if req.Method == http.MethodOptions {
+			if req.Method == http.MethodOptions || req.Method == http.MethodHead {
 				return req, nil
 			}
 
@@ -93,60 +91,7 @@ func CacheBookmarkedFilms() HandlerStruct {
 				return req, nil
 			}
 
-			spectateFilmEstimatedIndex = -1
-			favoriteFilmsJSONCache = unmarshal
-			return req, nil
-		},
-	}
-}
-
-func DirtyFixInvalidMatchSpectateID() HandlerStruct {
-	target := regexp.MustCompile(`(?i)` + InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Discovery + `/hi/films/matches/00000000-0000-0000-0000-000000000000/spectate`)
-
-	return HandlerStruct{
-		Match: goproxy.UrlMatches(target),
-		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			spectateFilmSyncMutex.Lock()
-			defer spectateFilmSyncMutex.Unlock()
-
-			if req.Method == http.MethodOptions {
-				return req, nil
-			}
-
-			totalFilms := len(favoriteFilmsJSONCache.Results)
-			if totalFilms == 0 {
-				return req, nil
-			}
-
-			spectateFilmEstimatedIndex++
-			exists := spectateFilmEstimatedIndex >= 0 && spectateFilmEstimatedIndex < totalFilms
-
-			if !exists {
-				// will fallback to the 1st item
-				spectateFilmEstimatedIndex = 0
-			}
-
-			userAgent := UtilitiesRequestModule.ExtractHeaderValue(req, "user-agent")
-			spartanToken := UtilitiesRequestModule.ExtractHeaderValue(req, "x-343-authorization-spartan")
-			telemetryID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-telemetry-session-id")
-			flightID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-clearance")
-
-			film, err := HaloWaypointLibRequestModuleDomains.GetFilmByAssetID(HaloWaypointLibRequestModule.RequestAttributes{
-				UserAgent:    userAgent,
-				SpartanToken: spartanToken,
-				ExtraHeaders: map[string]string{
-					"343-Telemetry-Session-Id": telemetryID,
-					"343-Clearance":            flightID,
-				},
-			}, favoriteFilmsJSONCache.Results[spectateFilmEstimatedIndex].AssetID)
-
-			if err != nil {
-				return req, nil
-			}
-
-			matchID := film.CustomData.MatchID
-			req.URL.Path = "/hi/films/matches/"+matchID+"/spectate"
-
+			userFavoriteFilms = unmarshal
 			return req, nil
 		},
 	}

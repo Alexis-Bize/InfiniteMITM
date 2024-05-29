@@ -18,18 +18,19 @@ import (
 	"embed"
 	"infinite-mitm/configs"
 	InfiniteMITMApplicationMITMService "infinite-mitm/internal/application/services/mitm"
-	InfiniteMITMApplicationMITMServiceHandlers "infinite-mitm/internal/application/services/mitm/handlers"
 	ProxyModule "infinite-mitm/pkg/modules/proxy"
 	"log"
 )
 
 func Start(f embed.FS) error {
-	err := ProxyModule.ToggleProxy("on")
+	var err error
+
+	server, err := InfiniteMITMApplicationMITMService.InitializeServer(f)
 	if err != nil {
 		return err
 	}
 
-	server, err := InfiniteMITMApplicationMITMService.InitializeServer(f, []InfiniteMITMApplicationMITMServiceHandlers.HandlerStruct{})
+	err = ProxyModule.ToggleProxy("on")
 	if err != nil {
 		return err
 	}

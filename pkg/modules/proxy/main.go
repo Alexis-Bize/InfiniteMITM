@@ -58,7 +58,8 @@ func toggle(command string) error {
 }
 
 func enableProxyWindows() error {
-	return exec.Command("netsh", "winhttp", "set", "proxy", proxyHost+":"+proxyPort).Run()
+	proxyArg := fmt.Sprintf("proxy-server=\"http=%s:%s;https=%s:%s\"", proxyHost, proxyPort, proxyHost, proxyPort)
+	return exec.Command("netsh", "winhttp", "set", "proxy", proxyArg, "\"<-loopback>\"").Run()
 }
 
 func disableProxyWindows() error {

@@ -33,6 +33,8 @@ func (l CustomLogger) Printf(format string, v ...interface{}) {
 	// Ignore goproxy logs
 }
 
+const overrideLogger = true
+
 func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
@@ -57,7 +59,10 @@ func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceM
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
-	proxy.Logger = CustomLogger{}
+
+	if overrideLogger {
+		proxy.Logger = CustomLogger{}
+	}
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 

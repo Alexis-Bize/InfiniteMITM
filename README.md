@@ -16,6 +16,13 @@
 -   Force Kill Proxy
 -   [Fix Bookmarked Films](/docs/Fix-Bookmarked-Films.md)
 
+## Building From Source
+
+```shell
+$ chmod +x ./scripts/build.sh
+$ ./scripts/build.sh
+```
+
 ## Known Issues
 
 -   **Windows** may flag the application as a threat or virus due to a **false positive** (https://go.dev/doc/faq#virus)

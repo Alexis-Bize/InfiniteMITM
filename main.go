@@ -20,6 +20,7 @@ import (
 	"log"
 )
 
+//go:generate goversioninfo -icon=assets/resource/windows/icon_256x256.ico
 //go:embed cert/*
 //go:embed assets/resource/mitm.yaml
 var f embed.FS

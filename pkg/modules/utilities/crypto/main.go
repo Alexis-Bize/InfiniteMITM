@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package InfiniteMITMApplicationServiceModule
+package UtilitiesCryptoModule
 
 import (
-	"net/http"
-
-	"gopkg.in/elazarl/goproxy.v1"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
-type HandlerStruct struct {
-	Match goproxy.ReqConditionFunc
-	Fn    func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response)
+func SHA256(value string) string {
+	hash := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(hash[:])
 }

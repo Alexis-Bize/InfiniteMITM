@@ -1,9 +1,9 @@
-package proxy
+package ProxyModule
 
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	"infinite-mitm/pkg/modules/errors"
+	ErrorsModule "infinite-mitm/pkg/modules/errors"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -19,7 +19,7 @@ var proxyPort = strconv.Itoa(configs.GetConfig().Proxy.Port)
 func ToggleProxy(command string) error {
 	err := toggle(command)
 	if err != nil {
-		return errors.Handle(errors.ErrProxy, err.Error())
+		return ErrorsModule.Log(ErrorsModule.ErrProxy, err.Error())
 	}
 
 	return nil
@@ -27,7 +27,7 @@ func ToggleProxy(command string) error {
 
 func toggle(command string) error {
 	if command != "on" && command != "off" {
-		return errors.ErrProxyToggleInvalidCommand
+		return ErrorsModule.ErrProxyToggleInvalidCommand
 	}
 
 	c := make(chan os.Signal, 1)
@@ -36,6 +36,7 @@ func toggle(command string) error {
 	go func() {
 		<-c
 		disableProxy()
+		os.Exit(0)
 	}()
 
 	switch runtime.GOOS {

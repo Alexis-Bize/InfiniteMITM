@@ -12,43 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package InfiniteMITMApplicationService
+package InfiniteMITMApplicationMITMService
 
 import (
 	"crypto/tls"
 	"crypto/x509"
 	"embed"
-	InfiniteMITMApplicationServiceModule "infinite-mitm/internal/application/services/mitm/modules"
-	"log"
+	"fmt"
+	"infinite-mitm/configs"
+	InfiniteMITMApplicationServiceMITMHandlers "infinite-mitm/internal/application/services/mitm/handlers"
+	ErrorsModule "infinite-mitm/pkg/modules/errors"
 	"net/http"
 
-	"gopkg.in/elazarl/goproxy.v1"
+	"github.com/elazarl/goproxy"
 )
 
-func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceModule.HandlerStruct) *http.Server {
+type CustomLogger struct{}
+
+func (l CustomLogger) Printf(format string, v ...interface{}) {
+	// Ignore goproxy logs
+}
+
+func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
-		log.Fatalf("failed to read root CA certificate: %v", err)
+		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
 	}
 
 	CAKey, err := f.ReadFile("cert/rootCA.key")
 	if err != nil {
-		log.Fatalf("failed to read root CA key: %v", err)
+		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
 	}
 
 	cert, err := tls.X509KeyPair(CACert, CAKey)
 	if err != nil {
-		log.Fatalf("failed to parse root CA certificate: %v", err)
+		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
 	}
 
 	CACertPool := x509.NewCertPool()
 	if !CACertPool.AppendCertsFromPEM(CACert) {
-		log.Fatalf("failed to add root CA certificate to pool")
+		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, "failed to add root CA certificate to pool")
 	}
 
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
+	proxy.Logger = CustomLogger{}
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
@@ -61,7 +70,7 @@ func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceM
 	}
 
 	server := &http.Server{
-		Addr:    ":8888",
+		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
 		Handler: proxy,
 		TLSConfig: &tls.Config{
 			RootCAs:            CACertPool,
@@ -70,12 +79,14 @@ func InitializeServer(f embed.FS, userHandlers []InfiniteMITMApplicationServiceM
 		},
 	}
 
-	return server
+	return server, nil
 }
 
-func internalHandlers() []InfiniteMITMApplicationServiceModule.HandlerStruct {
-	handlers := []InfiniteMITMApplicationServiceModule.HandlerStruct{
-		InfiniteMITMApplicationServiceModule.PatchBookmarkedFilms(),
+func internalHandlers() []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct {
+	handlers := []InfiniteMITMApplicationServiceMITMHandlers.HandlerStruct{
+		InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointRequests(),
+		InfiniteMITMApplicationServiceMITMHandlers.CacheBookmarkedFilms(),
+		InfiniteMITMApplicationServiceMITMHandlers.DirtyFixInvalidMatchSpectateID(),
 	}
 
 	return handlers

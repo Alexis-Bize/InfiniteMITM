@@ -12,11 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package request
+package HaloWaypointLibRequestModule
 
-import "net/http"
+type Urls struct {
+	Stats     string
+	Authoring string
+	Discovery string
+}
 
-func ExtractSpartanTokenAuthorization(req *http.Request) string {
-	spartanToken := req.Header.Get("X-343-Authorization-Spartan")
-	return spartanToken
+type Config struct {
+	Urls 	Urls
+}
+
+func GetConfig() Config {
+	return Config{
+		Urls: Urls{
+			Stats:     "https://halostats.svc.halowaypoint.com",
+			Authoring: "https://authoring-infiniteugc.svc.halowaypoint.com",
+			Discovery: "https://discovery-infiniteugc.svc.halowaypoint.com",
+		},
+	}
 }

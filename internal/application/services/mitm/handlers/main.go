@@ -118,11 +118,6 @@ func DirtyFixInvalidMatchSpectateID() HandlerStruct {
 				return req, nil
 			}
 
-			userAgent := UtilitiesRequestModule.ExtractHeaderValue(req, "user-agent")
-			spartanToken := UtilitiesRequestModule.ExtractHeaderValue(req, "x-343-authorization-spartan")
-			telemetryID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-telemetry-session-id")
-			flightID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-clearance")
-
 			spectateFilmEstimatedIndex++
 			exists := spectateFilmEstimatedIndex >= 0 && spectateFilmEstimatedIndex < totalFilms
 
@@ -130,6 +125,11 @@ func DirtyFixInvalidMatchSpectateID() HandlerStruct {
 				// will fallback to the 1st item
 				spectateFilmEstimatedIndex = 0
 			}
+
+			userAgent := UtilitiesRequestModule.ExtractHeaderValue(req, "user-agent")
+			spartanToken := UtilitiesRequestModule.ExtractHeaderValue(req, "x-343-authorization-spartan")
+			telemetryID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-telemetry-session-id")
+			flightID := UtilitiesRequestModule.ExtractHeaderValue(req, "343-clearance")
 
 			film, err := HaloWaypointLibRequestModuleDomains.GetFilmByAssetID(HaloWaypointLibRequestModule.RequestAttributes{
 				UserAgent:    userAgent,

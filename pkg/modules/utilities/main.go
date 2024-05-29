@@ -12,22 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package Utilities
 
-import (
-	"embed"
-	InfiniteMITM "infinite-mitm/internal"
-	"log"
-)
-
-//go:generate goversioninfo -icon=assets/resource/windows/icon_256x256.ico
-//go:embed cert/*
-//go:embed assets/resource/shared/templates/*
-var f embed.FS
-
-func main() {
-	err := InfiniteMITM.Start(f)
-	if err != nil {
-		log.Fatalln(err)
+func GetValueAndIndex(m map[string]string, keys []string, key string) (string, int) {
+	value, exists := m[key]
+	if !exists {
+		return "", -1
 	}
+
+	for index, k := range keys {
+		if k == key {
+			return value, index
+		}
+	}
+
+	return value, -1
 }

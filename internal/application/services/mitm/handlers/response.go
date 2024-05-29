@@ -24,7 +24,7 @@ import (
 )
 
 func HandleHaloWaypointResponses() ResponseHandlerStruct {
-	target := regexp.MustCompile(`(?i)` + InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Root)
+	target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Root))
 
 	return ResponseHandlerStruct{
 		Match: goproxy.UrlMatches(target),
@@ -33,19 +33,6 @@ func HandleHaloWaypointResponses() ResponseHandlerStruct {
 				log.Printf("[%s] [%v] %s", resp.Request.Method, resp.StatusCode, resp.Request.URL.String())
 			}
 
-			return resp
-		},
-	}
-}
-
-func Dirty__Force200OnInvalidMatchSpectateID() ResponseHandlerStruct {
-	target := regexp.MustCompile(`(?i)` + InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Discovery + `/hi/films/matches/00000000-0000-0000-0000-000000000000/spectate`)
-
-	return ResponseHandlerStruct{
-		Match: goproxy.UrlMatches(target),
-		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-			resp.StatusCode = http.StatusOK
-			resp.Status = http.StatusText(http.StatusOK)
 			return resp
 		},
 	}

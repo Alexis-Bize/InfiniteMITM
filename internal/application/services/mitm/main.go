@@ -89,18 +89,16 @@ func InitializeServer(f embed.FS) (*http.Server, error) {
 
 func internalRequestHandlers() []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct {
 	handlers := []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct{
-		InfiniteMITMApplicationServiceMITMHandlers.Dirty__CacheUserFavoriteFilms(),
-		InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointRequests(),
 	}
 
+	handlers = append(handlers, InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointRequests())
 	return handlers
 }
 
 func internalResponseHandlers() []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct {
 	handlers := []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct{
-		InfiniteMITMApplicationServiceMITMHandlers.Dirty__Force200OnInvalidMatchSpectateID(),
-		InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointResponses(),
 	}
 
+	handlers = append(handlers, InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointResponses())
 	return handlers
 }

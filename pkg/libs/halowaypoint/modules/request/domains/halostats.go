@@ -14,6 +14,17 @@
 
 package HaloWaypointLibRequestModuleDomains
 
+import (
+	"encoding/json"
+	"fmt"
+	HaloWaypointLibRequestModule "infinite-mitm/pkg/libs/halowaypoint/modules/request"
+	ErrorsModule "infinite-mitm/pkg/modules/errors"
+	UtilitiesRequestModule "infinite-mitm/pkg/modules/utilities/request"
+	"io"
+	"net/http"
+	"time"
+)
+
 type MatchSpectateResponse struct {
 	FilmStatusBond int `json:"FilmStatusBond"`
 	CustomData     struct {
@@ -33,4 +44,87 @@ type MatchSpectateResponse struct {
 	} `json:"CustomData"`
 	BlobStoragePathPrefix      string `json:"BlobStoragePathPrefix"`
 	AssetID                    string `json:"AssetId"`
+}
+
+// Partial
+type MatchStatsResponse struct {
+	MatchID   string `json:"MatchId"`
+	MatchInfo struct {
+		StartTime           time.Time `json:"StartTime"`
+		EndTime             time.Time `json:"EndTime"`
+		Duration            string    `json:"Duration"`
+		LifecycleMode       int       `json:"LifecycleMode"`
+		GameVariantCategory int       `json:"GameVariantCategory"`
+		LevelID             string    `json:"LevelId"`
+		MapVariant          struct {
+			AssetKind int    `json:"AssetKind"`
+			AssetID   string `json:"AssetId"`
+			VersionID string `json:"VersionId"`
+		} `json:"MapVariant"`
+		UgcGameVariant struct {
+			AssetKind int    `json:"AssetKind"`
+			AssetID   string `json:"AssetId"`
+			VersionID string `json:"VersionId"`
+		} `json:"UgcGameVariant"`
+		ClearanceID string `json:"ClearanceId"`
+		Playlist    struct {
+			AssetKind int    `json:"AssetKind"`
+			AssetID   string `json:"AssetId"`
+			VersionID string `json:"VersionId"`
+		} `json:"Playlist"`
+		PlaylistExperience  int `json:"PlaylistExperience"`
+		PlaylistMapModePair struct {
+			AssetKind int    `json:"AssetKind"`
+			AssetID   string `json:"AssetId"`
+			VersionID string `json:"VersionId"`
+		} `json:"PlaylistMapModePair"`
+		SeasonID            string `json:"SeasonId"`
+		PlayableDuration    string `json:"PlayableDuration"`
+		TeamsEnabled        bool   `json:"TeamsEnabled"`
+		TeamScoringEnabled  bool   `json:"TeamScoringEnabled"`
+		GameplayInteraction int    `json:"GameplayInteraction"`
+	} `json:"MatchInfo"`
+}
+
+func GetMatchStats(attr HaloWaypointLibRequestModule.RequestAttributes, matchID string) (MatchStatsResponse, error) {
+	url := UtilitiesRequestModule.ComputeUrl(HaloWaypointLibRequestModule.GetConfig().Urls.Stats, fmt.Sprintf("/hi/matches/%s/stats", matchID))
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return MatchStatsResponse{}, ErrorsModule.Log(ErrorsModule.ErrHTTPRequestException, err.Error())
+	}
+
+	for k, v := range UtilitiesRequestModule.AssignHeaders(map[string]string{
+		"User-Agent": attr.UserAgent,
+		"X-343-Authorization-Spartan": attr.SpartanToken,
+		"Accept": "application/json",
+	}) { req.Header.Set(k, v) }
+
+	for k, v := range attr.ExtraHeaders {
+		req.Header.Set(k, v)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return MatchStatsResponse{}, ErrorsModule.Log(ErrorsModule.ErrHTTPRequestException, err.Error())
+	}
+	defer resp.Body.Close()
+
+	err = HaloWaypointLibRequestModule.ValidateResponseStatusCode(resp)
+	if err != nil {
+		return MatchStatsResponse{}, err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return MatchStatsResponse{}, ErrorsModule.Log(ErrorsModule.ErrIOReadException, err.Error())
+	}
+
+	var unmarshal MatchStatsResponse
+	if err := json.Unmarshal(body, &unmarshal); err != nil {
+		return MatchStatsResponse{}, ErrorsModule.Log(ErrorsModule.ErrJSONUnmarshalException, err.Error())
+	}
+
+	return unmarshal, nil
 }

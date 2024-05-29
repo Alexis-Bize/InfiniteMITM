@@ -13,8 +13,6 @@
 
 -   Install Root Certificate
 -   [Override Requests](/docs/Override-Requests.md)
--   Force Kill Proxy
--   [Fix Bookmarked Films](/docs/Fix-Bookmarked-Films.md)
 
 ## Building From Source
 

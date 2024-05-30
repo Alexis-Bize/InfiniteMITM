@@ -14,17 +14,34 @@
 
 package Utilities
 
-func GetValueAndIndex(m map[string]string, keys []string, key string) (string, int) {
-	value, exists := m[key]
-	if !exists {
-		return "", -1
-	}
+import (
+	"fmt"
+	"reflect"
+)
 
-	for index, k := range keys {
-		if k == key {
-			return value, index
+func Contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
 		}
 	}
 
-	return value, -1
+	return false
+}
+
+func InterfaceToMap(i interface{}) map[string]string {
+	v := reflect.ValueOf(i)
+	output := make(map[string]string)
+
+	if i == nil {
+		return output
+	}
+
+	for _, key := range v.MapKeys() {
+		ckey := fmt.Sprintf("%v", key.Interface())
+		cvalue := fmt.Sprintf("%v", v.MapIndex(key).Interface())
+		output[ckey] = cvalue
+	}
+
+	return output
 }

@@ -74,6 +74,12 @@ func InitializeServer(f embed.FS) (*http.Server, error) {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
 
+	clientResponseHandlers, _ := ReadClientMITMConfig()
+
+	for _, handler := range clientResponseHandlers {
+		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
+	}
+
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
 		Handler: proxy,

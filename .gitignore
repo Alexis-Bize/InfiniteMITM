@@ -2,10 +2,10 @@
 .vscode
 .env
 
-build/*/*
-!build/*/.gitkeep
+/build/*/*
+/!build/*/.gitkeep
 
-resource.syso
-versioninfo.json
+/resource.syso
+/versioninfo.json
 
 InfiniteVariantToolCLI.exe

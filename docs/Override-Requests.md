@@ -128,7 +128,7 @@ In some cases, you might need to reuse a parameter that was matched during the r
 
 ```
 # Request Path
-/enginegamevariant/65f4c3e1-5641-4d64-8bb5-b37daed784e4/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/FFA.bin
+/cool/example/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/path/xuid(1234)
 
 # Config
 blobs:

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package InfiniteMITMDomainsModule
+package MITMDomainsModule
 
 type Domain = string
 
@@ -24,14 +24,7 @@ type Domains struct {
 	HaloStats Domain
 	Settings  Domain
 	GameCMS   Domain
-}
-
-type PublicDomains struct {
-	Blobs     Domain
-	Authoring Domain
-	Discovery Domain
-	Settings  Domain
-	GameCMS   Domain
+	Economy   Domain
 }
 
 const (
@@ -42,6 +35,7 @@ const (
 	HaloStats Domain  = "halostats.svc.halowaypoint.com:443"
 	Settings  Domain  = "settings.svc.halowaypoint.com:443"
 	GameCMS   Domain  = "gamecms-hacs.svc.halowaypoint.com:443"
+	Economy   Domain  = "economy.svc.halowaypoint.com:443"
 )
 
 var HaloWaypointSVCDomains = Domains{
@@ -52,12 +46,5 @@ var HaloWaypointSVCDomains = Domains{
 	HaloStats: HaloStats,
 	Settings:  Settings,
 	GameCMS:   GameCMS,
-}
-
-var HaloWaypointSVCDomainsPublic = PublicDomains{
-	Blobs:     HaloWaypointSVCDomains.Blobs,
-	Authoring: HaloWaypointSVCDomains.Authoring,
-	Discovery: HaloWaypointSVCDomains.Discovery,
-	Settings:  HaloWaypointSVCDomains.Settings,
-	GameCMS:   HaloWaypointSVCDomains.GameCMS,
+	Economy:   Economy,
 }

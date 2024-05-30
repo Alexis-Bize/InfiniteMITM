@@ -16,7 +16,8 @@ package main
 
 import (
 	"embed"
-	InfiniteMITM "infinite-mitm/internal"
+	MITM "infinite-mitm/internal"
+	MITMApplicationPromptService "infinite-mitm/internal/application/services/prompt"
 	"log"
 )
 
@@ -26,8 +27,12 @@ import (
 var f embed.FS
 
 func main() {
-	err := InfiniteMITM.Start(f)
+	err := MITMApplicationPromptService.DebugPattern()
+
 	if err != nil {
-		log.Fatalln(err)
+		err := MITM.Start(f)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }

@@ -3,7 +3,7 @@ package ProxyModule
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	InfiniteMITMApplicationSignalService "infinite-mitm/internal/application/services/signal"
+	MITMApplicationSignalService "infinite-mitm/internal/application/services/signal"
 	ErrorsModule "infinite-mitm/pkg/modules/errors"
 	"os/exec"
 	"runtime"
@@ -28,7 +28,7 @@ func toggle(command string) error {
 		return ErrorsModule.ErrProxyToggleInvalidCommand
 	}
 
-	InfiniteMITMApplicationSignalService.SetupSignalHandler(func() {
+	MITMApplicationSignalService.SetupSignalHandler(func() {
 		disableProxy()
 	})
 

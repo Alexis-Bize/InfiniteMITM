@@ -1,6 +1,6 @@
 # Override Requests
 
-**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `settings` | `gamecms`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
+**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `stats` | `settings` | `gamecms` | `economy`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
 
 **Note:** When changing the `body`, the `Content-Length` header will be automatically calculated.
 
@@ -28,7 +28,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
       methods:
           - GET
       response:
-          body: https://blobs-infiniteugc.svc.halowaypoint.com/enginegamevariant/:guid/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
+          body: https://blobs-infiniteugc.svc.halowaypoint.com/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
           headers:
               x-infinite-mitm: :infinite-mitm-version
               content-type: :content-type-bond
@@ -89,11 +89,53 @@ discovery: # Must be one of blobs | authoring | discovery | settings
 -   `:content-type-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
--   `:path*`
-    -   Matches all paths.
+-   `:$`
+    -   Ends the match expression
+    -   Example: `/foo/bar:$` will not match `/foo/bar/baz`
+-   `:blobs-svc`
+    -   Returns blobs service URL
+    -   Output: `https://blobs-infiniteugc.svc.halowaypoint.com`
+-   `:authoring-svc`
+    -   Returns authoring service URL
+    -   Output: `https://authoring-infiniteugc.svc.halowaypoint.com`
+-   `:discovery-svc`
+    -   Returns discovery service URL
+    -   Output: `https://discovery-infiniteugc.svc.halowaypoint.com`
+-   `:stats-svc`
+    -   Returns stats service URL
+    -   Output: `https://halostats.svc.halowaypoint.com`
+-   `:settings-svc`
+    -   Returns stats service URL
+    -   Output: `https://settings.svc.halowaypoint.com`
+-   `:gamecms-svc`
+    -   Returns gamecms service URL
+    -   Output: `https://gamecms-hacs.svc.halowaypoint.com`
+-   `:economy-svc`
+    -   Returns economy service URL
+    -   Output: `https://economy.svc.halowaypoint.com`
 -   `:infinite-mitm-root`
     -   Represents the root folder of local files.
     -   Output: `~/InfiniteMITM`
 -   `:infinite-mitm-version`
     -   Represents the InfiniteMITM version.
     -   Example: `0.1.0`
+
+## Response Match Parameters
+
+In some cases, you might need to reuse a parameter that was matched during the request in your response. To do this, you can use `${pos}` where `{pos}` is the position of your route parameter.
+
+### Example
+
+```
+# Request Path
+/enginegamevariant/65f4c3e1-5641-4d64-8bb5-b37daed784e4/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/FFA.bin
+
+# Config
+blobs:
+  - path: /cool/example/:guid/path/:xuid
+    response:
+      body: :infinite-mitm-root/example/$2/test_$1
+
+# Output
+~/InfiniteMITM/xuid(1234)/test_f0ec5d75-1f75-4315-808a-bc9068074982
+```

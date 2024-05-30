@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package InfiniteMITMApplicationMITMService
+package MITMApplicationMITMService
 
 import (
 	"infinite-mitm/configs"
@@ -20,7 +20,7 @@ import (
 	pattern "infinite-mitm/internal/application/services/mitm/helpers/pattern"
 	domains "infinite-mitm/internal/modules/domains"
 	errors "infinite-mitm/pkg/modules/errors"
-	Utilities "infinite-mitm/pkg/modules/utilities"
+	utilities "infinite-mitm/pkg/modules/utilities"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -52,8 +52,10 @@ type YAML struct {
 	Blobs     []YAMLNode `yaml:"blobs,omitempty"`
 	Authoring []YAMLNode `yaml:"authoring,omitempty"`
 	Discovery []YAMLNode `yaml:"discovery,omitempty"`
+	HaloStats []YAMLNode `yaml:"stats,omitempty"`
 	Settings  []YAMLNode `yaml:"settings,omitempty"`
 	GameCMS   []YAMLNode `yaml:"gamecms,omitempty"`
+	Economy   []YAMLNode `yaml:"economy,omitempty"`
 }
 
 func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
@@ -91,13 +93,47 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 					return handlers.ResponseHandlerStruct{
 						Match: goproxy.UrlMatches(target),
 						Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-							if !Utilities.Contains(methods, resp.Request.Method) {
+							if !utilities.Contains(methods, resp.Request.Method) {
 								return resp
 							}
 
-							kv := Utilities.InterfaceToMap(v.Response.Headers)
+							kv := utilities.InterfaceToMap(v.Response.Headers)
 							for key, value := range kv {
-								resp.Header.Set(key, pattern.Replace(value))
+								resp.Header.Set(key, pattern.Process(path, value))
+							}
+
+							return resp
+						},
+					}
+				}
+
+				clientResponseHandlers = append(clientResponseHandlers, handler())
+			}
+		}
+	}
+
+	if len(content.Discovery) > 0 {
+		for _, v := range content.Settings {
+			if v.Response != (YAMLResponseNode{}) {
+				path := v.Path
+				if path == "" || !strings.HasPrefix(path, "/") {
+					continue
+				}
+
+				methods := v.Methods
+				handler := func () handlers.ResponseHandlerStruct {
+					target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Discovery + path))
+
+					return handlers.ResponseHandlerStruct{
+						Match: goproxy.UrlMatches(target),
+						Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+							if !utilities.Contains(methods, resp.Request.Method) {
+								return resp
+							}
+
+							kv := utilities.InterfaceToMap(v.Response.Headers)
+							for key, value := range kv {
+								resp.Header.Set(key, pattern.Process(path, value))
 							}
 
 							return resp

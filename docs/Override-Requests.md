@@ -137,5 +137,5 @@ blobs:
       body: :infinite-mitm-root/example/$2/test_$1
 
 # Output
-~/InfiniteMITM/xuid(1234)/test_f0ec5d75-1f75-4315-808a-bc9068074982
+~/InfiniteMITM/xuid(1234)/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2
 ```

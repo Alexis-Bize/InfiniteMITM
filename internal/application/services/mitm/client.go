@@ -17,6 +17,7 @@ package InfiniteMITMApplicationMITMService
 import (
 	"infinite-mitm/configs"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	pattern "infinite-mitm/internal/application/services/mitm/helpers/pattern"
 	domains "infinite-mitm/internal/modules/domains"
 	errors "infinite-mitm/pkg/modules/errors"
 	Utilities "infinite-mitm/pkg/modules/utilities"
@@ -55,8 +56,6 @@ type YAML struct {
 	GameCMS   []YAMLNode `yaml:"gamecms,omitempty"`
 }
 
-const MITM_FILENAME = "mitm.yaml"
-
 func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 
@@ -65,7 +64,7 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 		return clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
 	}
 
-	filePath := filepath.Join(dirname, configs.GetConfig().Name, MITM_FILENAME)
+	filePath := filepath.Join(dirname, configs.GetConfig().Name, "mitm.yaml")
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
@@ -87,7 +86,7 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 
 				methods := v.Methods
 				handler := func () handlers.ResponseHandlerStruct {
-					target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Settings + path))
+					target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Settings + path))
 
 					return handlers.ResponseHandlerStruct{
 						Match: goproxy.UrlMatches(target),
@@ -98,7 +97,7 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 
 							kv := Utilities.InterfaceToMap(v.Response.Headers)
 							for key, value := range kv {
-								resp.Header.Set(key, strings.Replace(value, ":infinite-mitm-version", configs.GetConfig().Version, -1))
+								resp.Header.Set(key, pattern.Replace(value))
 							}
 
 							return resp

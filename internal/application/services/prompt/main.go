@@ -20,12 +20,14 @@ const (
 	StartProxyServer PromptOption = iota
 	InstallRootCertificate
 	ForceKillProxy
+	Exit
 )
 
 var optionToString = map[PromptOption]string{
 	StartProxyServer:       "Start Proxy Server",
 	InstallRootCertificate: "Install Root Certificate",
 	ForceKillProxy:         "Force Kill Proxy",
+	Exit:                   "Exit",
 }
 
 func (d PromptOption) String() string {

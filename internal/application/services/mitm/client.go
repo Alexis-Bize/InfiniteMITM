@@ -74,38 +74,69 @@ func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.Respons
 		return clientRequestHandlers, clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
 	}
 
-	if len(content.Settings) > 0 {
-		for _, v := range content.Settings {
-			if v.Response != (YAMLResponseNode{}) {
-				path := v.Path
-				if path == "" || !strings.HasPrefix(path, "/") {
-					continue
-				}
-
-				methods := v.Methods
-				handler := func () handlers.ResponseHandlerStruct {
-					target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Settings + path))
-
-					return handlers.ResponseHandlerStruct{
-						Match: goproxy.UrlMatches(target),
-						Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-							if !utilities.Contains(methods, resp.Request.Method) {
-								return resp
-							}
-
-							matches := pattern.Match(target, resp.Request.URL.String())
-							kv := utilities.InterfaceToMap(v.Response.Headers)
-							for key, value := range kv {
-								resp.Header.Set(key, pattern.ReplaceMatches(value, matches))
-							}
-
-							return resp
-						},
-					}
-				}
-
-				clientResponseHandlers = append(clientResponseHandlers, handler())
+	for _, v := range content.Blobs {
+		if v.Response != (YAMLResponseNode{}) {
+			path := v.Path
+			if path == "" || !strings.HasPrefix(path, "/") {
+				continue
 			}
+
+			methods := v.Methods
+			handler := func () handlers.ResponseHandlerStruct {
+				target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Blobs + path))
+
+				return handlers.ResponseHandlerStruct{
+					Match: goproxy.UrlMatches(target),
+					Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+						if !utilities.Contains(methods, resp.Request.Method) {
+							return resp
+						}
+
+						matches := pattern.Match(target, resp.Request.URL.String())
+						kv := utilities.InterfaceToMap(v.Response.Headers)
+						for key, value := range kv {
+							resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+						}
+
+						return resp
+					},
+				}
+			}
+
+			clientResponseHandlers = append(clientResponseHandlers, handler())
+		}
+	}
+
+	for _, v := range content.Discovery {
+		if v.Response != (YAMLResponseNode{}) {
+			path := v.Path
+			if path == "" || !strings.HasPrefix(path, "/") {
+				continue
+			}
+
+			methods := v.Methods
+			handler := func () handlers.ResponseHandlerStruct {
+				target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Discovery + path))
+
+				return handlers.ResponseHandlerStruct{
+					Match: goproxy.UrlMatches(target),
+					Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+						if !utilities.Contains(methods, resp.Request.Method) {
+							return resp
+						}
+
+						matches := pattern.Match(target, resp.Request.URL.String())
+						kv := utilities.InterfaceToMap(v.Response.Headers)
+						for key, value := range kv {
+							resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+						}
+
+						return resp
+					},
+				}
+			}
+
+			clientResponseHandlers = append(clientResponseHandlers, handler())
 		}
 	}
 

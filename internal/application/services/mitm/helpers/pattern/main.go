@@ -131,7 +131,13 @@ func ReplaceParameters(value string) string {
 		MatchParameters.JSON, MatchPatterns.JSON,
 
 		MatchParameters.END, MatchPatterns.END,
-		
+	)
+
+	return replacer.Replace(value)
+}
+
+func ReplaceStaticParameters(value string) string {
+	replacer := strings.NewReplacer(
 		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
 		":mitm-version", configs.GetConfig().Version,
 	)

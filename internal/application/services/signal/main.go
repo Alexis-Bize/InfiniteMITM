@@ -30,3 +30,7 @@ func SetupSignalHandler(cleanupFn func()) {
 		os.Exit(0)
 	}()
 }
+
+func Stop() {
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+}

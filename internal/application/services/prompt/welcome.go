@@ -29,6 +29,7 @@ func Welcome() (string, error) {
 			huh.NewOption(StartProxyServer.String(), StartProxyServer.String()),
 			huh.NewOption(InstallRootCertificate.String(), InstallRootCertificate.String()),
 			huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
+			huh.NewOption(Exit.String(), Exit.String()),
 		).
 		Value(&option).
 		Run()

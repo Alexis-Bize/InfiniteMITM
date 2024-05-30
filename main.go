@@ -17,7 +17,7 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	"log"
+	MITMApplicationSignalService "infinite-mitm/internal/application/services/signal"
 )
 
 //go:generate goversioninfo -icon=assets/resource/windows/icon_256x256.ico
@@ -28,6 +28,6 @@ var f embed.FS
 func main() {
 	err := MITM.Start(&f)
 	if err != nil {
-		log.Fatalln(err)
+		MITMApplicationSignalService.Stop()
 	}
 }

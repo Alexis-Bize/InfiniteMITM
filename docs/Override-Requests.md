@@ -132,7 +132,7 @@ In some cases, you might need to reuse a parameter that was matched during the r
 /cool/example/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/path/xuid(1234)
 ```
 
-### MITM Config
+#### MITM Config
 
 ```yaml
 blobs:

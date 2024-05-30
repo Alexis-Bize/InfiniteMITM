@@ -20,8 +20,8 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
-	InfiniteMITMApplicationServiceMITMHandlers "infinite-mitm/internal/application/services/mitm/handlers"
-	ErrorsModule "infinite-mitm/pkg/modules/errors"
+	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	errors "infinite-mitm/pkg/modules/errors"
 	"net/http"
 
 	"github.com/elazarl/goproxy"
@@ -38,22 +38,22 @@ const overrideLogger = true
 func InitializeServer(f embed.FS) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
+		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
 	}
 
 	CAKey, err := f.ReadFile("cert/rootCA.key")
 	if err != nil {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
+		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
 	}
 
 	cert, err := tls.X509KeyPair(CACert, CAKey)
 	if err != nil {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, err.Error())
+		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
 	}
 
 	CACertPool := x509.NewCertPool()
 	if !CACertPool.AppendCertsFromPEM(CACert) {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrRootCertificateException, "failed to add root CA certificate to pool")
+		return nil, errors.Log(errors.ErrRootCertificateException, "failed to add root CA certificate to pool")
 	}
 
 	goproxy.GoproxyCa = cert
@@ -87,18 +87,18 @@ func InitializeServer(f embed.FS) (*http.Server, error) {
 	return server, nil
 }
 
-func internalRequestHandlers() []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct {
-	handlers := []InfiniteMITMApplicationServiceMITMHandlers.RequestHandlerStruct{
+func internalRequestHandlers() []handlers.RequestHandlerStruct {
+	handlersList := []handlers.RequestHandlerStruct{
 	}
 
-	handlers = append(handlers, InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointRequests())
-	return handlers
+	handlersList = append(handlersList, handlers.HandleHaloWaypointRequests())
+	return handlersList
 }
 
-func internalResponseHandlers() []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct {
-	handlers := []InfiniteMITMApplicationServiceMITMHandlers.ResponseHandlerStruct{
+func internalResponseHandlers() []handlers.ResponseHandlerStruct {
+	handlersList := []handlers.ResponseHandlerStruct{
 	}
 
-	handlers = append(handlers, InfiniteMITMApplicationServiceMITMHandlers.HandleHaloWaypointResponses())
-	return handlers
+	handlersList = append(handlersList, handlers.HandleHaloWaypointResponses())
+	return handlersList
 }

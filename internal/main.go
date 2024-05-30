@@ -16,25 +16,50 @@ package InfiniteMITM
 
 import (
 	"embed"
-	"infinite-mitm/configs"
-	InfiniteMITMApplicationMITMService "infinite-mitm/internal/application/services/mitm"
-	ProxyModule "infinite-mitm/pkg/modules/proxy"
-	"log"
+	mitm "infinite-mitm/internal/application/services/mitm"
+	prompt "infinite-mitm/internal/application/services/prompt"
+	networkTable "infinite-mitm/internal/application/services/ui/network"
+	errors "infinite-mitm/pkg/modules/errors"
+	proxy "infinite-mitm/pkg/modules/proxy"
+	"os"
 )
 
 func Start(f embed.FS) error {
 	var err error
 
-	server, err := InfiniteMITMApplicationMITMService.InitializeServer(f)
+	option, err := prompt.Welcome()
 	if err != nil {
-		return err
+		os.Exit(0)
 	}
 
-	err = ProxyModule.ToggleProxy("on")
-	if err != nil {
-		return err
+	if prompt.StartProxyServer.Is(option) {
+		server, err := mitm.InitializeServer(f)
+		if err != nil {
+			return err
+		}
+
+		err = proxy.ToggleProxy("on")
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			program := networkTable.Create()
+			if _, err := program.Run(); err != nil {
+				errors.Log(errors.ErrFatalException, err.Error())
+				os.Exit(1)
+			}
+		}()
+
+		if err := server.ListenAndServe(); err != nil {
+			errors.Log(errors.ErrFatalException, err.Error())
+			os.Exit(1)
+		}
 	}
 
-	log.Printf("%s - Starting proxy server on port %d\n", configs.GetConfig().Name, configs.GetConfig().Proxy.Port)
-	return server.ListenAndServe()
+	if prompt.ForceKillProxy.Is(option) {
+		proxy.ToggleProxy("off")
+	}
+
+	return nil
 }

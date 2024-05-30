@@ -20,6 +20,7 @@ var (
 	ErrJSONUnmarshalException = errors.New("json unmarshal exception")
 	// Miscellaneous
 	ErrIOReadException = errors.New("io read exception")
+	ErrFatalException = errors.New("fatal exception")
 )
 
 func Log(err error, message string) error {

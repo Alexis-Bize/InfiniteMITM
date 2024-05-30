@@ -3,14 +3,12 @@ package ProxyModule
 import (
 	"fmt"
 	"infinite-mitm/configs"
+	InfiniteMITMApplicationSignalService "infinite-mitm/internal/application/services/signal"
 	ErrorsModule "infinite-mitm/pkg/modules/errors"
-	"os"
 	"os/exec"
-	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 var proxyHost = configs.GetConfig().Proxy.Host
@@ -30,14 +28,9 @@ func toggle(command string) error {
 		return ErrorsModule.ErrProxyToggleInvalidCommand
 	}
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-
-	go func() {
-		<-c
+	InfiniteMITMApplicationSignalService.SetupSignalHandler(func() {
 		disableProxy()
-		os.Exit(0)
-	}()
+	})
 
 	switch runtime.GOOS {
 	case "windows":

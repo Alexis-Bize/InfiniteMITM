@@ -9,6 +9,8 @@
 
 **InfiniteMITM** is a MITM (man-in-the-middle) CLI for **Halo Infinite** which enables you to intercept and modify the game's requests and responses on the fly.
 
+<img alt="InfiniteMITM CLI" title="InfiniteMITM CLI" src="./assets/preview.png?v=1" width="600" />
+
 ## Documentation
 
 -   Install Root Certificate

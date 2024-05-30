@@ -15,8 +15,8 @@
 package InfiniteMITMApplicationMITMServiceHandlers
 
 import (
-	InfiniteMITMDomainsModule "infinite-mitm/internal/modules"
-	"log"
+	networkTable "infinite-mitm/internal/application/services/ui/network"
+	domains "infinite-mitm/internal/modules/domains"
 	"net/http"
 	"regexp"
 
@@ -24,13 +24,13 @@ import (
 )
 
 func HandleHaloWaypointResponses() ResponseHandlerStruct {
-	target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(InfiniteMITMDomainsModule.HaloWaypointSVCDomains.Root))
+	target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root))
 
 	return ResponseHandlerStruct{
 		Match: goproxy.UrlMatches(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			if resp.Request.Method != http.MethodOptions {
-				log.Printf("[%s] [%v] %s", resp.Request.Method, resp.StatusCode, resp.Request.URL.String())
+				networkTable.Push(resp.Request.Method, resp.StatusCode, resp.Request.URL.String())
 			}
 
 			return resp

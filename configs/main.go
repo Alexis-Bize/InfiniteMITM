@@ -17,6 +17,9 @@ package configs
 import (
 	"embed"
 	"log"
+	"os"
+	"path"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -31,10 +34,13 @@ type Config struct {
 	Version     string `yaml:"version"`
 	Author      string `yaml:"author"`
 	Repository  string `yaml:"repository"`
-	Proxy       struct {
+	Proxy struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
 	} `yaml:"proxy"`
+	Extra struct {
+		ProjectDir string
+	}
 }
 
 func GetConfig() *Config {
@@ -52,5 +58,11 @@ func GetConfig() *Config {
 		log.Fatalln(err)
 	}
 
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	config.Extra.ProjectDir = path.Join(dirname, strings.Replace(config.Name, " ", "", -1))
 	return &config
 }

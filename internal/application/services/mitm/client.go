@@ -58,24 +58,20 @@ type YAML struct {
 	Economy   []YAMLNode `yaml:"economy,omitempty"`
 }
 
-func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
+func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.ResponseHandlerStruct, error) {
+	var clientRequestHandlers []handlers.RequestHandlerStruct
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		return clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
-	}
-
-	filePath := filepath.Join(dirname, configs.GetConfig().Name, "mitm.yaml")
+	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, "mitm.yaml")
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
-		return clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
+		return clientRequestHandlers, clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
 	}
 
 	var content YAML
 	err = yaml.Unmarshal(yamlFile, &content)
 	if err != nil {
-		return clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
+		return clientRequestHandlers, clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
 	}
 
 	if len(content.Settings) > 0 {
@@ -97,9 +93,10 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 								return resp
 							}
 
+							matches := pattern.Match(target, resp.Request.URL.String())
 							kv := utilities.InterfaceToMap(v.Response.Headers)
 							for key, value := range kv {
-								resp.Header.Set(key, pattern.Process(path, value))
+								resp.Header.Set(key, pattern.ReplaceMatches(value, matches))
 							}
 
 							return resp
@@ -112,39 +109,5 @@ func ReadClientMITMConfig() ([]handlers.ResponseHandlerStruct, error) {
 		}
 	}
 
-	if len(content.Discovery) > 0 {
-		for _, v := range content.Settings {
-			if v.Response != (YAMLResponseNode{}) {
-				path := v.Path
-				if path == "" || !strings.HasPrefix(path, "/") {
-					continue
-				}
-
-				methods := v.Methods
-				handler := func () handlers.ResponseHandlerStruct {
-					target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Discovery + path))
-
-					return handlers.ResponseHandlerStruct{
-						Match: goproxy.UrlMatches(target),
-						Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-							if !utilities.Contains(methods, resp.Request.Method) {
-								return resp
-							}
-
-							kv := utilities.InterfaceToMap(v.Response.Headers)
-							for key, value := range kv {
-								resp.Header.Set(key, pattern.Process(path, value))
-							}
-
-							return resp
-						},
-					}
-				}
-
-				clientResponseHandlers = append(clientResponseHandlers, handler())
-			}
-		}
-	}
-
-	return clientResponseHandlers, nil
+	return clientRequestHandlers, clientResponseHandlers, nil
 }

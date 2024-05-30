@@ -12,18 +12,18 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
       methods: # HTTP methods that this configuration will handle
           - GET
       response:
-          body: :infinite-mitm-root/maps/design_21.mvar # Path to the file that will be used as the response body
+          body: :mitm-dir/maps/design_21.mvar # Path to the file that will be used as the response body
           headers: # Additional headers to include in the response
               x-infinite-mitm: :infinite-mitm-version
-              content-type: :content-type-bond
+              content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
       methods:
           - GET
       response:
-          body: :infinite-mitm-root/enginegamevariant/cgui-markups/Slayer_8Teams.bin
+          body: :mitm-dir/enginegamevariant/cgui-markups/Slayer_8Teams.bin
           headers:
               x-infinite-mitm: :infinite-mitm-version
-              content-type: :content-type-bond
+              content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
       methods:
           - GET
@@ -31,7 +31,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
           body: https://blobs-infiniteugc.svc.halowaypoint.com/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
           headers:
               x-infinite-mitm: :infinite-mitm-version
-              content-type: :content-type-bond
+              content-type: :ct-bond
     - path: /ugcstorage/:path* # Match all paths after /ugcstorage/
       methods:
           - GET
@@ -54,11 +54,11 @@ discovery: # Must be one of blobs | authoring | discovery | settings
           - GET
           - POST
       request: # Used to alter the request
-          body: :infinite-mitm-root/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
+          body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
           headers: # Override request headers (case insensitive)
               custom-header: customValue
       response: # Used to alter the response
-          body: :infinite-mitm-root/response/body/file # URI to the overridden file
+          body: :mitm-dir/response/body/file # URI to the overridden file
           headers: # Override response headers (case insensitive)
               custom-response-header: customValue
 ```
@@ -77,16 +77,7 @@ discovery: # Must be one of blobs | authoring | discovery | settings
 -   `:cgui-bin`
     -   Matches all `CustomGamesUIMarkup` files.
     -   Example: `Slayer_CustomGamesUIMarkup_en.bin`
--   `:spartan-token`
-    -   Represents the value of the `X-343-Authorization-Spartan` header used in requests or responses.
-    -   Example: `v4=JSONWebToken`
--   `:flight-id`
-    -   Represents the value of the `343-Clearance` header used in requests or responses.
-    -   Example: `970df3e1-86ae-4571-8488-6b453876da88`
--   `:telemetry-id`
-    -   Represents the value of the `343-Telemetry-Session-Id` header used in requests or responses.
-    -   Example: `ab66f54f-1c18-47e2-9486-0070e0ae9cc5`
--   `:content-type-bond`
+-   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
 -   `:$`
@@ -113,10 +104,10 @@ discovery: # Must be one of blobs | authoring | discovery | settings
 -   `:economy-svc`
     -   Returns economy service URL
     -   Output: `https://economy.svc.halowaypoint.com`
--   `:infinite-mitm-root`
+-   `:mitm-root`
     -   Represents the root folder of local files.
     -   Output: `~/InfiniteMITM`
--   `:infinite-mitm-version`
+-   `:mitm-version`
     -   Represents the InfiniteMITM version.
     -   Example: `0.1.0`
 
@@ -138,7 +129,7 @@ In some cases, you might need to reuse a parameter that was matched during the r
 blobs:
     - path: /cool/example/:guid/path/:xuid
       response:
-          body: :infinite-mitm-root/example/$2/test_$1
+          body: :mitm-dir/example/$2/test_$1
 ```
 
 #### Output

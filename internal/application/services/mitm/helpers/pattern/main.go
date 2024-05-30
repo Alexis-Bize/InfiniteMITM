@@ -15,88 +15,138 @@
 package MITMApplicationMITMServicePatternHelpers
 
 import (
+	"infinite-mitm/configs"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 type Patterns struct {
+	SANDBOX string
 	XUID    string
 	GUID    string
 	MVAR    string
-	SANDBOX string
+	CGUI    string
+	EGV     string
+
+	BLOBS_SVC     string
+	STATS_SVC     string
+	GAMECMS_SVC   string
+	ECONOMY_SVC   string
+	SETTINGS_SVC  string
+	AUTHORING_SVC string
+	DISCOVERY_SVC string
+	
+	XML  string
+	BOND string
+	JSON string
+
+	END string
 }
 
 var MatchParameters = Patterns{
+	EGV:     ":egv-bin",
 	XUID:    ":xuid",
 	GUID:    ":guid",
 	MVAR:    ":map-mvar",
+	CGUI:    ":cgui-bin",
 	SANDBOX: ":sandbox",
+
+	BLOBS_SVC:      ":blobs-svc",
+	STATS_SVC:      ":stats-svc",
+	GAMECMS_SVC:    ":gamecms-svc",
+	ECONOMY_SVC:    ":economy-svc",
+	SETTINGS_SVC:   ":settings-svc",
+	AUTHORING_SVC:  ":authoring-svc",
+	DISCOVERY_SVC:  ":discovery-svc",
+
+	XML:  ":ct-xml",
+	BOND: ":ct-bond",
+	JSON: ":ct-json",
+
+	END: ":$",
 }
 
 var MatchPatterns = Patterns{
-	XUID:    `xuid\((\d+)\)`,
+	EGV:     `([a-z0-9-_]+\.bin)`,
 	GUID:    `([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`,
+	XUID:    `xuid\((\d+)\)`,
 	MVAR:    `([a-z0-9-_]+\.mvar)`,
+	CGUI:    `([a-z]+_CustomGamesUIMarkup_[a-z]+\.bin)`,
 	SANDBOX: `(retail|test|beta|beta-test)`,
+
+	BLOBS_SVC:      "https://blobs-infiniteugc.svc.halowaypoint.com",
+	STATS_SVC:      "https://halostats.svc.halowaypoint.com",
+	GAMECMS_SVC:    "https://gamecms-hacs.svc.halowaypoint.com",
+	ECONOMY_SVC:    "https://economy.svc.halowaypoint.com",
+	SETTINGS_SVC:   "https://settings.svc.halowaypoint.com",
+	AUTHORING_SVC:  "https://authoring-infiniteugc.svc.halowaypoint.com",
+	DISCOVERY_SVC:  "https://discovery-infiniteugc.svc.halowaypoint.com",
+
+	XML:  "application/xml",
+	BOND: "application/x-bond-compact-binary",
+	JSON: "application/json",
+
+	END: `$`,
 }
 
 func Create(value string) *regexp.Regexp {
-	return regexp.MustCompile(Replace(value))
+	return regexp.MustCompile(ReplaceParameters(value))
 }
 
-func Replace(value string) string {
-	value = strings.Replace(value, MatchParameters.XUID, MatchPatterns.XUID, -1)
-	value = strings.Replace(value, MatchParameters.GUID, MatchPatterns.GUID, -1)
-	value = strings.Replace(value, MatchParameters.MVAR, MatchPatterns.MVAR, -1)
-	value = strings.Replace(value, MatchParameters.SANDBOX, MatchPatterns.SANDBOX, -1)
-	return value
+func Match(re *regexp.Regexp, value string) []string {
+	var matches []string
+	
+	submatches := re.FindAllStringSubmatch(value, -1)
+	if len(submatches) > 0 {
+		for _, match := range submatches[0][1:] {
+			if len(match) > 0 {
+				matches = append(matches, match)
+			}
+		}
+	}
+
+	return matches
 }
 
-func Process(reqp string, resp string) string {
-	re1 := Replace(reqp)
-	re2 := resp
+func ReplaceParameters(value string) string {
+	replacer := strings.NewReplacer(
+		MatchParameters.SANDBOX, MatchPatterns.SANDBOX,
+		MatchParameters.XUID, MatchPatterns.XUID,
+		MatchParameters.GUID, MatchPatterns.GUID,
+		MatchParameters.MVAR, MatchPatterns.MVAR,
+		MatchParameters.CGUI, MatchPatterns.CGUI,
+		MatchParameters.EGV, MatchPatterns.EGV,
 
-	// xuid
-	XUIDExtractor := regexp.MustCompile(MatchPatterns.XUID)
-	XUIDMatches := XUIDExtractor.FindAllStringSubmatch(re1, -1)
-	var XUIDValues []string
-	for _, match := range XUIDMatches {
-		if len(match) > 0 {
-			XUIDValues = append(XUIDValues, match[0])
+		MatchParameters.BLOBS_SVC, MatchPatterns.BLOBS_SVC,
+		MatchParameters.STATS_SVC, MatchPatterns.STATS_SVC,
+		MatchParameters.GAMECMS_SVC, MatchPatterns.GAMECMS_SVC,
+		MatchParameters.ECONOMY_SVC, MatchPatterns.ECONOMY_SVC,
+		MatchParameters.SETTINGS_SVC, MatchPatterns.SETTINGS_SVC,
+		MatchParameters.AUTHORING_SVC, MatchPatterns.AUTHORING_SVC,
+		MatchParameters.DISCOVERY_SVC, MatchPatterns.DISCOVERY_SVC,
+
+		MatchParameters.XML, MatchPatterns.XML,
+		MatchParameters.BOND, MatchPatterns.BOND,
+		MatchParameters.JSON, MatchPatterns.JSON,
+
+		MatchParameters.END, MatchPatterns.END,
+		
+		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
+		":mitm-version", configs.GetConfig().Version,
+	)
+
+	return replacer.Replace(value)
+}
+
+func ReplaceMatches(target string, matches []string) string {
+	re := regexp.MustCompile(`\$\d+`)
+	return re.ReplaceAllStringFunc(target, func(m string) string {
+		index, err := strconv.Atoi(m[1:])
+		if err != nil || index < 1 || index > len(matches) {
+			return m
 		}
-	}
-
-	if len(XUIDValues) > 0 {
-		re2 = strings.Replace(re2, MatchParameters.XUID, XUIDValues[0], -1)
-	}
-
-	// guid
-	GUIDExtractor := regexp.MustCompile(MatchPatterns.GUID)
-	GUIDMatches := GUIDExtractor.FindAllStringSubmatch(re1, -1)
-	var GUIDValues []string
-	for _, match := range GUIDMatches {
-		if len(match) > 0 {
-			GUIDValues = append(GUIDValues, match[0])
-		}
-	}
-
-	if len(GUIDValues) > 0 {
-		re2 = strings.Replace(re2, MatchParameters.GUID, GUIDValues[0], -1)
-	}
-
-	// sandbox
-	SANDBOXExtractor := regexp.MustCompile(MatchPatterns.SANDBOX)
-	SANDBOXMatches := SANDBOXExtractor.FindAllStringSubmatch(re1, -1)
-	var SANDBOXValues []string
-	for _, match := range SANDBOXMatches {
-		if len(match) > 0 {
-			SANDBOXValues = append(SANDBOXValues, match[0])
-		}
-	}
-
-	if len(SANDBOXValues) > 0 {
-		re2 = strings.Replace(re2, MatchParameters.SANDBOX, SANDBOXValues[0], -1)
-	}
-
-	return re2
+		
+		return matches[index-1]
+	})
 }

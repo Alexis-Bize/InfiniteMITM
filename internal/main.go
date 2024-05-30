@@ -16,16 +16,19 @@ package MITM
 
 import (
 	"embed"
+	"infinite-mitm/configs"
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	networkTable "infinite-mitm/internal/application/services/ui/network"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
+	"io"
 	"os"
+	"path/filepath"
 )
 
-func Start(f embed.FS) error {
-	var err error
+func Start(f *embed.FS) error {
+	createRootFolder(f)
 
 	option, err := prompt.Welcome()
 	if err != nil {
@@ -62,4 +65,41 @@ func Start(f embed.FS) error {
 	}
 
 	return nil
+}
+
+func createRootFolder(f *embed.FS) {
+	projectDir := configs.GetConfig().Extra.ProjectDir
+	sourceMITMTemplate := "assets/resource/shared/templates/mitm.yaml"
+	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
+
+	if err := os.MkdirAll(projectDir, 0755); err != nil {
+		errors.Log(errors.ErrFatalException, err.Error())
+		os.Exit(1)
+	}
+
+	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
+		templateFile, err := f.Open(sourceMITMTemplate)
+		if err != nil {
+			errors.Log(errors.ErrFatalException, err.Error())
+			os.Exit(1)
+		}
+		defer templateFile.Close()
+
+		destinationFile, err := os.Create(outputMITMTemplate)
+		if err != nil {
+			errors.Log(errors.ErrFatalException, err.Error())
+			os.Exit(1)
+		}
+		defer destinationFile.Close()
+
+		if _, err = io.Copy(destinationFile, templateFile); err != nil {
+			errors.Log(errors.ErrFatalException, err.Error())
+			os.Exit(1)
+		}
+
+		if err = destinationFile.Sync(); err != nil {
+			errors.Log(errors.ErrFatalException, err.Error())
+			os.Exit(1)
+		}
+	}
 }

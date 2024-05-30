@@ -35,7 +35,7 @@ func (l CustomLogger) Printf(format string, v ...interface{}) {
 
 const overrideLogger = true
 
-func InitializeServer(f embed.FS) (*http.Server, error) {
+func InitializeServer(f *embed.FS) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
 		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
@@ -74,7 +74,11 @@ func InitializeServer(f embed.FS) (*http.Server, error) {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
 
-	clientResponseHandlers, _ := ReadClientMITMConfig()
+	clientRequestHandlers, clientResponseHandlers, _ := ReadClientMITMConfig()
+
+	for _, handler := range clientRequestHandlers {
+		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
+	}
 
 	for _, handler := range clientResponseHandlers {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)

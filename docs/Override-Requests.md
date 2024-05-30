@@ -126,20 +126,23 @@ In some cases, you might need to reuse a parameter that was matched during the r
 
 ### Example
 
+#### Request Path
+
 ```
-# Request Path
 /cool/example/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/path/xuid(1234)
 ```
 
+### MITM Config
+
 ```yaml
-# Config
 blobs:
     - path: /cool/example/:guid/path/:xuid
       response:
           body: :infinite-mitm-root/example/$2/test_$1
 ```
 
+#### Output
+
 ```
-# Output
 ~/InfiniteMITM/xuid(1234)/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2
 ```

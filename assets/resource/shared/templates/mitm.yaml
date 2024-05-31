@@ -1,11 +1,11 @@
 root: # *.svc.halowaypoint.com
-    - path: /:*
-      methods:
-          - GET
-          - POST
-          - PUT
-          - PATCH
-          - DELETE
-      response:
-          headers:
-              x-infinite-mitm: :mitm-version
+  - path: /:*
+    methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+    response:
+      headers:
+        x-infinite-mitm: :mitm-version

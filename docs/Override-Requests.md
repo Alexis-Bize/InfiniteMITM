@@ -28,7 +28,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
       methods:
           - GET
       response:
-          body: https://blobs-infiniteugc.svc.halowaypoint.com/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
+          body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
           headers:
               x-infinite-mitm: :infinite-mitm-version
               content-type: :ct-bond

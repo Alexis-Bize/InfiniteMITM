@@ -20,13 +20,14 @@ var (
 	ErrHTTPForbidden = errors.New("forbidden")
 	ErrHTTPUnauthorized = errors.New("unauthorized")
 	ErrHTTPNotFound = errors.New("not found")
-	ErrHTTPInternal = errors.New("internal error")
+	ErrHTTPError = errors.New("http error")
 	ErrHTTPRequestException = errors.New("http request exception")
+	ErrHTTPBodyReadException = errors.New("http body read exception")
 	// JSON
 	ErrJSONUnmarshalException = errors.New("json unmarshal exception")
 	// Miscellaneous
-	ErrIOReadException = errors.New("io read exception")
 	ErrFatalException = errors.New("fatal exception")
+	ErrIOReadException = errors.New("io read exception")
 )
 
 func (e *MITMError) Error() string {
@@ -34,7 +35,8 @@ func (e *MITMError) Error() string {
 }
 
 func (e *MITMError) Log() {
-	log.Println(e.Err.Error())
+	message := fmt.Sprintf("[ERROR] message: %s; original error: %v", e.Message, e.Err)
+	log.Println(message)
 }
 
 func (e *MITMError) Unwrap() error {

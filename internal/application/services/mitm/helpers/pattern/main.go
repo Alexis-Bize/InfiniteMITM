@@ -22,27 +22,10 @@ import (
 )
 
 type Patterns struct {
-	SANDBOX string
-	XUID    string
-	GUID    string
-	MVAR    string
-	CGUI    string
-	EGV     string
-
-	BLOBS_SVC     string
-	STATS_SVC     string
-	GAMECMS_SVC   string
-	ECONOMY_SVC   string
-	SETTINGS_SVC  string
-	AUTHORING_SVC string
-	DISCOVERY_SVC string
-	
-	XML  string
-	BOND string
-	JSON string
-
-	ALL string
-	STOP string
+	SANDBOX, XUID, GUID, MVAR, CGUI, EGV string
+	BLOBS_SVC, STATS_SVC, GAMECMS_SVC, ECONOMY_SVC, SETTINGS_SVC, AUTHORING_SVC, DISCOVERY_SVC string
+	XML, BOND, JSON string
+	ALL, STOP string
 }
 
 var MatchParameters = Patterns{
@@ -135,13 +118,8 @@ func ReplaceParameters(value string) string {
 
 		MatchParameters.ALL, MatchPatterns.ALL,
 		MatchParameters.STOP, MatchPatterns.STOP,
-	)
 
-	return replacer.Replace(value)
-}
-
-func ReplaceStaticParameters(value string) string {
-	replacer := strings.NewReplacer(
+		// Static
 		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
 		":mitm-version", configs.GetConfig().Version,
 	)

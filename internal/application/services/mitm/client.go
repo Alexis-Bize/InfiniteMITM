@@ -15,6 +15,7 @@
 package MITMApplicationMITMService
 
 import (
+	"bytes"
 	"fmt"
 	"infinite-mitm/configs"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
@@ -22,7 +23,10 @@ import (
 	domains "infinite-mitm/internal/modules/domains"
 	errors "infinite-mitm/pkg/modules/errors"
 	utilities "infinite-mitm/pkg/modules/utilities"
+	request "infinite-mitm/pkg/modules/utilities/request"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -193,11 +197,27 @@ func createRequestHandler(domain domains.Domain, node YAMLNode) handlers.Request
 				return req, nil
 			}
 
+			body := node.Request.Body
 			matches := pattern.Match(target, req.URL.String())
+
+			if body != "" && req.Method != "GET" && req.Method != "DELETE" {
+				buffer, err := readBodyFile(body, req.Header, matches)
+
+				if err != nil {
+					errors.Create(errors.ErrIOReadException, "invalid request body, skipping").Log()
+				} else if buffer != nil {
+					bufferLength := len(buffer)
+					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
+					req.ContentLength = int64(bufferLength)
+					req.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
+				}
+			}
+
+			
 			kv := utilities.InterfaceToMap(node.Request.Headers)
 			for key, value := range kv {
 				fmt.Println(key)
-				req.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			return req, nil
@@ -214,13 +234,68 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 				return resp
 			}
 
+			body := node.Response.Body
 			matches := pattern.Match(target, resp.Request.URL.String())
+
+			if body != "" {
+				buffer, err := readBodyFile(body, resp.Header, matches)
+				if err != nil {
+					errors.Create(errors.ErrIOReadException, "invalid response body, skipping").Log()
+				} else if buffer != nil {
+					bufferLength := len(buffer)
+					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
+					resp.ContentLength = int64(bufferLength)
+					resp.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
+				}
+			}
+			
 			kv := utilities.InterfaceToMap(node.Response.Headers)
 			for key, value := range kv {
-				resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			return resp
 		},
 	}
 }
+
+func readBodyFile(body string, headers http.Header, matches []string) ([]byte, error) {
+	body = pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
+
+	var buffer []byte
+	var err error
+
+	if isURL(body) {
+		buffer, err = request.Send("GET", body, nil, request.HeadersToMap(headers))
+	} else if isSystemPath(body) {
+		buffer, err = os.ReadFile(body)
+	}
+
+
+	return buffer, err
+}
+
+func isURL(str string) bool {
+	_, err := url.ParseRequestURI(str)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+func isSystemPath(str string) bool {
+	if strings.HasPrefix(str, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return false
+		}
+
+		str = filepath.Join(homeDir, str[2:])
+	}
+
+	matched, _ := regexp.MatchString(`^[a-zA-Z]:\\|^\/`, str)
+	return matched || filepath.IsAbs(str)
+}
+

@@ -80,34 +80,40 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
 -   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
+-   `:ct-json`
+    -   Represents a JSON content type.
+    -   Output: `application/json
+-   `:ct-xml`
+    -   Represents a XML content type.
+    -   Output: `application/xml
 -   `:*`
-    -   Will match everything else
+    -   Will match everything else.
     -   Example: `/foo/bar:*` will match `/foo/bar/baz`
 -   `:$`
-    -   Ends the match expression
+    -   Ends the match expression.
     -   Example: `/foo/bar:$` will not match `/foo/bar/baz`
 -   `:blobs-svc`
-    -   Returns blobs service URL
+    -   Returns blobs service URL.
     -   Output: `https://blobs-infiniteugc.svc.halowaypoint.com`
 -   `:authoring-svc`
-    -   Returns authoring service URL
+    -   Returns authoring service URL.
     -   Output: `https://authoring-infiniteugc.svc.halowaypoint.com`
 -   `:discovery-svc`
-    -   Returns discovery service URL
+    -   Returns discovery service URL.
     -   Output: `https://discovery-infiniteugc.svc.halowaypoint.com`
 -   `:stats-svc`
-    -   Returns stats service URL
+    -   Returns stats service URL.
     -   Output: `https://halostats.svc.halowaypoint.com`
 -   `:settings-svc`
-    -   Returns stats service URL
+    -   Returns stats service URL.
     -   Output: `https://settings.svc.halowaypoint.com`
 -   `:gamecms-svc`
-    -   Returns gamecms service URL
+    -   Returns gamecms service URL.
     -   Output: `https://gamecms-hacs.svc.halowaypoint.com`
 -   `:economy-svc`
-    -   Returns economy service URL
+    -   Returns economy service URL.
     -   Output: `https://economy.svc.halowaypoint.com`
--   `:mitm-root`
+-   `:mitm-dir`
     -   Represents the root folder of local files (only suitable for `response.body`).
     -   Output: `~/InfiniteMITM`
 -   `:mitm-version`

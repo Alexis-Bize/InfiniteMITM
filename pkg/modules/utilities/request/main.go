@@ -16,57 +16,60 @@ package UtilitiesRequestModule
 
 import (
 	"bytes"
+	"fmt"
 	errors "infinite-mitm/pkg/modules/errors"
 	"io"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 )
 
+func Send(method, url string, payload []byte, headers map[string]string) ([]byte, error) {
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.Create(errors.ErrHTTPError, fmt.Sprintf("status code: %d", resp.StatusCode))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Create(errors.ErrHTTPBodyReadException, err.Error())
+	}
+
+	return body, nil
+}
+
 func ComputeUrl(baseUrl string, path string) string {
-	if !strings.HasPrefix(path, "/") {
+	if path != "" && !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 
 	return baseUrl + path
 }
 
-func ReplayRequestWithJSONAccept(req *http.Request) (*http.Response, error) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
-	}
-	req.Body.Close()
-
-	clonedReq := req.Clone(req.Context())
-	clonedReq.Body = io.NopCloser(bytes.NewReader(body))
-	clonedReq.Header.Set("Accept", "application/json")
-	clonedReq.RequestURI = ""
-
-	_, err = httputil.DumpRequest(clonedReq, true)
-	if err != nil {
-		return nil, errors.Create(errors.ErrHTTPInternal, err.Error())
+func HeadersToMap(header http.Header) map[string]string {
+	headersMap := make(map[string]string)
+	for key, values := range header {
+		headersMap[key] = strings.Join(values, ", ")
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(clonedReq)
-	if err != nil {
-		return nil, errors.Create(errors.ErrHTTPInternal, err.Error())
-	}
-
-	return resp, nil
-}
-
-func AssignHeaders(extraHeaders map[string]string) map[string]string {
-	headers := map[string]string{}
-	for k, v := range extraHeaders {
-		headers[k] = v
-	}
-
-	return headers
+	return headersMap
 }
 
 func ExtractHeaderValue(req *http.Request, key string) string {
-	spartanToken := req.Header.Get(key)
-	return spartanToken
+	value := req.Header.Get(key)
+	return value
 }

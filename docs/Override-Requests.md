@@ -108,10 +108,10 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
     -   Returns economy service URL
     -   Output: `https://economy.svc.halowaypoint.com`
 -   `:mitm-root`
-    -   Represents the root folder of local files.
+    -   Represents the root folder of local files (only suitable for `response.body`).
     -   Output: `~/InfiniteMITM`
 -   `:mitm-version`
-    -   Represents the InfiniteMITM version.
+    -   Represents the InfiniteMITM version (only suitable for `response.headers`).
     -   Example: `0.1.0`
 
 ## Response Match Parameters

@@ -1,8 +1,8 @@
 # Override Requests
 
-**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `stats` | `settings` | `gamecms` | `economy`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
+**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `stats` | `settings` | `gamecms` | `economy` | `root`) and desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`).
 
-**Note:** When changing the `body`, the `Content-Length` header will be automatically calculated.
+**Note:** When changing the request `body`, the `Content-Length` header will be automatically calculated.
 
 ## Example
 
@@ -47,7 +47,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
 ## Definition
 
 ```yaml
-discovery: # Must be one of blobs | authoring | discovery | settings
+root: # Must be one of "blobs | authoring | discovery | settings | root" (root = all)
     # Each item in the list represents a specific endpoint configuration.
     - path: /example/path # Targeted path (case insensitive)
       methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
@@ -80,6 +80,9 @@ discovery: # Must be one of blobs | authoring | discovery | settings
 -   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
+-   `:*`
+    -   Will match everything else
+    -   Example: `/foo/bar:*` will match `/foo/bar/baz`
 -   `:$`
     -   Ends the match expression
     -   Example: `/foo/bar:$` will not match `/foo/bar/baz`
@@ -120,16 +123,16 @@ In some cases, you might need to reuse a parameter that was matched during the r
 #### Request Path
 
 ```
-/cool/example/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/path/xuid(1234)
+/ekur/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/olympus/xuid(1234)
 ```
 
 #### MITM Config
 
 ```yaml
 blobs:
-    - path: /cool/example/:guid/path/:xuid
+    - path: /ekur/:guid/olympus/:xuid
       response:
-          body: :mitm-dir/example/$2/test_$1
+          body: :mitm-dir/example/xuid($2)/test_$1
 ```
 
 #### Output

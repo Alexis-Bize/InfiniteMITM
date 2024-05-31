@@ -3,8 +3,8 @@ package ProxyModule
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	MITMApplicationSignalService "infinite-mitm/internal/application/services/signal"
-	ErrorsModule "infinite-mitm/pkg/modules/errors"
+	signal "infinite-mitm/internal/application/services/signal"
+	errors "infinite-mitm/pkg/modules/errors"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -17,7 +17,7 @@ var proxyPort = strconv.Itoa(configs.GetConfig().Proxy.Port)
 func ToggleProxy(command string) error {
 	err := toggle(command)
 	if err != nil {
-		return ErrorsModule.Log(ErrorsModule.ErrProxy, err.Error())
+		return errors.Create(errors.ErrProxy, err.Error())
 	}
 
 	return nil
@@ -25,10 +25,10 @@ func ToggleProxy(command string) error {
 
 func toggle(command string) error {
 	if command != "on" && command != "off" {
-		return ErrorsModule.ErrProxyToggleInvalidCommand
+		return errors.ErrProxyToggleInvalidCommand
 	}
 
-	MITMApplicationSignalService.SetupSignalHandler(func() {
+	signal.SetupSignalHandler(func() {
 		disableProxy()
 	})
 

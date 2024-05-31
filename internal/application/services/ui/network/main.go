@@ -34,7 +34,7 @@ type model struct {
 	table table.Model
 }
 
-type IOUpdate table.Row
+type TableRowUpdate table.Row
 
 func (m *model) Init() tea.Cmd {
 	return nil
@@ -43,7 +43,7 @@ func (m *model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case IOUpdate:
+	case TableRowUpdate:
 		m.table.SetRows(append(m.table.Rows(), table.Row(msg)))
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -107,7 +107,7 @@ func Create() *tea.Program {
 func Push(method string, statusCode int, url string) {
 	rows := modelInstance.table.Rows()
 	position := len(rows) + 1
-	program.Send(IOUpdate(table.Row{
+	program.Send(TableRowUpdate(table.Row{
 		fmt.Sprintf("%d", position),
 		method,
 		strconv.Itoa(statusCode),

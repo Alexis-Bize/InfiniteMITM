@@ -1,7 +1,11 @@
-discovery: # discovery-infiniteugc.svc.halowaypoint.com
-    - path: /hi/playlists/:guid/versions/:guid
+authoring: # authoring-infiniteugc.svc.halowaypoint.com
+    - path: /:*
       methods:
           - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
       response:
           headers:
               x-infinite-mitm: :mitm-version

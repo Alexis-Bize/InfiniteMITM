@@ -16,7 +16,7 @@ package UtilitiesRequestModule
 
 import (
 	"bytes"
-	ErrorsModule "infinite-mitm/pkg/modules/errors"
+	errors "infinite-mitm/pkg/modules/errors"
 	"io"
 	"net/http"
 	"net/http/httputil"
@@ -45,13 +45,13 @@ func ReplayRequestWithJSONAccept(req *http.Request) (*http.Response, error) {
 
 	_, err = httputil.DumpRequest(clonedReq, true)
 	if err != nil {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrHTTPInternal, err.Error())
+		return nil, errors.Create(errors.ErrHTTPInternal, err.Error())
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(clonedReq)
 	if err != nil {
-		return nil, ErrorsModule.Log(ErrorsModule.ErrHTTPInternal, err.Error())
+		return nil, errors.Create(errors.ErrHTTPInternal, err.Error())
 	}
 
 	return resp, nil

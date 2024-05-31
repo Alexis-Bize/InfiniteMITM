@@ -15,6 +15,7 @@
 package MITMApplicationMITMService
 
 import (
+	"fmt"
 	"infinite-mitm/configs"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	pattern "infinite-mitm/internal/application/services/mitm/helpers/pattern"
@@ -49,6 +50,7 @@ type YAMLNode struct {
 }
 
 type YAML struct {
+	Root      []YAMLNode `yaml:"root,omitempty"`
 	Blobs     []YAMLNode `yaml:"blobs,omitempty"`
 	Authoring []YAMLNode `yaml:"authoring,omitempty"`
 	Discovery []YAMLNode `yaml:"discovery,omitempty"`
@@ -65,80 +67,160 @@ func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.Respons
 	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, "mitm.yaml")
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
-		return clientRequestHandlers, clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
+		return clientRequestHandlers, clientResponseHandlers, errors.Create(errors.ErrFatalException, err.Error())
 	}
 
 	var content YAML
 	err = yaml.Unmarshal(yamlFile, &content)
 	if err != nil {
-		return clientRequestHandlers, clientResponseHandlers, errors.Log(errors.ErrFatalException, err.Error())
+		return clientRequestHandlers, clientResponseHandlers, errors.Create(errors.ErrFatalException, err.Error())
+	}
+
+	for _, v := range content.Root {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Root, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Root, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
 	}
 
 	for _, v := range content.Blobs {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Blobs, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
 		if v.Response != (YAMLResponseNode{}) {
-			path := v.Path
-			if path == "" || !strings.HasPrefix(path, "/") {
-				continue
-			}
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Blobs, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
 
-			methods := v.Methods
-			handler := func () handlers.ResponseHandlerStruct {
-				target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Blobs + path))
+	for _, v := range content.Authoring {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Authoring, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
 
-				return handlers.ResponseHandlerStruct{
-					Match: goproxy.UrlMatches(target),
-					Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-						if !utilities.Contains(methods, resp.Request.Method) {
-							return resp
-						}
-
-						matches := pattern.Match(target, resp.Request.URL.String())
-						kv := utilities.InterfaceToMap(v.Response.Headers)
-						for key, value := range kv {
-							resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
-						}
-
-						return resp
-					},
-				}
-			}
-
-			clientResponseHandlers = append(clientResponseHandlers, handler())
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Authoring, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
 		}
 	}
 
 	for _, v := range content.Discovery {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Discovery, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
 		if v.Response != (YAMLResponseNode{}) {
-			path := v.Path
-			if path == "" || !strings.HasPrefix(path, "/") {
-				continue
-			}
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Discovery, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
 
-			methods := v.Methods
-			handler := func () handlers.ResponseHandlerStruct {
-				target := pattern.Create(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Discovery + path))
+	for _, v := range content.HaloStats {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.HaloStats, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
 
-				return handlers.ResponseHandlerStruct{
-					Match: goproxy.UrlMatches(target),
-					Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-						if !utilities.Contains(methods, resp.Request.Method) {
-							return resp
-						}
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.HaloStats, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
 
-						matches := pattern.Match(target, resp.Request.URL.String())
-						kv := utilities.InterfaceToMap(v.Response.Headers)
-						for key, value := range kv {
-							resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
-						}
+	for _, v := range content.Settings {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Settings, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
 
-						return resp
-					},
-				}
-			}
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Settings, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
 
-			clientResponseHandlers = append(clientResponseHandlers, handler())
+	for _, v := range content.GameCMS {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.GameCMS, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.GameCMS, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
+
+	for _, v := range content.Economy {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Economy, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Economy, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
 		}
 	}
 
 	return clientRequestHandlers, clientResponseHandlers, nil
+}
+
+func createPattern(domain domains.Domain, path string) *regexp.Regexp {
+	if path == "" || !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	re := pattern.Create(`(?i)` + regexp.QuoteMeta(domain + path))
+	return re
+}
+
+func createRequestHandler(domain domains.Domain, node YAMLNode) handlers.RequestHandlerStruct {
+	target := createPattern(domain, node.Path)
+	return handlers.RequestHandlerStruct{
+		Match: goproxy.UrlMatches(target),
+		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			if !utilities.Contains(node.Methods, req.Method) {
+				return req, nil
+			}
+
+			matches := pattern.Match(target, req.URL.String())
+			kv := utilities.InterfaceToMap(node.Request.Headers)
+			for key, value := range kv {
+				fmt.Println(key)
+				req.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+			}
+
+			return req, nil
+		},
+	}
+}
+
+func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.ResponseHandlerStruct {
+	target := createPattern(domain, node.Path)
+	return handlers.ResponseHandlerStruct{
+		Match: goproxy.UrlMatches(target),
+		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+			if !utilities.Contains(node.Methods, resp.Request.Method) {
+				return resp
+			}
+
+			matches := pattern.Match(target, resp.Request.URL.String())
+			kv := utilities.InterfaceToMap(node.Response.Headers)
+			for key, value := range kv {
+				resp.Header.Set(key, pattern.ReplaceStaticParameters(pattern.ReplaceMatches(value, matches)))
+			}
+
+			return resp
+		},
+	}
 }

@@ -2,8 +2,14 @@ package ErrorsModule
 
 import (
 	"errors"
+	"fmt"
 	"log"
 )
+
+type MITMError struct {
+    Message string
+	Err     error
+}
 
 var (
 	// Proxy
@@ -23,15 +29,25 @@ var (
 	ErrFatalException = errors.New("fatal exception")
 )
 
-func Log(err error, message string) error {
+func (e *MITMError) Error() string {
+	return fmt.Sprintf("message: %s; original error: %v", e.Message, e.Err)
+}
+
+func (e *MITMError) Log() {
+	log.Println(e.Err.Error())
+}
+
+func (e *MITMError) Unwrap() error {
+	return e.Err
+}
+
+func Create(err error, message string) *MITMError {
 	if message == "" {
 		message = err.Error()
 	}
 
-	log.Println(message)
-	return err
-}
-
-func Is(err error, expected error) bool {
-	return err == expected
+	return &MITMError{
+		Message: message,
+		Err:     err,
+	}
 }

@@ -29,7 +29,9 @@ import (
 )
 
 func Start(f *embed.FS) error {
-	createRootAssets(f)
+	if err := createRootAssets(f); err != nil {
+		return err
+	}
 
 	option, err := prompt.Welcome()
 	if err != nil {
@@ -49,13 +51,13 @@ func Start(f *embed.FS) error {
 		go func() {
 			program := networkTable.Create()
 			if _, err := program.Run(); err != nil {
-				errors.Log(errors.ErrFatalException, err.Error())
+				errors.Create(errors.ErrFatalException, err.Error()).Log()
 				signal.Stop()
 			}
 		}()
 
 		if err := server.ListenAndServe(); err != nil {
-			errors.Log(errors.ErrFatalException, err.Error())
+			errors.Create(errors.ErrFatalException, err.Error()).Log()
 			signal.Stop()
 		}
 
@@ -70,39 +72,36 @@ func Start(f *embed.FS) error {
 	return nil
 }
 
-func createRootAssets(f *embed.FS) {
+func createRootAssets(f *embed.FS) error {
 	projectDir := configs.GetConfig().Extra.ProjectDir
 	sourceMITMTemplate := "assets/resource/shared/templates/mitm.yaml"
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
-		errors.Log(errors.ErrFatalException, err.Error())
-		os.Exit(1)
+		return errors.Create(errors.ErrFatalException, err.Error())
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
 		templateFile, err := f.Open(sourceMITMTemplate)
 		if err != nil {
-			errors.Log(errors.ErrFatalException, err.Error())
-			os.Exit(1)
+			return errors.Create(errors.ErrFatalException, err.Error())
 		}
 		defer templateFile.Close()
 
 		destinationFile, err := os.Create(outputMITMTemplate)
 		if err != nil {
-			errors.Log(errors.ErrFatalException, err.Error())
-			os.Exit(1)
+			return errors.Create(errors.ErrFatalException, err.Error())
 		}
 		defer destinationFile.Close()
 
 		if _, err = io.Copy(destinationFile, templateFile); err != nil {
-			errors.Log(errors.ErrFatalException, err.Error())
-			os.Exit(1)
+			return errors.Create(errors.ErrFatalException, err.Error())
 		}
 
 		if err = destinationFile.Sync(); err != nil {
-			errors.Log(errors.ErrFatalException, err.Error())
-			os.Exit(1)
+			return errors.Create(errors.ErrFatalException, err.Error())
 		}
 	}
+
+	return nil
 }

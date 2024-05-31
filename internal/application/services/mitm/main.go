@@ -38,22 +38,22 @@ const overrideLogger = true
 func InitializeServer(f *embed.FS) (*http.Server, error) {
 	CACert, err := f.ReadFile("cert/rootCA.pem")
 	if err != nil {
-		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 
 	CAKey, err := f.ReadFile("cert/rootCA.key")
 	if err != nil {
-		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 
 	cert, err := tls.X509KeyPair(CACert, CAKey)
 	if err != nil {
-		return nil, errors.Log(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 
 	CACertPool := x509.NewCertPool()
 	if !CACertPool.AppendCertsFromPEM(CACert) {
-		return nil, errors.Log(errors.ErrRootCertificateException, "failed to add root CA certificate to pool")
+		return nil, errors.Create(errors.ErrRootCertificateException, "failed to add root CA certificate to pool")
 	}
 
 	goproxy.GoproxyCa = cert
@@ -66,6 +66,11 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
+	clientRequestHandlers, clientResponseHandlers, err := ReadClientMITMConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	for _, handler := range internalRequestHandlers() {
 		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
 	}
@@ -73,8 +78,6 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 	for _, handler := range internalResponseHandlers() {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
-
-	clientRequestHandlers, clientResponseHandlers, _ := ReadClientMITMConfig()
 
 	for _, handler := range clientRequestHandlers {
 		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)

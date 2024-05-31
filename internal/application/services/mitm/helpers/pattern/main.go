@@ -41,7 +41,8 @@ type Patterns struct {
 	BOND string
 	JSON string
 
-	END string
+	ALL string
+	STOP string
 }
 
 var MatchParameters = Patterns{
@@ -64,7 +65,8 @@ var MatchParameters = Patterns{
 	BOND: ":ct-bond",
 	JSON: ":ct-json",
 
-	END: ":$",
+	ALL:  ":\\*",
+	STOP: ":\\$",
 }
 
 var MatchPatterns = Patterns{
@@ -87,7 +89,8 @@ var MatchPatterns = Patterns{
 	BOND: "application/x-bond-compact-binary",
 	JSON: "application/json",
 
-	END: `$`,
+	ALL:  `(.*)`,
+	STOP: `$`,
 }
 
 func Create(value string) *regexp.Regexp {
@@ -130,7 +133,8 @@ func ReplaceParameters(value string) string {
 		MatchParameters.BOND, MatchPatterns.BOND,
 		MatchParameters.JSON, MatchPatterns.JSON,
 
-		MatchParameters.END, MatchPatterns.END,
+		MatchParameters.ALL, MatchPatterns.ALL,
+		MatchParameters.STOP, MatchPatterns.STOP,
 	)
 
 	return replacer.Replace(value)
@@ -150,7 +154,7 @@ func ReplaceMatches(target string, matches []string) string {
 	return re.ReplaceAllStringFunc(target, func(m string) string {
 		index, err := strconv.Atoi(m[1:])
 		if err != nil || index < 1 || index > len(matches) {
-			return m
+			return ""
 		}
 		
 		return matches[index-1]

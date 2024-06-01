@@ -58,6 +58,7 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
       headers: # Override request headers (case insensitive)
         custom-header: customValue
     response: # Used to alter the response
+      code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
       body: :mitm-dir/response/body/file # URI to the overridden file
       headers: # Override response headers (case insensitive)
         custom-response-header: customValue

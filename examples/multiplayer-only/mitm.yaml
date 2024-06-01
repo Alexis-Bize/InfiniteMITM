@@ -1,0 +1,6 @@
+settings: # settings.svc.halowaypoint.com
+  - path: /featureflags/hi
+    methods:
+      - GET
+    response:
+      body: :mitm-dir/flags/multiplayer-only.bin

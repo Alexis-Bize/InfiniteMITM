@@ -42,8 +42,9 @@ type YAMLRequestNode struct {
 }
 
 type YAMLResponseNode struct {
-	Body    string `yaml:"body,omitempty"`
-	Headers interface {} `yaml:"headers,omitempty"`
+	Body       string `yaml:"body,omitempty"`
+	Headers    interface {} `yaml:"headers,omitempty"`
+	StatusCode int `yaml:"code,omitempty"`
 }
 
 type YAMLNode struct {
@@ -252,6 +253,11 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 			kv := utilities.InterfaceToMap(node.Response.Headers)
 			for key, value := range kv {
 				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
+			}
+
+			if node.Response.StatusCode != 0 {
+				resp.Status = http.StatusText(node.Response.StatusCode)
+				resp.StatusCode = node.Response.StatusCode
 			}
 
 			return resp

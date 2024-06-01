@@ -17,14 +17,14 @@ package MITMApplicationPromptService
 type PromptOption int
 
 const (
-	StartProxyServer PromptOption = iota
+	Start PromptOption = iota
 	InstallRootCertificate
 	ForceKillProxy
 	Exit
 )
 
 var optionToString = map[PromptOption]string{
-	StartProxyServer:       "Start Proxy Server",
+	Start:                  "Start Proxy Server",
 	InstallRootCertificate: "Install Root Certificate",
 	ForceKillProxy:         "Force Kill Proxy",
 	Exit:                   "Exit",

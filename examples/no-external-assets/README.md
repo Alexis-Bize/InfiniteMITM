@@ -1,0 +1,1 @@
+# No External Assets

@@ -1,0 +1,8 @@
+gamecms: # gamecms.svc.halowaypoint.com
+  - path: /hi/progression/file/:*
+    methods:
+      - GET
+    response:
+      code: 204 # no content, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+      headers:
+        - cache-control: no-cache

@@ -26,7 +26,7 @@ func Welcome() (string, error) {
 	err := huh.NewSelect[string]().
 		Title(fmt.Sprintf("%s - %s", configs.GetConfig().Name, configs.GetConfig().Version)).
 		Options(
-			huh.NewOption(StartProxyServer.String(), StartProxyServer.String()),
+			huh.NewOption(Start.String(), Start.String()),
 			huh.NewOption(InstallRootCertificate.String(), InstallRootCertificate.String()),
 			huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
 			huh.NewOption(Exit.String(), Exit.String()),

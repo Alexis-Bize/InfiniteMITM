@@ -16,20 +16,17 @@ package MITM
 
 import (
 	"embed"
-	"infinite-mitm/configs"
+	application "infinite-mitm/internal/application"
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	signal "infinite-mitm/internal/application/services/signal"
 	networkTable "infinite-mitm/internal/application/services/ui/network"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 func Start(f *embed.FS) error {
-	if err := createRootAssets(f); err != nil {
+	if err := application.CreateRootAssets(f); err != nil {
 		return err
 	}
 
@@ -38,69 +35,42 @@ func Start(f *embed.FS) error {
 		return err
 	}
 
-	if prompt.StartProxyServer.Is(option) {
-		server, err := mitm.InitializeServer(f)
-		if err != nil {
-			return err
-		}
-
-		if err = proxy.ToggleProxy("on"); err != nil {
-			return err
-		}
-
-		go func() {
-			program := networkTable.Create()
-			if _, err := program.Run(); err != nil {
-				errors.Create(errors.ErrFatalException, err.Error()).Log()
-				signal.Stop()
-			}
-		}()
-
-		if err := server.ListenAndServe(); err != nil {
-			errors.Create(errors.ErrFatalException, err.Error()).Log()
-			signal.Stop()
-		}
-
-		return nil
-	}
-
-	if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
+	if prompt.Start.Is(option) {
+		startServer(f)
+	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
 		signal.Stop()
-		return nil
 	}
 
 	return nil
 }
 
-func createRootAssets(f *embed.FS) error {
-	projectDir := configs.GetConfig().Extra.ProjectDir
-	sourceMITMTemplate := "assets/resource/shared/templates/mitm.yaml"
-	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
+func startProxy() {
+	if err := proxy.ToggleProxy("on"); err != nil {
+		errors.Create(errors.ErrFatalException, err.Error()).Log()
+		signal.Stop()
+	}
+}
 
-	if err := os.MkdirAll(projectDir, 0755); err != nil {
-		return errors.Create(errors.ErrFatalException, err.Error())
+func createNetworkView() {
+	program := networkTable.Create()
+	if _, err := program.Run(); err != nil {
+		errors.Create(errors.ErrFatalException, err.Error()).Log()
+		signal.Stop()
+	}
+}
+
+func startServer(f *embed.FS) error {
+	server, err := mitm.InitializeServer(f)
+	if err != nil {
+		return err
 	}
 
-	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
-		templateFile, err := f.Open(sourceMITMTemplate)
-		if err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
-		}
-		defer templateFile.Close()
+	go startProxy()
+	go createNetworkView()
 
-		destinationFile, err := os.Create(outputMITMTemplate)
-		if err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
-		}
-		defer destinationFile.Close()
-
-		if _, err = io.Copy(destinationFile, templateFile); err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
-		}
-
-		if err = destinationFile.Sync(); err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
-		}
+	if err := server.ListenAndServe(); err != nil {
+		errors.Create(errors.ErrFatalException, err.Error()).Log()
+		signal.Stop()
 	}
 
 	return nil

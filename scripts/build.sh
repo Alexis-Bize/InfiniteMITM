@@ -33,7 +33,7 @@ version=$(grep "^version:" "$config_file" | cut -d ":" -f 2- | sed 's/^ *//g')
 author=$(grep "^author:" "$config_file" | cut -d ":" -f 2- | sed 's/^ *//g')
 repository=$(grep "^repository:" "$config_file" | cut -d ":" -f 2- | sed 's/^ *//g')
 
-name_lower="${name,,}"
+name_lower=$(echo "$name" | tr '[:upper:]' '[:lower:]')
 package_name="${name}-${version}"
 
 target_platforms=(

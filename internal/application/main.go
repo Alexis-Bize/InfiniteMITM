@@ -87,11 +87,17 @@ func CheckForRootCertificate() (bool, error) {
 }
 
 func checkForRootCertificateOnWindows() (bool, error) {
-	cmd := exec.Command("certutil", "-verifystore", "root", certName)
+	cmd := exec.Command("certutil", "-verifystore", "CA", certName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.ExitCode() == 2148073489 {
+				return false, nil
+			}
+		}
+
 		return false, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 

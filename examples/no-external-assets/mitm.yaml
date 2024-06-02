@@ -1,5 +1,5 @@
 gamecms: # gamecms.svc.halowaypoint.com
-  - path: /hi/progression/file/:*
+  - path: /hi/progression/file/*
     methods:
       - GET
     response:

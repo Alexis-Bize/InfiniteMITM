@@ -26,6 +26,7 @@ $ ./scripts/build.sh
 ## Known Issues
 
 -   **Windows** may flag the application as a threat or virus due to a **false positive** (https://go.dev/doc/faq#virus)
+-   As the application will create a local server to intercept traffic on a local port (1337), it **must be run as an administrator**.
 
 ## Licence
 

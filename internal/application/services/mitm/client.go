@@ -253,7 +253,6 @@ func createRequestHandler(domain domains.Domain, node YAMLNode) handlers.Request
 			
 			kv := utilities.InterfaceToMap(node.Request.Headers)
 			for key, value := range kv {
-				fmt.Println(key)
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 

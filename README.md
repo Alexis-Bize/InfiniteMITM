@@ -11,6 +11,10 @@
 
 <img alt="InfiniteMITM CLI" title="InfiniteMITM CLI" src="./assets/preview.png?v=1" />
 
+## Disclaimer
+
+This application is designed to enhance your experience and should not impact other players' experiences. However, by using this app, you acknowledge and agree that you are solely responsible for any actions taken with this app, including any potential bans or other consequences that may result. The developers of this application are not responsible for any disciplinary actions taken by game administrators or any other parties.
+
 ## Documentation
 
 -   [Install Root Certificate](/docs/Install-Root-Certificate.md)

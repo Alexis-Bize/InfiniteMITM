@@ -15,6 +15,10 @@
 
 This application is designed to enhance your experience and should not impact other players' experiences. However, by using this app, you acknowledge and agree that you are solely responsible for any actions taken with this app, including any potential bans or other consequences that may result. The developers of this application are not responsible for any disciplinary actions taken by game administrators or any other parties.
 
+## Installation
+
+Download and unzip one of the files from the [latest release](https://github.com/Alexis-Bize/InfiniteMITM/releases/latest) for your current OS.
+
 ## Documentation
 
 -   [Install Root Certificate](/docs/Install-Root-Certificate.md)

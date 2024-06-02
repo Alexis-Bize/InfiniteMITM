@@ -1,4 +1,4 @@
-gamecms: # gamecms.svc.halowaypoint.com
+gamecms: # gamecms-hacs.svc.halowaypoint.com
   - path: /hi/progression/file/*
     methods:
       - GET

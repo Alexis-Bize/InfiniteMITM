@@ -3,7 +3,6 @@ package ProxyModule
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	signal "infinite-mitm/internal/application/services/signal"
 	errors "infinite-mitm/pkg/modules/errors"
 	"os/exec"
 	"runtime"
@@ -27,10 +26,6 @@ func toggle(command string) error {
 	if command != "on" && command != "off" {
 		return errors.ErrProxyToggleInvalidCommand
 	}
-
-	signal.SetupSignalHandler(func() {
-		disableProxy()
-	})
 
 	switch runtime.GOOS {
 	case "windows":

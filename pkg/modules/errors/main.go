@@ -15,7 +15,6 @@ var (
 	// Proxy
 	ErrProxy = errors.New("proxy error")
 	ErrProxyToggleInvalidCommand = errors.New("invalid proxy toggle command")
-	ErrRootCertificateException = errors.New("root certificate exception")
 	// HTTP
 	ErrHTTPForbidden = errors.New("forbidden")
 	ErrHTTPUnauthorized = errors.New("unauthorized")
@@ -25,9 +24,12 @@ var (
 	ErrHTTPBodyReadException = errors.New("http body read exception")
 	// JSON
 	ErrJSONUnmarshalException = errors.New("json unmarshal exception")
-	// Miscellaneous
+	// Application
+	ErrAppException = errors.New("app exception")
 	ErrFatalException = errors.New("fatal exception")
+	ErrWatcherException = errors.New("watcher exception")
 	ErrIOReadException = errors.New("io read exception")
+	ErrRootCertificateException = errors.New("root certificate exception")
 )
 
 func (e *MITMError) Error() string {

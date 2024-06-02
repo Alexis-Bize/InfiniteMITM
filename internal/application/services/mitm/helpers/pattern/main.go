@@ -116,6 +116,7 @@ func ReplaceParameters(value string) string {
 		MatchParameters.BOND, MatchPatterns.BOND,
 		MatchParameters.JSON, MatchPatterns.JSON,
 
+		"*", MatchPatterns.ALL,
 		MatchParameters.ALL, MatchPatterns.ALL,
 		MatchParameters.STOP, MatchPatterns.STOP,
 

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"infinite-mitm/configs"
+	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	pattern "infinite-mitm/internal/application/services/mitm/helpers/pattern"
 	domains "infinite-mitm/internal/modules/domains"
@@ -33,6 +34,8 @@ import (
 	"strings"
 
 	"github.com/elazarl/goproxy"
+	"github.com/fsnotify/fsnotify"
+	"github.com/gookit/event"
 	"gopkg.in/yaml.v2"
 )
 
@@ -63,6 +66,39 @@ type YAML struct {
 	Settings  []YAMLNode `yaml:"settings,omitempty"`
 	GameCMS   []YAMLNode `yaml:"gamecms,omitempty"`
 	Economy   []YAMLNode `yaml:"economy,omitempty"`
+}
+
+func WatchClientMITMConfig() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		errors.Create(errors.ErrWatcherException, err.Error()).Log()
+		return
+	}
+	defer watcher.Close()
+
+	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, "mitm.yaml")
+	err = watcher.Add(filePath)
+	if err != nil {
+		errors.Create(errors.ErrWatcherException, err.Error()).Log()
+		return
+	}
+
+	go func() {
+		for {
+			select {
+			case watchEvent, ok := <-watcher.Events:
+				if ok && watchEvent.Op&fsnotify.Write == fsnotify.Write {
+					event.MustFire(events.RestartServer, map[string]any{})
+				}
+			case err, ok := <-watcher.Errors:
+				if ok && err != nil {
+					errors.Create(errors.ErrWatcherException, err.Error()).Log()
+				}
+			}
+		}
+	}()
+
+	<-make(chan struct{})
 }
 
 func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.ResponseHandlerStruct, error) {
@@ -185,7 +221,7 @@ func createPattern(domain domains.Domain, path string) *regexp.Regexp {
 		path = "/" + path
 	}
 
-	re := pattern.Create(`(?i)` + regexp.QuoteMeta(domain + path))
+	re := pattern.Create(`(?i)` + regexp.QuoteMeta(domain) + path)
 	return re
 }
 
@@ -293,12 +329,12 @@ func isURL(str string) bool {
 
 func isSystemPath(str string) bool {
 	if strings.HasPrefix(str, "~/") {
-		homeDir, err := os.UserHomeDir()
+		home, err := utilities.GetHomeDirectory()
 		if err != nil {
 			return false
 		}
 
-		str = filepath.Join(homeDir, str[2:])
+		str = filepath.Join(home, str[2:])
 	}
 
 	matched, _ := regexp.MatchString(`^[a-zA-Z]:\\|^\/`, str)

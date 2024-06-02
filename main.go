@@ -17,19 +17,17 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	signal "infinite-mitm/internal/application/services/signal"
 	"log"
 )
 
 //go:generate goversioninfo -icon=assets/resource/windows/icon_256x256.ico
-//go:embed cert/*
 //go:embed assets/resource/shared/templates/*
+//go:embed cert/*
 var f embed.FS
 
 func main() {
 	err := MITM.Start(&f)
 	if err != nil {
 		log.Println(err)
-		signal.Stop()
 	}
 }

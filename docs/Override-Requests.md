@@ -87,10 +87,10 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
 -   `:ct-xml`
     -   Represents a XML content type.
     -   Output: `application/xml
--   `:*`
+-   `:*` or `*`
     -   Will match everything else.
     -   Example: `/foo/bar:*` will match `/foo/bar/baz`
--   `:$`
+-   `:$` or `$`
     -   Ends the match expression.
     -   Example: `/foo/bar:$` will not match `/foo/bar/baz`
 -   `:blobs-svc`

@@ -12,25 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationSignalService
+package MITMApplicationEvents
 
-import (
-	"os"
-	"os/signal"
-	"syscall"
+const (
+	RestartServer = "server.restart"
 )
-
-func SetupSignalHandler(cleanupFn func()) {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-
-	go func() {
-		<-c
-		cleanupFn()
-		os.Exit(0)
-	}()
-}
-
-func Stop() {
-	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-}

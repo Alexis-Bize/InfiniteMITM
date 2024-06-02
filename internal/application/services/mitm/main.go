@@ -36,12 +36,12 @@ func (l CustomLogger) Printf(format string, v ...interface{}) {
 const overrideLogger = true
 
 func InitializeServer(f *embed.FS) (*http.Server, error) {
-	CACert, err := f.ReadFile("cert/rootCA.pem")
+	CACert, err := f.ReadFile("cert/InfiniteMITMRootCA.pem")
 	if err != nil {
 		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 
-	CAKey, err := f.ReadFile("cert/rootCA.key")
+	CAKey, err := f.ReadFile("cert/InfiniteMITMRootCA.key")
 	if err != nil {
 		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}

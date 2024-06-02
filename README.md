@@ -13,7 +13,7 @@
 
 ## Documentation
 
--   Install Root Certificate
+-   [Install Root Certificate](/docs/Install-Root-Certificate.md)
 -   [Override Requests](/docs/Override-Requests.md)
 
 ## Building From Source

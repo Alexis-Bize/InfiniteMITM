@@ -21,18 +21,27 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
-func Welcome() (string, error) {
-	var option string
+func Welcome(rootCertificateInstalled bool) (string, error) {
+	var selected string
+	var options []huh.Option[string]
+
+	if rootCertificateInstalled {
+		options = append(options, huh.NewOption(Start.String(), Start.String()))
+	} else {
+		options = append(options, huh.NewOption(InstallRootCertificate.String(), InstallRootCertificate.String()))
+	}
+
+	options = append(
+		options,
+		huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
+		huh.NewOption(Exit.String(), Exit.String()),
+	)
+
 	err := huh.NewSelect[string]().
 		Title(fmt.Sprintf("%s - %s", configs.GetConfig().Name, configs.GetConfig().Version)).
-		Options(
-			huh.NewOption(Start.String(), Start.String()),
-			huh.NewOption(InstallRootCertificate.String(), InstallRootCertificate.String()),
-			huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
-			huh.NewOption(Exit.String(), Exit.String()),
-		).
-		Value(&option).
+		Options(options...).
+		Value(&selected).
 		Run()
 
-	return option, err
+	return selected, err
 }

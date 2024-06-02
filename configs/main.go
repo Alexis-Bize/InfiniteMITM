@@ -16,8 +16,8 @@ package configs
 
 import (
 	"embed"
+	utilities "infinite-mitm/pkg/modules/utilities"
 	"log"
-	"os"
 	"path"
 	"strings"
 
@@ -58,11 +58,11 @@ func GetConfig() *Config {
 		log.Fatalln(err)
 	}
 
-	dirname, err := os.UserHomeDir()
+	home, err := utilities.GetHomeDirectory()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	config.Extra.ProjectDir = path.Join(dirname, strings.Replace(config.Name, " ", "", -1))
+	config.Extra.ProjectDir = path.Join(home, strings.Replace(config.Name, " ", "", -1))
 	return &config
 }

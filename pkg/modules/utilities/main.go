@@ -16,7 +16,13 @@ package Utilities
 
 import (
 	"fmt"
+	errors "infinite-mitm/pkg/modules/errors"
+	"os"
+	"os/exec"
 	"reflect"
+	"runtime"
+
+	"github.com/charmbracelet/huh/spinner"
 )
 
 func Contains(slice []string, item string) bool {
@@ -44,4 +50,27 @@ func InterfaceToMap(i interface{}) map[string]string {
 	}
 
 	return output
+}
+
+func GetHomeDirectory() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", errors.Create(errors.ErrFatalException, err.Error())
+	}
+
+	return home, nil
+}
+
+// https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+func OpenBrowser(url string) {
+	spinner.New().Title("Attempting to open your browser...").Run()
+
+	switch runtime.GOOS {
+	case "linux":
+		exec.Command("xdg-open", url).Start()
+	case "windows":
+		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		exec.Command("open", url).Start()
+	}
 }

@@ -1,6 +1,6 @@
 # Server Selection
 
-Override the available servers by keeping only one active to force its selection.
+Override the available servers by keeping only desired ones to force their selection.
 
 ## Installation
 

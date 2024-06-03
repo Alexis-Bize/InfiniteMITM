@@ -131,9 +131,9 @@ In some cases, you might need to reuse a parameter that was matched during the r
 
 ```yaml
 blobs:
-    - path: /ekur/:guid/olympus/:xuid
-      response:
-          body: :mitm-dir/example/xuid($2)/test_$1
+  - path: /ekur/:guid/olympus/:xuid
+    response:
+      body: :mitm-dir/example/xuid($2)/test_$1
 ```
 
 #### Output

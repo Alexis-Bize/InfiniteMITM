@@ -2,6 +2,12 @@
 
 Override the available servers by keeping only desired ones to force their selection.
 
+## Preview
+
+<p align="center">
+    <img alt="InfiniteMITM - Server Selection" title="InfiniteMITM - Server Selection" src="./preview.png?v=1" width="720" />
+</p>
+
 ## Installation
 
 -   Create a `resources/json` directory in `~/InfiniteMITM`.
@@ -11,17 +17,17 @@ Override the available servers by keeping only desired ones to force their selec
 
 ### Schema (Example)
 
-In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the `JapanEast` one
+In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the `NorthCentralUs` one
 
 ```json
 [
   {
-    "region": "EastUs",
-    "serverUrl": "pfmsqosprod2-0.japaneast.cloudapp.azure.com"
+    "region": "SouthAfricaNorth",
+    "serverUrl": "pfmsqosprod2-0.northcentralus.cloudapp.azure.com"
   },
   {
     "region": "EastUs2",
-    "serverUrl": "pfmsqosprod2-0.japaneast.cloudapp.azure.com"
+    "serverUrl": "pfmsqosprod2-0.northcentralus.cloudapp.azure.com"
   }
 ]
 ```

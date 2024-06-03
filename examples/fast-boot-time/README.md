@@ -1,11 +1,11 @@
 # Fast Boot Time
 
-Disabling progression assets will "deactivate" all related customization requests (such as emblems, armors, etc.), resulting in a **70% faster boot time** after authentication.
+Will "deactivate" all related customization requests (such as emblems, armors, etc.), resulting in a **70% faster boot time** after authentication.
 
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - No Progression Assets" title="InfiniteMITM - No Progression Assets" src="./preview.gif?v=1" width="720" />
+    <img alt="InfiniteMITM - Fast Boot Time" title="InfiniteMITM - Fast Boot Time" src="./preview.gif?v=1" width="720" />
 </p>
 
 ## Installation
@@ -14,4 +14,4 @@ Disabling progression assets will "deactivate" all related customization request
 
 ## Notice
 
-Various elements, such as the store, available credits, and challenges, may be disabled. However, this won't impact your in-game progression or your ability to earn XP, CR, and SP.
+This won't impact your in-game progression or your ability to earn XP, CR, and SP.

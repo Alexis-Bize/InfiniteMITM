@@ -1,5 +1,5 @@
 gamecms: # gamecms-hacs.svc.halowaypoint.com
-  - path: /hi/progression/file/*
+  - path: /hi/progression/file/(inventory|configuration)/*
     methods:
       - GET
     request:

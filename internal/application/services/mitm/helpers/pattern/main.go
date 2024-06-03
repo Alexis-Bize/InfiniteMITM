@@ -116,11 +116,12 @@ func ReplaceParameters(value string) string {
 		MatchParameters.BOND, MatchPatterns.BOND,
 		MatchParameters.JSON, MatchPatterns.JSON,
 
-		"*", MatchPatterns.ALL,
 		MatchParameters.ALL, MatchPatterns.ALL,
 		MatchParameters.STOP, MatchPatterns.STOP,
 
-		// Static
+		"*", MatchPatterns.ALL,
+		"$", MatchPatterns.STOP,
+
 		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
 		":mitm-version", configs.GetConfig().Version,
 	)

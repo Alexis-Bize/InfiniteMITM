@@ -1,0 +1,19 @@
+blobs: # blobs-infiniteugc.svc.halowaypoint.com
+  - path: /ugcstorage/*.(jpg|png)
+    methods:
+      - GET
+    response:
+      body: https://cataas.com/cat
+      headers:
+        cache-control: no-cache
+        content-type: image/jpeg
+
+gamecms: # gamecms-hacs.svc.halowaypoint.com
+  - path: /hi/images/file/news/*.(jpg|png)
+    methods:
+      - GET
+    response:
+      body: https://cataas.com/cat
+      headers:
+        cache-control: no-cache
+        content-type: image/jpeg

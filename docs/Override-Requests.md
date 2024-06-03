@@ -8,60 +8,60 @@
 
 ```yaml
 blobs: # blobs-infiniteugc.svc.halowaypoint.com
-    - path: /ugcstorage/map/:guid/:guid/:map-mvar # Path pattern to match, will catch all .mvar files
-      methods: # HTTP methods that this configuration will handle
-          - GET
-      response:
-          body: :mitm-dir/maps/design_21.mvar # Path to the file that will be used as the response body
-          headers: # Additional headers to include in the response
-              x-infinite-mitm: :infinite-mitm-version
-              content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
-      methods:
-          - GET
-      response:
-          body: :mitm-dir/enginegamevariant/cgui-markups/Slayer_8Teams.bin
-          headers:
-              x-infinite-mitm: :infinite-mitm-version
-              content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
-      methods:
-          - GET
-      response:
-          body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
-          headers:
-              x-infinite-mitm: :infinite-mitm-version
-              content-type: :ct-bond
-    - path: /ugcstorage/:path* # Match all paths after /ugcstorage/
-      methods:
-          - GET
-          - POST
-          - PATCH
-          - PUT
-          - DELETE
-      request: # Headers to override in the request
-          headers:
-              x-343-authorization-spartan: v4=MyCustomSpartanToken
+  - path: /ugcstorage/map/:guid/:guid/:map-mvar # Path pattern to match, will catch all .mvar files
+    methods: # HTTP methods that this configuration will handle
+      - GET
+    response:
+      body: :mitm-dir/maps/design_21.mvar # Path to the file that will be used as the response body
+      headers: # Additional headers to include in the response
+        x-infinite-mitm: :infinite-mitm-version
+        content-type: :ct-bond
+  - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
+    methods:
+      - GET
+    response:
+      body: :mitm-dir/enginegamevariant/cgui-markups/Slayer_8Teams.bin
+      headers:
+        x-infinite-mitm: :infinite-mitm-version
+        content-type: :ct-bond
+  - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
+    methods:
+      - GET
+    response:
+      body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
+      headers:
+        x-infinite-mitm: :infinite-mitm-version
+        content-type: :ct-bond
+  - path: /ugcstorage/:path* # Match all paths after /ugcstorage/
+    methods:
+      - GET
+      - POST
+      - PATCH
+      - PUT
+      - DELETE
+    request: # Headers to override in the request
+      headers:
+        x-343-authorization-spartan: v4=MyCustomSpartanToken
 ```
 
 ## Definition
 
 ```yaml
 root: # Must be one of "blobs | authoring | discovery | settings | root" (root = all)
-    # Each item in the list represents a specific endpoint configuration.
-    - path: /example/path # Targeted path (case insensitive)
-      methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
-          - GET
-          - POST
-      request: # Used to alter the request
-          body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
-          headers: # Override request headers (case insensitive)
-              custom-header: customValue
-      response: # Used to alter the response
-          code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-          body: :mitm-dir/response/body/file # URI to the overridden file
-          headers: # Override response headers (case insensitive)
-              custom-response-header: customValue
+  # Each item in the list represents a specific endpoint configuration.
+  - path: /example/path # Targeted path (case insensitive)
+    methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
+      - GET
+      - POST
+    request: # Used to alter the request
+      body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
+      headers: # Override request headers (case insensitive)
+        custom-header: customValue
+    response: # Used to alter the response
+      code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+      body: :mitm-dir/response/body/file # URI to the overridden file
+      headers: # Override response headers (case insensitive)
+        custom-response-header: customValue
 ```
 
 ## Predefined Route Parameters

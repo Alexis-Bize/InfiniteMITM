@@ -24,13 +24,10 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   [Install Root Certificate](/docs/Install-Root-Certificate.md)
 -   [Override Requests](/docs/Override-Requests.md)
 
-## Examples
+## Examples (Snippet)
 
 -   [Server Selection](/examples/server-selection/README.md)
 -   [Multiplayer Only](/examples/multiplayer-only/README.md)
--   [See all](/examples)
-
-
 
 ## Building From Source
 

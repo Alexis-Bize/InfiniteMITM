@@ -32,7 +32,7 @@ import (
 	"github.com/charmbracelet/huh/spinner"
 )
 
-var certName = "InfiniteMITM"
+var certName = "InfiniteMITMRootCA"
 
 func CreateRootAssets(f *embed.FS) error {
 	spinner.New().Title("Checking local assets integrity...").Run()

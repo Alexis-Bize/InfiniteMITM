@@ -25,6 +25,7 @@ type Domains struct {
 	Settings  Domain
 	GameCMS   Domain
 	Economy   Domain
+	Lobby     Domain
 }
 
 const (
@@ -36,6 +37,7 @@ const (
 	Settings  Domain  = "settings.svc.halowaypoint.com:443"
 	GameCMS   Domain  = "gamecms-hacs.svc.halowaypoint.com:443"
 	Economy   Domain  = "economy.svc.halowaypoint.com:443"
+	Lobby     Domain  = "lobby-hi.svc.halowaypoint.com:443"
 )
 
 var HaloWaypointSVCDomains = Domains{
@@ -47,4 +49,5 @@ var HaloWaypointSVCDomains = Domains{
 	Settings:  Settings,
 	GameCMS:   GameCMS,
 	Economy:   Economy,
+	Lobby:     Lobby,
 }

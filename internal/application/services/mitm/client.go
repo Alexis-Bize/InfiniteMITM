@@ -66,6 +66,7 @@ type YAML struct {
 	Settings  []YAMLNode `yaml:"settings,omitempty"`
 	GameCMS   []YAMLNode `yaml:"gamecms,omitempty"`
 	Economy   []YAMLNode `yaml:"economy,omitempty"`
+	Lobby     []YAMLNode `yaml:"lobby,omitempty"`
 }
 
 func WatchClientMITMConfig() {
@@ -209,6 +210,18 @@ func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.Respons
 
 		if v.Response != (YAMLResponseNode{}) {
 			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Economy, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
+
+	for _, v := range content.Lobby {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Lobby, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Lobby, v)
 			clientResponseHandlers = append(clientResponseHandlers, handler)
 		}
 	}

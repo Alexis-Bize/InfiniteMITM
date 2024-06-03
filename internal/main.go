@@ -15,9 +15,11 @@
 package MITM
 
 import (
+	"context"
 	"embed"
 	"net/http"
 	"sync"
+	"time"
 
 	configs "infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
@@ -132,10 +134,14 @@ func createNetworkView() {
 
 func restartServer(f *embed.FS, wg *sync.WaitGroup) error {
 	if server != nil {
-		if err := server.Close(); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
 			return err
 		}
 	}
+
+	time.Sleep(1 * time.Second)
 
 	wg.Add(1)
 	go startServer(f, true, wg)

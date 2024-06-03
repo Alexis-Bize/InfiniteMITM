@@ -71,19 +71,19 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 		fmt.Println(err)
 	}
 
-	for _, handler := range internalRequestHandlers() {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
-
-	for _, handler := range internalResponseHandlers() {
-		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
-	}
-
 	for _, handler := range clientRequestHandlers {
 		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
 	}
 
 	for _, handler := range clientResponseHandlers {
+		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
+	}
+
+	for _, handler := range internalRequestHandlers() {
+		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
+	}
+
+	for _, handler := range internalResponseHandlers() {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
 

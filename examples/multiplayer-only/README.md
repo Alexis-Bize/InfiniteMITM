@@ -8,6 +8,30 @@ Disable all options (campaign, customization, store, etc.) and keep only Multipl
     <img alt="InfiniteMITM - No Progression Assets" title="InfiniteMITM - No Progression Assets" src="./preview.jpg?v=1" width="720" />
 </p>
 
+## Disabled Feature Flags
+
+-   CampaignEnabled
+-   ForgeEnabled
+-   ArmorMenuEnabled
+-   WeaponsMenuEnabled
+-   VehiclesMenuEnabled
+-   BodyAndAIMenuEnabled
+-   PresentationMenuEnabled
+-   CustomizationEnabled
+-   CommunityEnabled
+-   StoreEnabled
+-   RecommendedMapsEnabled
+-   RecommendedModesEnabled
+-   RecommendedFilmsEnabled
+-   RecommendedFilesEnabled
+-   HCSStoreEnabled
+-   BuyCreditsEnabled
+-   TheaterEnabled
+-   SpotlightEnabled
+-   CustomsBrowserEnabled
+
+Please refer to our [documentation](/blob/main/docs/Feature-Flags.md) for more details about these values.
+
 ## Installation
 
 -   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.

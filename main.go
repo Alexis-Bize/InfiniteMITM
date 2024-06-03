@@ -20,8 +20,8 @@ import (
 	"log"
 )
 
-//go:generate goversioninfo -icon=assets/resource/windows/icon_256x256.ico
-//go:embed assets/resource/shared/templates/*
+//go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
+//go:embed assets/resources/shared/templates/*
 //go:embed cert/*
 var f embed.FS
 

@@ -17,6 +17,7 @@ package MITMApplication
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"infinite-mitm/configs"
 	errors "infinite-mitm/pkg/modules/errors"
 	Utilities "infinite-mitm/pkg/modules/utilities"
@@ -27,6 +28,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 )
 
@@ -34,9 +36,11 @@ var certName = "InfiniteMITM"
 
 func CreateRootAssets(f *embed.FS) error {
 	spinner.New().Title("Checking local assets integrity...").Run()
-	
+
 	projectDir := configs.GetConfig().Extra.ProjectDir
-	sourceMITMTemplate := "assets/resource/shared/templates/mitm.yaml"
+	resourcesPath := filepath.Join(projectDir, "resources")
+
+	sourceMITMTemplate := "assets/resources/shared/templates/mitm.yaml"
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -62,6 +66,27 @@ func CreateRootAssets(f *embed.FS) error {
 
 		if err = destinationFile.Sync(); err != nil {
 			return errors.Create(errors.ErrFatalException, err.Error())
+		}
+	}
+
+	if _, err := os.Stat(resourcesPath); os.IsNotExist(err) {
+		var ignoreResourcesCreation bool
+		err := huh.NewConfirm().
+			Title("Would you like to create a resources directory to help you organize your work?").
+			Description(fmt.Sprintf("The directory will be created under \"%s\"", projectDir)).
+			Affirmative("No, thanks. I know what I'm doing.").
+			Negative("Yes please!").
+			Value(&ignoreResourcesCreation).
+			Run()
+
+		if err == nil && !ignoreResourcesCreation {
+			spinner.New().Title("Creating resources...").Run()
+
+			os.MkdirAll(resourcesPath, 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "flags"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "ugc", "maps"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "bin", "InfiniteVariantToolCLI"), 0755)
 		}
 	}
 
@@ -113,7 +138,7 @@ func checkForRootCertificateOnDarwin() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	keychainPath := home + "/Library/Keychains/login.keychain-db"
 	cmd := exec.Command("security", "find-certificate", "-a", "-c", certName, keychainPath)
 	var out bytes.Buffer

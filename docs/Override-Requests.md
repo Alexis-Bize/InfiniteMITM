@@ -12,7 +12,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
     methods: # HTTP methods that this configuration will handle
       - GET
     response:
-      body: :mitm-dir/maps/design_21.mvar # Path to the file that will be used as the response body
+      body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
       headers: # Additional headers to include in the response
         x-infinite-mitm: :infinite-mitm-version
         content-type: :ct-bond
@@ -20,7 +20,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
     methods:
       - GET
     response:
-      body: :mitm-dir/enginegamevariant/cgui-markups/Slayer_8Teams.bin
+      body: :mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin
       headers:
         x-infinite-mitm: :infinite-mitm-version
         content-type: :ct-bond
@@ -32,7 +32,7 @@ blobs: # blobs-infiniteugc.svc.halowaypoint.com
       headers:
         x-infinite-mitm: :infinite-mitm-version
         content-type: :ct-bond
-  - path: /ugcstorage/:path* # Match all paths after /ugcstorage/
+  - path: /ugcstorage/* # Match all after /ugcstorage/
     methods:
       - GET
       - POST

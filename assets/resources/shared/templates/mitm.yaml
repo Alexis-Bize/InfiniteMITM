@@ -1,5 +1,5 @@
 root: # *.svc.halowaypoint.com
-  - path: /:*
+  - path: /*
     methods:
       - GET
       - POST

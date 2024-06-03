@@ -51,7 +51,7 @@
 
 ## How to Customize Existing Flags
 
-Thanks to the amazing work by **soupstream**, [InfiniteVariantTool](https://github.com/soupstream/InfiniteVariantTool) allows you to convert .bond files (the binary file format used by the game) into .xml files and vice versa.
+Thanks to the amazing work by **soupstream**, [InfiniteVariantTool](https://github.com/soupstream/InfiniteVariantTool) allows you to convert bond binary files (format used by the game) into .xml files and vice versa.
 
 ### Schema (Example)
 

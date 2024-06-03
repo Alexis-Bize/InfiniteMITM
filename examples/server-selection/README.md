@@ -36,7 +36,7 @@ In the following example (partial, must not be used as is), all `serverUrl` inst
 
 The returned estimated wait time may not be impacted by your changes, but the match search will be.
 
-### Server Regions and URLs
+## Server Regions and URLs
 
 - **South Africa North**
   - Region: `SouthAfricaNorth`

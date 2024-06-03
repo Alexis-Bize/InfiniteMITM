@@ -1,6 +1,6 @@
 # Override Requests
 
-**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `stats` | `settings` | `gamecms` | `economy` | `root`), desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`) and **regex** support.
+**InfiniteMITM** enables you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs` | `authoring` | `discovery` | `stats` | `settings` | `gamecms` | `economy` | `lobby` | `root`), desired REST methods (`GET` | `POST` | `PATCH` | `PUT` | `DELETE`) and **regex** support.
 
 **Note:** When changing the request `body`, the `Content-Length` header will be automatically calculated.
 
@@ -139,5 +139,5 @@ blobs:
 #### Output
 
 ```
-~/InfiniteMITM/xuid(1234)/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2
+~/InfiniteMITM/example/xuid(1234)/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2
 ```

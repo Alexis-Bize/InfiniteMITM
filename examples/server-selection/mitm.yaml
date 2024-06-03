@@ -1,0 +1,8 @@
+lobby: # lobby-hi.svc.halowaypoint.com
+  - path: /titles/hi/qosservers
+    methods:
+      - GET
+    response:
+      body: :mitm-dir/resources/json/server-selection.json
+      headers:
+        content-type: :ct-json

@@ -83,10 +83,11 @@ func CreateRootAssets(f *embed.FS) error {
 			spinner.New().Title("Creating resources...").Run()
 
 			os.MkdirAll(resourcesPath, 0755)
-			os.MkdirAll(filepath.Join(resourcesPath, "flags"), 0755)
 			os.MkdirAll(filepath.Join(resourcesPath, "ugc", "maps"), 0755)
 			os.MkdirAll(filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"), 0755)
-			os.MkdirAll(filepath.Join(resourcesPath, "bin", "InfiniteVariantToolCLI"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "bin", "flags"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "tools", "InfiniteVariantToolCLI"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "json"), 0755)
 		}
 	}
 

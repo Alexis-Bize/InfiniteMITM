@@ -8,6 +8,4 @@
 /resource.syso
 /versioninfo.json
 
-cert/*.pfx
-
 InfiniteVariantToolCLI.exe

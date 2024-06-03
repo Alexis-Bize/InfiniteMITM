@@ -3,4 +3,4 @@ settings: # settings.svc.halowaypoint.com
     methods:
       - GET
     response:
-      body: :mitm-dir/resources/flags/multiplayer-only.bin
+      body: :mitm-dir/resources/bin/flags/multiplayer-only.bin

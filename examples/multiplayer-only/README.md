@@ -8,7 +8,12 @@ Disable all options (campaign, customization, store, etc.) and keep only Multipl
     <img alt="InfiniteMITM - No Progression Assets" title="InfiniteMITM - No Progression Assets" src="./preview.jpg?v=1" width="720" />
 </p>
 
-## Requirements
+## Installation
 
--   Create a `flags` directory in `~/InfiniteMITM`.
--   Download and move `multiplayer-only.bin` into the `flags` directory.
+-   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.
+-   Download and move [`multiplayer-only.bin`](./resources/bin/flags/multiplayer-only.bin) into the `flags` directory.
+-   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+
+## Notice
+
+By overriding existing flags, you may also disable ones that have been recently added server-side.

@@ -30,7 +30,7 @@ Disable all options (campaign, customization, store, etc.) and keep only Multipl
 -   `VehiclesMenuEnabled`
 -   `WeaponsMenuEnabled`
 
-Please refer to our [documentation](/blob/main/docs/Feature-Flags.md) for more details about these values.
+Please refer to our [documentation](/docs/Feature-Flags.md) for more details about these values.
 
 ## Installation
 

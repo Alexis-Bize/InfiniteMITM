@@ -6,23 +6,29 @@ Override the available servers by keeping only desired ones to force their selec
 
 -   Create a `resources/json` directory in `~/InfiniteMITM`.
 -   Download and move [`server-selection.json`](./resources/json/server-selection.json) into the `json` directory.
--   Remove any unwanted servers from the file.
+-   Replace all `serverUrl` by the desired ones.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
 
 ### Schema (Example)
+
+In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the `JapanEast` one
 
 ```json
 [
   {
     "region": "EastUs",
-    "serverUrl": "pfmsqosprod2-0.eastus.cloudapp.azure.com"
+    "serverUrl": "pfmsqosprod2-0.japaneast.cloudapp.azure.com"
   },
   {
     "region": "EastUs2",
-    "serverUrl": "pfmsqosprod2-0.eastus2.cloudapp.azure.com"
+    "serverUrl": "pfmsqosprod2-0.japaneast.cloudapp.azure.com"
   }
 ]
 ```
+
+## Notice
+
+The returned estimated wait time won't be based on your changes, but the match search will.
 
 ### Server Regions and URLs
 

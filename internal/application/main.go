@@ -70,10 +70,16 @@ func CreateRootAssets(f *embed.FS) error {
 	}
 
 	if _, err := os.Stat(resourcesPath); os.IsNotExist(err) {
+		previewDir := projectDir
+
+		if runtime.GOOS == "window" {
+			previewDir = strings.ReplaceAll(previewDir, "/", "\\")
+		}
+
 		var ignoreResourcesCreation bool
 		err := huh.NewConfirm().
 			Title("Would you like to create a resources directory to help you organize your work?").
-			Description(fmt.Sprintf("The directory will be created under \"%s\"", projectDir)).
+			Description(fmt.Sprintf("The directory will be created under \"%s\"", previewDir)).
 			Affirmative("No, thanks. I know what I'm doing.").
 			Negative("Yes please!").
 			Value(&ignoreResourcesCreation).
@@ -113,7 +119,7 @@ func CheckForRootCertificate() (bool, error) {
 }
 
 func checkForRootCertificateOnWindows() (bool, error) {
-	cmd := exec.Command("certutil", "-verifystore", "CA", certName)
+	cmd := exec.Command("certutil", "-verifystore", "-user", "root", certName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()

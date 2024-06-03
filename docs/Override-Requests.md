@@ -117,27 +117,27 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
 
 ## Response Match Parameters
 
-In some cases, you might need to reuse a parameter that was matched during the request in your response. To do this, you can use `${pos}` where `{pos}` is the position of your route parameter.
+In some cases, you might need to reuse a parameter that was matched during the request in your response. To do this, you can use `${pos}` where `{pos}` is the position of your route parameter or regex.
 
 ### Example
 
 #### Request Path
 
 ```
-/ekur/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/olympus/xuid(1234)
+/ekur/97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/olympus/xuid(1234)/details
 ```
 
 #### MITM Config
 
 ```yaml
 blobs:
-  - path: /ekur/:guid/olympus/:xuid
+  - path: /ekur/:guid/olympus/:xuid/([a-z]+)$
     response:
-      body: :mitm-dir/example/xuid($2)/test_$1
+      body: :mitm-dir/example/xuid_$2/test_$1/$3
 ```
 
 #### Output
 
 ```
-~/InfiniteMITM/example/xuid(1234)/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2
+~/InfiniteMITM/example/xuid_1234/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/details
 ```

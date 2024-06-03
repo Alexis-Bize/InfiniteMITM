@@ -17,17 +17,17 @@ Override the available servers by keeping only desired ones to force their selec
 
 ### Schema (Example)
 
-In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the `NorthCentralUs` one
+In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the **West Europe** one
 
 ```json
 [
   {
     "region": "SouthAfricaNorth",
-    "serverUrl": "pfmsqosprod2-0.northcentralus.cloudapp.azure.com"
+    "serverUrl": "pfmsqosprod2-0.westeurope.cloudapp.azure.com"
   },
   {
     "region": "EastUs2",
-    "serverUrl": "pfmsqosprod2-0.northcentralus.cloudapp.azure.com"
+    "serverUrl": "pfmsqosprod2-0.westeurope.cloudapp.azure.com"
   }
 ]
 ```

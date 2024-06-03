@@ -1,6 +1,6 @@
-# No Progression Assets
+# Fast Boot Time
 
-Disabling progression assets (gamecms) will deactivate all related customization requests (such as emblems, armors, etc.), resulting in a **70% faster boot time** after authentication.
+Disabling progression assets will "deactivate" all related customization requests (such as emblems, armors, etc.), resulting in a **70% faster boot time** after authentication.
 
 ## Preview
 
@@ -10,8 +10,6 @@ Disabling progression assets (gamecms) will deactivate all related customization
 
 ## Installation
 
--   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.
--   Download and move [`multiplayer-only.bin`](./resources/bin/flags/multiplayer-only.bin) into the `flags` directory.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
 
 ## Notice

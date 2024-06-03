@@ -27,7 +27,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 ## Examples (Snippet)
 
 -   [Server Selection](/examples/server-selection)
--   [Multiplayer Only](/examples/multiplayer-only)
+-   [Flags Override](/examples/flags-override)
 
 ## Building From Source
 

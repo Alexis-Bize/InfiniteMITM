@@ -1,11 +1,11 @@
-# Multiplayer Only
+# Flags Override
 
 Disable all options (campaign, customization, store, etc.) and keep only Multiplayer (Matchmaking and Custom game) and Academy.
 
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Multiplayer Only" title="InfiniteMITM - Multiplayer Only" src="./preview.jpg?v=1" width="720" />
+    <img alt="InfiniteMITM - Flags Override" title="InfiniteMITM - Flags Override" src="./preview.jpg?v=1" width="720" />
 </p>
 
 ## Disabled Feature Flags
@@ -35,7 +35,7 @@ Please refer to our [documentation](/docs/Feature-Flags.md) for more details abo
 ## Installation
 
 -   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.
--   Download and move [`multiplayer-only.bin`](./resources/bin/flags/multiplayer-only.bin) into the `flags` directory.
+-   Download and move [`flags-override.bin`](./resources/bin/flags/flags-override.bin) into the `flags` directory.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
 
 ## Notice

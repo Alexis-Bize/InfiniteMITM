@@ -28,7 +28,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 
 -   [Server Selection](/examples/server-selection/README.md)
 -   [Multiplayer Only](/examples/multiplayer-only/README.md)
--   [See All Examples](/examples)
+-   [See all](/examples)
 
 
 

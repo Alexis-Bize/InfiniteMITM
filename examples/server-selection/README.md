@@ -28,7 +28,7 @@ In the following example (partial, must not be used as is), all `serverUrl` inst
 
 ## Notice
 
-The returned estimated wait time won't be based on your changes, but the match search will.
+The returned estimated wait time may not be impacted by your changes, but the match search will be.
 
 ### Server Regions and URLs
 

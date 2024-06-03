@@ -10,25 +10,25 @@ Disable all options (campaign, customization, store, etc.) and keep only Multipl
 
 ## Disabled Feature Flags
 
--   CampaignEnabled
--   ForgeEnabled
--   ArmorMenuEnabled
--   WeaponsMenuEnabled
--   VehiclesMenuEnabled
--   BodyAndAIMenuEnabled
--   PresentationMenuEnabled
--   CustomizationEnabled
--   CommunityEnabled
--   StoreEnabled
--   RecommendedMapsEnabled
--   RecommendedModesEnabled
--   RecommendedFilmsEnabled
--   RecommendedFilesEnabled
--   HCSStoreEnabled
--   BuyCreditsEnabled
--   TheaterEnabled
--   SpotlightEnabled
--   CustomsBrowserEnabled
+-   `ArmorMenuEnabled`
+-   `BodyAndAIMenuEnabled`
+-   `BuyCreditsEnabled`
+-   `CampaignEnabled`
+-   `CommunityEnabled`
+-   `CustomizationEnabled`
+-   `CustomsBrowserEnabled`
+-   `ForgeEnabled`
+-   `HCSStoreEnabled`
+-   `PresentationMenuEnabled`
+-   `RecommendedFilesEnabled`
+-   `RecommendedFilmsEnabled`
+-   `RecommendedMapsEnabled`
+-   `RecommendedModesEnabled`
+-   `SpotlightEnabled`
+-   `StoreEnabled`
+-   `TheaterEnabled`
+-   `VehiclesMenuEnabled`
+-   `WeaponsMenuEnabled`
 
 Please refer to our [documentation](/blob/main/docs/Feature-Flags.md) for more details about these values.
 

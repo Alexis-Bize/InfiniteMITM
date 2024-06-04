@@ -33,15 +33,15 @@ func (l CustomLogger) Printf(format string, v ...interface{}) {
 	// Ignore goproxy logs
 }
 
-const overrideLogger = true
+var certName = configs.GetConfig().Certificate.Name
 
 func InitializeServer(f *embed.FS) (*http.Server, error) {
-	CACert, err := f.ReadFile("cert/InfiniteMITMRootCA.pem")
+	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName))
 	if err != nil {
 		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
 
-	CAKey, err := f.ReadFile("cert/InfiniteMITMRootCA.key")
+	CAKey, err := f.ReadFile(fmt.Sprintf("cert/%s.key", certName))
 	if err != nil {
 		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}
@@ -59,10 +59,7 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
-
-	if overrideLogger {
-		proxy.Logger = CustomLogger{}
-	}
+	proxy.Logger = CustomLogger{}
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 

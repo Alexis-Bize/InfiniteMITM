@@ -38,6 +38,9 @@ type Config struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
 	} `yaml:"proxy"`
+	Certificate struct {
+		Name string `yaml:"name"`
+	} `yaml:"certificate"`
 	Extra struct {
 		ProjectDir string
 	}

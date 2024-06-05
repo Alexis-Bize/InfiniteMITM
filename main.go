@@ -17,15 +17,24 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
+	MITMApplicationUIServiceTestTable "infinite-mitm/internal/application/services/ui/test"
 	"log"
 )
 
 //go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
 //go:embed assets/resources/shared/templates/*
-//go:embed cert/*
+//go:embed cert/InfiniteMITMRootCA.pem
+//go:embed cert/InfiniteMITMRootCA.key
 var f embed.FS
 
+const debug = true
+
 func main() {
+	if debug {
+		MITMApplicationUIServiceTestTable.Create()
+		return
+	}
+
 	err := MITM.Start(&f)
 	if err != nil {
 		log.Println(err)

@@ -16,4 +16,6 @@ package MITMApplicationEvents
 
 const (
 	RestartServer = "server.restart"
+	ProxyRequestSent = "request.sent"
+	ProxyResponseReceived = "response.received"
 )

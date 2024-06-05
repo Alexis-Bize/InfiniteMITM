@@ -23,15 +23,14 @@ import (
 
 //go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
 //go:embed assets/resources/shared/templates/*
-//go:embed cert/InfiniteMITMRootCA.pem
-//go:embed cert/InfiniteMITMRootCA.key
+//go:embed cert/*
 var f embed.FS
 
 const debug = true
 
 func main() {
 	if debug {
-		MITMApplicationUIServiceTestTable.Create()
+		MITMApplicationUIServiceTestTable.Start()
 		return
 	}
 

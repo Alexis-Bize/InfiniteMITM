@@ -15,147 +15,291 @@
 package MITMApplicationUIServiceTestTable
 
 import (
+	"encoding/json"
 	"fmt"
+	events "infinite-mitm/internal/application/events"
+	errors "infinite-mitm/pkg/modules/errors"
+	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gookit/event"
+	"golang.org/x/term"
 )
 
-type tab string
-
-const (
-	requestTab  tab = "Request"
-	responseTab tab = "Response"
-)
-
-type model struct {
-	requestsTable table.Model
-	tabs          []tab
-	activeTab     tab
-	action        string
-	details       map[tab]string
-	selectedIndex int
-	windowWidth   int
-	windowHeight  int
+type RequestData struct {
+	ID        string `json:"id"`
+	URL       string `json:"url"`
+	Method    string `json:"method"`
+	Headers   map[string]string `json:"headers"`
+	Body      []byte `json:"body"`
+	Proxified bool `json:"proxified"`
 }
 
-func Create() {
-	tabs := []tab{requestTab, responseTab}
+type ResponseData struct {
+	ID     string `json:"id"`
+	Status int `json:"status"`
+	Headers map[string]string `json:"headers"`
+	Body []byte `json:"body"`
+}
 
-	details := map[tab]string{
-		requestTab:  "Request details will appear here.",
-		responseTab: "Response details will appear here.",
-	}
+type NetworkData struct {
+	Request  RequestData
+	Response ResponseData
+}
 
-	m := model{
-		tabs:          tabs,
-		activeTab:     requestTab,
-		action:        "Press q to quit, tab to switch tabs, enter to view details",
-		details:       details,
-		selectedIndex: -1,
-	}
+type model struct {
+	table             table.Model
+	details           string
+	selectedID        int
+	currentView       string
+}
 
-	p := tea.NewProgram(m)
+type tableRowPush table.Row
+type tableRowUpdate table.Row
+
+var program *tea.Program
+var modelInstance *model
+var networkData = make(map[string]NetworkData)
+
+var (
+	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
+	highlight = lipgloss.AdaptiveColor{Light: "#874BFD", Dark: "#7D56F4"}
+	special   = lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}
+
+	divider = lipgloss.NewStyle().
+		SetString("•").
+		Padding(0, 1).
+		Foreground(subtle).
+		String()
+
+	colorSuccess = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}).Render
+	colorWarn = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#bf9543", Dark: "#f5be73"}).Render
+	colorError =lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#bf4343", Dark: "#f57373"}).Render
+
+	docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
+)
+
+func (m *model) Init() tea.Cmd {
+	return nil
+}
+
+func Start() {
+	initEvents()
+	p := createProgram()
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error: %v", err)
+		errors.Create(errors.ErrFatalException, err.Error())
 		os.Exit(1)
 	}
 }
 
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "tab":
-			m.switchTab()
-		case "enter":
-			m.selectRequest()
-		}
-	case tea.WindowSizeMsg:
-		m.windowWidth = msg.Width
-		m.windowHeight = msg.Height
-		m.updateTable()
+func createProgram() *tea.Program {
+	modelInstance = &model{
+		createNetworkView(),
+		"",
+		-1,
+		"network",
 	}
 
-	var cmd tea.Cmd
-	m.requestsTable, cmd = m.requestsTable.Update(msg)
-	return m, cmd
+	program = tea.NewProgram(modelInstance)
+	return program
 }
 
-func (m *model) updateTable() {
-	if m.windowWidth == 0 {
-		return
-	}
-
-	columnWidth := m.windowWidth / 3
-
+func createNetworkView() table.Model {
 	columns := []table.Column{
-		{Title: "Method", Width: columnWidth / 3},
-		{Title: "Status", Width: columnWidth / 6},
-		{Title: "URL", Width: columnWidth},
+		{Title: "✎", Width: 2},
+		{Title: "#", Width: 5},
+		{Title: "Method", Width: 10},
+		{Title: "Result", Width: 10},
+		{Title: "Host", Width: 40},
+		{Title: "Path", Width: 50},
+		{Title: "Content Type", Width: 40},
 	}
 
-	rows := []table.Row{
-		{"GET", "200", "https://example.com"},
-		{"POST", "200", "https://example.com/login"},
-	}
+	rows := []table.Row{}
 
-	m.requestsTable = table.New(
+	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
 	)
+
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	t.SetStyles(s)
+
+	return t
 }
 
-func (m *model) switchTab() {
-	if m.activeTab == requestTab {
-		m.activeTab = responseTab
-	} else {
-		m.activeTab = requestTab
-	}
+func initEvents() {
+	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+		if modelInstance == nil || program == nil {
+			return nil
+		}
+
+		s := fmt.Sprintf("%s", e.Data()["data"])
+		var data RequestData
+		json.Unmarshal([]byte(s), &data)
+
+		networkData[data.ID] = NetworkData{
+			Request: data,
+		}
+
+		position := len(modelInstance.table.Rows()) + 1
+
+		proxified := ""
+		if data.Proxified {
+			proxified = "✔"
+		}
+
+		parse, _ := url.Parse(data.URL)
+		program.Send(tableRowPush(table.Row{
+			proxified,
+			fmt.Sprintf("%d", position),
+			data.Method,
+			"...",
+			parse.Host,
+			parse.Path,
+			"...",
+		}))
+
+		return nil
+	}), event.Normal)
+
+	go func () {
+		i := 0
+
+		for {
+			i++
+
+			data1 := RequestData{
+				ID: fmt.Sprint("%d", i),
+				Method: "GET",
+				URL: "https://example.com/foo",
+				Headers: map[string]string{
+					"Accept": "application/json",
+				},
+				Body: nil,
+				Proxified: true,
+			}
+
+			mashal, _ := json.Marshal(data1)
+			event.MustFire(events.ProxyRequestSent, event.M{"data": mashal})
+			time.Sleep(5 * time.Second)
+
+			data2 := ResponseData{
+				Status: 200,
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+				},
+				Body: nil,
+			}
+
+			mashal, _ = json.Marshal(data2)
+			event.MustFire(events.ProxyResponseReceived, event.M{"data": mashal})
+		}
+	}()
 }
 
-func (m *model) selectRequest() {
-	row := m.requestsTable.SelectedRow()
-	if len(row) > 0 {
-		m.selectedIndex = m.requestsTable.Cursor()
-		m.details[requestTab] = fmt.Sprintf("Request details for %s %s", row[0], row[1])
-		m.details[responseTab] = fmt.Sprintf("Response details for %s %s", row[0], row[1])
-	}
-}
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tableRowPush:
+		m.table.SetRows(append(m.table.Rows(), table.Row(msg)))
+	case tableRowUpdate:
+		// TODO
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			if m.table.Focused() {
+				m.table.Blur()
+			} else {
+				m.table.Focus()
+			}
+		case "q":
+			if m.currentView == "details" {
+				m.currentView = "network"
+			}
+		case "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			if len(m.table.SelectedRow()) != 0 {
+				doc := strings.Builder{}
 
-func (m model) View() string {
-	// Define styles
-	tableStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2)
-	tabStyle := lipgloss.NewStyle().MarginRight(1).Padding(0, 1)
-	activeTabStyle := lipgloss.NewStyle().MarginRight(1).Padding(0, 1).Bold(true).Underline(true)
-	detailsStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2)
-	actionStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 1).MarginTop(0)
+				method := lipgloss.NewStyle().Bold(true).Render(m.table.SelectedRow()[2])
+				statusCode, _ := strconv.Atoi(m.table.SelectedRow()[3])
+				statusText := http.StatusText(statusCode)
+				if statusText == "" {
+					statusText = "ongoing"
+				}
 
-	// Render tabs
-	var renderedTabs []string
-	for _, t := range m.tabs {
-		if t == m.activeTab {
-			renderedTabs = append(renderedTabs, activeTabStyle.Render(string(t)))
-		} else {
-			renderedTabs = append(renderedTabs, tabStyle.Render(string(t)))
+				requestUrl := fmt.Sprintf("https://%s%s", m.table.SelectedRow()[4], m.table.SelectedRow()[5])
+
+				if statusCode >= 200 && statusCode < 300 {
+					requestUrl = colorSuccess(requestUrl)
+					statusText = colorSuccess(statusText)
+				} else if statusCode >= 400 && statusCode < 500 {
+					requestUrl = colorWarn(requestUrl)
+					statusText = colorWarn(statusText)
+				} else if statusCode >= 500 {
+					requestUrl = colorError(requestUrl)
+					statusText = colorError(statusText)
+				}
+
+				doc.WriteString(method + " [" + statusText + "] " + requestUrl)
+
+				m.details = lipgloss.JoinHorizontal(
+					lipgloss.Top,
+					docStyle.Render(doc.String()),
+				)
+
+				m.currentView = "details"
+			}
 		}
 	}
-	tabsView := strings.Join(renderedTabs, " ")
 
-	// Combine views
-	requestsView := tableStyle.Render(m.requestsTable.View())
-	detailsView := detailsStyle.Render(tabsView + "\n\n" + m.details[m.activeTab])
-	actionView := actionStyle.Render(m.action)
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
+}
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, requestsView, detailsView) + "\n" + actionView
+func (m *model) View() string {
+	physicalWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
+
+	if physicalWidth > 0 {
+		docStyle = docStyle.MaxWidth(physicalWidth)
+	}
+
+	tableStyle := lipgloss.
+		NewStyle().
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240"))
+
+	elem := ""
+
+	if m.currentView == "details" {
+		elem = m.details
+	} else {
+		elem = tableStyle.Render(m.table.View())
+	}
+
+	render := lipgloss.JoinVertical(
+		lipgloss.Top,
+		elem,
+	)
+
+	return docStyle.Render(render)
 }

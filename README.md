@@ -36,6 +36,8 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   Generate your own `InfiniteMITMRootCA.pem`, `InfiniteMITMRootCA.key` and `InfiniteMITMRootCA.cer` certificates in the `cert/` directory using `openssl` (CN=InfiniteMITMRootCA).
 -   Install the generated certificates on your machine.
 
+### Build Script:
+
 ```shell
 $ chmod +x ./scripts/build.sh
 $ ./scripts/build.sh

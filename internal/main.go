@@ -27,7 +27,7 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkTable "infinite-mitm/internal/application/services/ui/test"
+	networkTable "infinite-mitm/internal/application/services/ui/network"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
 	utilities "infinite-mitm/pkg/modules/utilities"

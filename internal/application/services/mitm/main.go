@@ -67,11 +67,11 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 		fmt.Println(err)
 	}
 
-	proxy.OnRequest().DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request,*http.Response) {
+	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request,*http.Response) {
 		customCtx := context.ContextHandler(ctx)
 		customCtx.SetUserData("uuid", uuid.New().String())
 		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
-		return r, nil
+		return req, nil
 	})
 
 	for _, handler := range clientRequestHandlers {

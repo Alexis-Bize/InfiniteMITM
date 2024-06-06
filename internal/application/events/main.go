@@ -16,6 +16,12 @@ package MITMApplicationEvents
 
 import "encoding/json"
 
+const (
+	RestartServer = "server.restart"
+	ProxyRequestSent = "request.sent"
+	ProxyResponseReceived = "response.received"
+)
+
 type ProxyRequestEventData struct {
 	ID        string `json:"id"`
 	URL       string `json:"url"`
@@ -27,9 +33,9 @@ type ProxyRequestEventData struct {
 
 type ProxyResponseEventData struct {
 	ID        string `json:"id"`
-	Status int `json:"status"`
-	Headers map[string]string `json:"headers"`
-	Body []byte `json:"body"`
+	Status    int `json:"status"`
+	Headers   map[string]string `json:"headers"`
+	Body      []byte `json:"body"`
 	Proxified bool `json:"proxified"`
 }
 
@@ -41,4 +47,16 @@ func StringifyRequestEventData(data ProxyRequestEventData) string {
 func StringifyResponseEventData(data ProxyResponseEventData) string {
 	marshal, _ := json.Marshal(data)
 	return string(marshal)
+}
+
+func ParseRequestEventData(data string) ProxyRequestEventData {
+	var unmarshal ProxyRequestEventData
+	json.Unmarshal([]byte(data), &unmarshal)
+	return unmarshal
+}
+
+func ParseResponseEventData(data string) ProxyResponseEventData {
+	var unmarshal ProxyResponseEventData
+	json.Unmarshal([]byte(data), &unmarshal)
+	return unmarshal
 }

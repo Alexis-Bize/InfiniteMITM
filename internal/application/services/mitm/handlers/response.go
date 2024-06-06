@@ -34,6 +34,10 @@ func HandleRootResponses() ResponseHandlerStruct {
 	return ResponseHandlerStruct{
 		Match: goproxy.UrlMatches(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+			if resp.Request.Method == http.MethodOptions {
+				return resp
+			}
+
 			customCtx := context.ContextHandler(ctx)
 			uuid := customCtx.GetUserData("uuid").(string)
 			if uuid == "" {

@@ -17,7 +17,6 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	MITMApplicationUIServiceTestTable "infinite-mitm/internal/application/services/ui/test"
 	"log"
 )
 
@@ -26,14 +25,7 @@ import (
 //go:embed cert/*
 var f embed.FS
 
-const debug = false
-
 func main() {
-	if debug {
-		MITMApplicationUIServiceTestTable.Create()
-		return
-	}
-
 	err := MITM.Start(&f)
 	if err != nil {
 		log.Println(err)

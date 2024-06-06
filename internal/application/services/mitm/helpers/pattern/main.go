@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationMITMServicePatternHelpers
+package MITMApplicationMITMServicePatternHelper
 
 import (
 	"infinite-mitm/configs"
@@ -22,7 +22,7 @@ import (
 )
 
 type Patterns struct {
-	SANDBOX, XUID, GUID, MVAR, CGUI, EGV string
+	SANDBOX, XUID, GUID, MVAR, CGUI, EGV, TITLE string
 	BLOBS_SVC, STATS_SVC, GAMECMS_SVC, ECONOMY_SVC, SETTINGS_SVC, AUTHORING_SVC, DISCOVERY_SVC string
 	XML, BOND, JSON string
 	ALL, STOP string
@@ -35,6 +35,7 @@ var MatchParameters = Patterns{
 	MVAR:    ":map-mvar",
 	CGUI:    ":cgui-bin",
 	SANDBOX: ":sandbox",
+	TITLE:   ":title",
 
 	BLOBS_SVC:      ":blobs-svc",
 	STATS_SVC:      ":stats-svc",
@@ -59,6 +60,7 @@ var MatchPatterns = Patterns{
 	MVAR:    `([a-z0-9-_]+\.mvar)`,
 	CGUI:    `([a-z]+_CustomGamesUIMarkup_[a-z]+\.bin)`,
 	SANDBOX: `(retail|test|beta|beta-test)`,
+	TITLE:   `(hi|hipnk|higrn|hired|hipur|hiorg|hiblu|hi343)`,
 
 	BLOBS_SVC:      "https://blobs-infiniteugc.svc.halowaypoint.com",
 	STATS_SVC:      "https://halostats.svc.halowaypoint.com",
@@ -82,7 +84,7 @@ func Create(value string) *regexp.Regexp {
 
 func Match(re *regexp.Regexp, value string) []string {
 	var matches []string
-	
+
 	submatches := re.FindAllStringSubmatch(value, -1)
 	if len(submatches) > 0 {
 		for _, match := range submatches[0][1:] {
@@ -103,6 +105,7 @@ func ReplaceParameters(value string) string {
 		MatchParameters.MVAR, MatchPatterns.MVAR,
 		MatchParameters.CGUI, MatchPatterns.CGUI,
 		MatchParameters.EGV, MatchPatterns.EGV,
+		MatchParameters.TITLE, MatchPatterns.TITLE,
 
 		MatchParameters.BLOBS_SVC, MatchPatterns.BLOBS_SVC,
 		MatchParameters.STATS_SVC, MatchPatterns.STATS_SVC,
@@ -136,7 +139,7 @@ func ReplaceMatches(target string, matches []string) string {
 		if err != nil || index < 1 || index > len(matches) {
 			return ""
 		}
-		
+
 		return matches[index-1]
 	})
 }

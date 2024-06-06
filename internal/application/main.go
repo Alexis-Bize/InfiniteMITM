@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"infinite-mitm/configs"
 	errors "infinite-mitm/pkg/modules/errors"
-	Utilities "infinite-mitm/pkg/modules/utilities"
 	"io"
 	"os"
 	"os/exec"
@@ -32,7 +31,7 @@ import (
 	"github.com/charmbracelet/huh/spinner"
 )
 
-var certName = configs.GetConfig().Certificate.Name
+var certName = configs.GetConfig().Proxy.Certificate.Name
 
 func CreateRootAssets(f *embed.FS) error {
 	spinner.New().Title("Checking local assets integrity...").Run()
@@ -141,16 +140,10 @@ func checkForRootCertificateOnWindows() (bool, error) {
 }
 
 func checkForRootCertificateOnDarwin() (bool, error) {
-	home, err := Utilities.GetHomeDirectory()
-	if err != nil {
-		return false, err
-	}
-
-	keychainPath := home + "/Library/Keychains/login.keychain-db"
-	cmd := exec.Command("security", "find-certificate", "-a", "-c", certName, keychainPath)
+	cmd := exec.Command("security", "find-certificate", "-a", "-c", certName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return false, errors.Create(errors.ErrRootCertificateException, err.Error())
 	}

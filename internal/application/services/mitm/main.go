@@ -21,19 +21,17 @@ import (
 	"fmt"
 	"infinite-mitm/configs"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	context "infinite-mitm/internal/application/services/mitm/helpers/context"
 	errors "infinite-mitm/pkg/modules/errors"
 	"net/http"
 
 	"github.com/elazarl/goproxy"
+	"github.com/google/uuid"
 )
 
-type CustomLogger struct{}
+type emptyLogger struct{}
 
-func (l CustomLogger) Printf(format string, v ...interface{}) {
-	// Ignore goproxy logs
-}
-
-var certName = configs.GetConfig().Certificate.Name
+var certName = configs.GetConfig().Proxy.Certificate.Name
 
 func InitializeServer(f *embed.FS) (*http.Server, error) {
 	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName))
@@ -59,16 +57,28 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
-	proxy.Logger = CustomLogger{}
+	proxy.Logger = emptyLogger{}
 
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
+	proxy.OnRequest()
 
 	clientRequestHandlers, clientResponseHandlers, err := ReadClientMITMConfig()
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	proxy.OnRequest().DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request,*http.Response) {
+		customCtx := context.ContextHandler(ctx)
+		customCtx.SetUserData("uuid", uuid.New().String())
+		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+		return r, nil
+	})
+
 	for _, handler := range clientRequestHandlers {
+		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
+	}
+
+	for _, handler := range internalRequestHandlers() {
 		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
 	}
 
@@ -76,13 +86,13 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
 
-	for _, handler := range internalRequestHandlers() {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
-
 	for _, handler := range internalResponseHandlers() {
 		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
 	}
+
+	proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		return resp
+	})
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
@@ -101,7 +111,7 @@ func internalRequestHandlers() []handlers.RequestHandlerStruct {
 	handlersList := []handlers.RequestHandlerStruct{
 	}
 
-	handlersList = append(handlersList, handlers.HandleHaloWaypointRequests())
+	handlersList = append(handlersList, handlers.HandleRootRequests())
 	return handlersList
 }
 
@@ -109,6 +119,10 @@ func internalResponseHandlers() []handlers.ResponseHandlerStruct {
 	handlersList := []handlers.ResponseHandlerStruct{
 	}
 
-	handlersList = append(handlersList, handlers.HandleHaloWaypointResponses())
+	handlersList = append(handlersList, handlers.HandleRootResponses())
 	return handlersList
+}
+
+func (l emptyLogger) Printf(format string, v ...interface{}) {
+	// Ignore goproxy logs
 }

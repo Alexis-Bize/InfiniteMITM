@@ -27,7 +27,7 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkTable "infinite-mitm/internal/application/services/ui/network"
+	networkTable "infinite-mitm/internal/application/services/ui/test"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
 	utilities "infinite-mitm/pkg/modules/utilities"
@@ -57,10 +57,10 @@ func Start(f *embed.FS) error {
 	if prompt.Start.Is(option) {
 		var wg sync.WaitGroup
 		wg.Add(4)
-		
+
 		go func() {
 			defer wg.Done()
-			createNetworkView()
+			networkTable.Create()
 		}()
 
 		go func() {
@@ -93,7 +93,7 @@ func enableProxy() {
 		errors.Create(errors.ErrFatalException, err.Error()).Log()
 		return
 	}
-	
+
 	kill.Register(func() {
 		proxy.ToggleProxy("off")
 	})
@@ -122,13 +122,6 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 		if err != http.ErrServerClosed {
 			errors.Create(errors.ErrFatalException, err.Error()).Log()
 		}
-	}
-}
-
-func createNetworkView() {
-	program := networkTable.Create()
-	if _, err := program.Run(); err != nil {
-		errors.Create(errors.ErrFatalException, err.Error()).Log()
 	}
 }
 

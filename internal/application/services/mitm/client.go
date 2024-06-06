@@ -20,6 +20,7 @@ import (
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	context "infinite-mitm/internal/application/services/mitm/helpers/context"
 	pattern "infinite-mitm/internal/application/services/mitm/helpers/pattern"
 	domains "infinite-mitm/internal/modules/domains"
 	errors "infinite-mitm/pkg/modules/errors"
@@ -41,12 +42,12 @@ import (
 
 type YAMLRequestNode struct {
 	Body    string `yaml:"body,omitempty"`
-	Headers interface {} `yaml:"headers,omitempty"`
+	Headers interface{} `yaml:"headers,omitempty"`
 }
 
 type YAMLResponseNode struct {
 	Body       string `yaml:"body,omitempty"`
-	Headers    interface {} `yaml:"headers,omitempty"`
+	Headers    interface{} `yaml:"headers,omitempty"`
 	StatusCode int `yaml:"code,omitempty"`
 }
 
@@ -69,6 +70,13 @@ type YAML struct {
 	Lobby     []YAMLNode `yaml:"lobby,omitempty"`
 }
 
+type ContentDomainPair struct {
+	content []YAMLNode
+	domain  domains.Domain
+}
+
+const YAMLFilename = "mitm.yaml"
+
 func WatchClientMITMConfig() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -77,7 +85,7 @@ func WatchClientMITMConfig() {
 	}
 	defer watcher.Close()
 
-	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, "mitm.yaml")
+	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	err = watcher.Add(filePath)
 	if err != nil {
 		errors.Create(errors.ErrWatcherException, err.Error()).Log()
@@ -106,7 +114,7 @@ func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.Respons
 	var clientRequestHandlers []handlers.RequestHandlerStruct
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 
-	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, "mitm.yaml")
+	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return clientRequestHandlers, clientResponseHandlers, errors.Create(errors.ErrFatalException, err.Error())
@@ -118,115 +126,44 @@ func ReadClientMITMConfig() ([]handlers.RequestHandlerStruct, []handlers.Respons
 		return clientRequestHandlers, clientResponseHandlers, errors.Create(errors.ErrFatalException, err.Error())
 	}
 
-	for _, v := range content.Root {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Root, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Root, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
+	contentDomainPairs := []ContentDomainPair{
+		{content: content.Root, domain: domains.HaloWaypointSVCDomains.Root},
+		{content: content.Blobs, domain: domains.HaloWaypointSVCDomains.Blobs},
+		{content: content.Authoring, domain: domains.HaloWaypointSVCDomains.Authoring},
+		{content: content.Discovery, domain: domains.HaloWaypointSVCDomains.Discovery},
+		{content: content.HaloStats, domain: domains.HaloWaypointSVCDomains.HaloStats},
+		{content: content.Settings, domain: domains.HaloWaypointSVCDomains.Settings},
+		{content: content.GameCMS, domain: domains.HaloWaypointSVCDomains.GameCMS},
+		{content: content.Economy, domain: domains.HaloWaypointSVCDomains.Economy},
+		{content: content.Lobby, domain: domains.HaloWaypointSVCDomains.Lobby},
 	}
 
-	for _, v := range content.Blobs {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Blobs, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Blobs, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.Authoring {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Authoring, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Authoring, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.Discovery {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Discovery, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Discovery, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.HaloStats {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.HaloStats, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.HaloStats, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.Settings {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Settings, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Settings, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.GameCMS {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.GameCMS, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.GameCMS, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.Economy {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Economy, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Economy, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
-	}
-
-	for _, v := range content.Lobby {
-		if v.Request != (YAMLRequestNode{}) {
-			handler := createRequestHandler(domains.HaloWaypointSVCDomains.Lobby, v)
-			clientRequestHandlers = append(clientRequestHandlers, handler)
-		}
-
-		if v.Response != (YAMLResponseNode{}) {
-			handler := createResponseHandler(domains.HaloWaypointSVCDomains.Lobby, v)
-			clientResponseHandlers = append(clientResponseHandlers, handler)
-		}
+	for _, pair := range contentDomainPairs {
+		reqHandlers, respHandlers := processNodes(pair.content, pair.domain)
+		clientRequestHandlers = append(clientRequestHandlers, reqHandlers...)
+		clientResponseHandlers = append(clientResponseHandlers, respHandlers...)
 	}
 
 	return clientRequestHandlers, clientResponseHandlers, nil
+}
+
+func processNodes(contentList []YAMLNode, domain domains.Domain) ([]handlers.RequestHandlerStruct, []handlers.ResponseHandlerStruct) {
+	var clientRequestHandlers []handlers.RequestHandlerStruct
+	var clientResponseHandlers []handlers.ResponseHandlerStruct
+
+	for _, v := range contentList {
+		if v.Request != (YAMLRequestNode{}) {
+			handler := createRequestHandler(domain, v)
+			clientRequestHandlers = append(clientRequestHandlers, handler)
+		}
+
+		if v.Response != (YAMLResponseNode{}) {
+			handler := createResponseHandler(domain, v)
+			clientResponseHandlers = append(clientResponseHandlers, handler)
+		}
+	}
+
+	return clientRequestHandlers, clientResponseHandlers
 }
 
 func createPattern(domain domains.Domain, path string) *regexp.Regexp {
@@ -263,10 +200,18 @@ func createRequestHandler(domain domains.Domain, node YAMLNode) handlers.Request
 				}
 			}
 
-			
 			kv := utilities.InterfaceToMap(node.Request.Headers)
 			for key, value := range kv {
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
+			}
+
+			customCtx := context.ContextHandler(ctx)
+			proxified := customCtx.GetUserData("proxified")
+
+			if proxified != nil {
+				pr := proxified.(map[string]bool)
+				pr["req"] = true
+				customCtx.SetUserData("proxified", pr)
 			}
 
 			return req, nil
@@ -289,7 +234,7 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 			if body != "" {
 				buffer, err := readBodyFile(body, resp.Header, matches)
 				if err != nil {
-					errors.Create(errors.ErrIOReadException, "invalid response body, skipping").Log()
+					errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s", body)).Log()
 				} else if buffer != nil {
 					bufferLength := len(buffer)
 					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
@@ -297,7 +242,7 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 					resp.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 				}
 			}
-			
+
 			kv := utilities.InterfaceToMap(node.Response.Headers)
 			for key, value := range kv {
 				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
@@ -306,6 +251,15 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 			if node.Response.StatusCode != 0 {
 				resp.Status = http.StatusText(node.Response.StatusCode)
 				resp.StatusCode = node.Response.StatusCode
+			}
+
+			customCtx := context.ContextHandler(ctx)
+			proxified := customCtx.GetUserData("proxified")
+
+			if proxified != nil {
+				pr := proxified.(map[string]bool)
+				pr["resp"] = true
+				customCtx.SetUserData("proxified", pr)
 			}
 
 			return resp
@@ -324,7 +278,6 @@ func readBodyFile(body string, headers http.Header, matches []string) ([]byte, e
 	} else if isSystemPath(body) {
 		buffer, err = os.ReadFile(body)
 	}
-
 
 	return buffer, err
 }

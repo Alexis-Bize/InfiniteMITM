@@ -26,11 +26,11 @@ import (
 //go:embed cert/*
 var f embed.FS
 
-const debug = true
+const debug = false
 
 func main() {
 	if debug {
-		MITMApplicationUIServiceTestTable.Start()
+		MITMApplicationUIServiceTestTable.Create()
 		return
 	}
 

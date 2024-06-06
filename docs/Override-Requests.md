@@ -78,6 +78,12 @@ root: # Must be one of "blobs | authoring | discovery | settings | root" (root =
 -   `:cgui-bin`
     -   Matches all `CustomGamesUIMarkup` files.
     -   Example: `Slayer_CustomGamesUIMarkup_en.bin`
+-   `:sandbox`
+    -   Matches all known sandboxes.
+    -   Sandboxes: `retail` | `test` | `beta` | `beta-test`
+-   `:title`
+    -   Matches all known titles.
+    -   Titles: `hi` | `hipnk` | `higrn` | `hired` | `hipur` | `hiorg` | `hiblu` | `hi343`
 -   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`

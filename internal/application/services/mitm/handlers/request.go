@@ -15,11 +15,17 @@
 package MITMApplicationMITMServiceHandlers
 
 import (
+	"bytes"
+	events "infinite-mitm/internal/application/events"
+	context "infinite-mitm/internal/application/services/mitm/helpers/context"
 	domains "infinite-mitm/internal/modules/domains"
+	request "infinite-mitm/pkg/modules/utilities/request"
+	"io"
 	"net/http"
 	"regexp"
 
 	"github.com/elazarl/goproxy"
+	"github.com/gookit/event"
 )
 
 type RequestHandlerStruct struct {
@@ -32,12 +38,36 @@ type ResponseHandlerStruct struct {
 	Fn    func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
 }
 
-func HandleHaloWaypointRequests() RequestHandlerStruct {
+func HandleRootRequests() RequestHandlerStruct {
 	target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root))
 
 	return RequestHandlerStruct{
 		Match: goproxy.UrlMatches(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			customCtx := context.ContextHandler(ctx)
+			uuid := customCtx.GetUserData("uuid").(string)
+			if uuid == "" {
+				return req, nil
+			}
+
+			var bodyBytes []byte
+			if req.Body != nil {
+				bodyBytes, _ = io.ReadAll(req.Body)
+			}
+
+			req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			proxified := customCtx.GetUserData("proxified").(map[string]bool)
+			details := events.StringifyRequestEventData(events.ProxyRequestEventData{
+				ID: uuid,
+				URL: req.URL.String(),
+				Method: req.Method,
+				Headers: request.HeadersToMap(req.Header),
+				Body: bodyBytes,
+				Proxified: proxified["req"],
+			})
+
+			event.MustFire(events.ProxyRequestSent, event.M{"details": details})
 			return req, nil
 		},
 	}

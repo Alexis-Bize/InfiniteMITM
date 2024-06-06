@@ -15,16 +15,13 @@
 package MITMApplicationUIServiceTestTable
 
 import (
-	"encoding/json"
 	"fmt"
 	events "infinite-mitm/internal/application/events"
 	errors "infinite-mitm/pkg/modules/errors"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -43,10 +40,11 @@ type RequestData struct {
 }
 
 type ResponseData struct {
-	ID     string `json:"id"`
-	Status int `json:"status"`
-	Headers map[string]string `json:"headers"`
-	Body []byte `json:"body"`
+	ID        string `json:"id"`
+	Status    int `json:"status"`
+	Headers   map[string]string `json:"headers"`
+	Body      []byte `json:"body"`
+	Proxified bool `json:"proxified"`
 }
 
 type NetworkData struct {
@@ -90,8 +88,11 @@ func (m *model) Init() tea.Cmd {
 	return nil
 }
 
-func Start() {
+func Create() {
 	initEvents()
+
+	return
+
 	p := createProgram()
 	if _, err := p.Run(); err != nil {
 		errors.Create(errors.ErrFatalException, err.Error())
@@ -147,72 +148,18 @@ func createNetworkView() table.Model {
 
 func initEvents() {
 	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-		if modelInstance == nil || program == nil {
-			return nil
-		}
-
-		s := fmt.Sprintf("%s", e.Data()["data"])
-		var data RequestData
-		json.Unmarshal([]byte(s), &data)
-
-		networkData[data.ID] = NetworkData{
-			Request: data,
-		}
-
-		position := len(modelInstance.table.Rows()) + 1
-
-		proxified := ""
-		if data.Proxified {
-			proxified = "✔"
-		}
-
-		parse, _ := url.Parse(data.URL)
-		program.Send(tableRowPush(table.Row{
-			proxified,
-			fmt.Sprintf("%d", position),
-			data.Method,
-			"...",
-			parse.Host,
-			parse.Path,
-			"...",
-		}))
-
+		fmt.Print("\n")
+		fmt.Println(e.Data())
+		fmt.Print("\n")
 		return nil
 	}), event.Normal)
 
-	go func () {
-		i := 0
-
-		for {
-			i++
-
-			data1 := RequestData{
-				ID: fmt.Sprint("%d", i),
-				Method: "GET",
-				URL: "https://example.com/foo",
-				Headers: map[string]string{
-					"Accept": "application/json",
-				},
-				Body: nil,
-				Proxified: true,
-			}
-
-			mashal, _ := json.Marshal(data1)
-			event.MustFire(events.ProxyRequestSent, event.M{"data": mashal})
-			time.Sleep(5 * time.Second)
-
-			data2 := ResponseData{
-				Status: 200,
-				Headers: map[string]string{
-					"Content-Type": "application/json",
-				},
-				Body: nil,
-			}
-
-			mashal, _ = json.Marshal(data2)
-			event.MustFire(events.ProxyResponseReceived, event.M{"data": mashal})
-		}
-	}()
+	event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+		fmt.Print("\n")
+		fmt.Println(e.Data())
+		fmt.Print("\n")
+		return nil
+	}), event.Normal)
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

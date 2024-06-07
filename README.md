@@ -7,7 +7,7 @@
     <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="Apache 2.0"></a>
 </p>
 
-**InfiniteMITM** is an interactive MITM (man-in-the-middle) CLI for **Halo Infinite** which enables you to intercept and modify the game's requests and responses on the fly.
+**InfiniteMITM** is an interactive MITM (Man-In-The-Middle) CLI for **Halo Infinite** which enables you to intercept and modify the game's requests and responses on the fly.
 
 **Note:** While this interactive CLI is primarily designed to work with Halo Infinite, other Halo titles may also be supported.
 

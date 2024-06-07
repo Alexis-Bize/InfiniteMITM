@@ -17,7 +17,7 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	"log"
+	MITMApplicationUIServiceNetworkUI "infinite-mitm/internal/application/services/ui/network"
 )
 
 //go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
@@ -25,9 +25,16 @@ import (
 //go:embed cert/*
 var f embed.FS
 
+const __DEBUG__ = false
+
 func main() {
-	err := MITM.Start(&f)
-	if err != nil {
-		log.Println(err)
+	if __DEBUG__ {
+		MITMApplicationUIServiceNetworkUI.Create()
+		return
+	}
+
+	mitmErr := MITM.Start(&f)
+	if mitmErr != nil {
+		mitmErr.Log()
 	}
 }

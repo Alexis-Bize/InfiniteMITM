@@ -7,7 +7,7 @@ import (
 )
 
 type MITMError struct {
-    Message string
+	Message string
 	Err     error
 }
 
@@ -25,7 +25,8 @@ var (
 	// JSON
 	ErrJSONUnmarshalException = errors.New("json unmarshal exception")
 	// Application
-	ErrAppException = errors.New("app exception")
+	ErrAppException = errors.New("application exception")
+	ErrInvalidYAMLException = errors.New("invalid yaml exception")
 	ErrFatalException = errors.New("fatal exception")
 	ErrWatcherException = errors.New("watcher exception")
 	ErrIOReadException = errors.New("io read exception")
@@ -37,12 +38,23 @@ func (e *MITMError) Error() string {
 }
 
 func (e *MITMError) Log() {
-	message := fmt.Sprintf("[ERROR] message: %s; original error: %v", e.Message, e.Err)
-	log.Println(message)
+	Log(e)
+}
+
+func (e *MITMError) String() string {
+	return String(e)
 }
 
 func (e *MITMError) Unwrap() error {
 	return e.Err
+}
+
+func String(e *MITMError) string {
+	return fmt.Sprintf("[error] message: %s; original error: %v", e.Message, e.Err)
+}
+
+func Log(e *MITMError) {
+	log.Println(String(e))
 }
 
 func Create(err error, message string) *MITMError {

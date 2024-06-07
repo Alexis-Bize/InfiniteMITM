@@ -20,6 +20,7 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
+	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/helpers/context"
 	errors "infinite-mitm/pkg/modules/errors"
@@ -27,13 +28,14 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
+	"github.com/gookit/event"
 )
 
 type emptyLogger struct{}
 
 var certName = configs.GetConfig().Proxy.Certificate.Name
 
-func InitializeServer(f *embed.FS) (*http.Server, error) {
+func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName))
 	if err != nil {
 		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
@@ -62,10 +64,19 @@ func InitializeServer(f *embed.FS) (*http.Server, error) {
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 	proxy.OnRequest()
 
-	clientRequestHandlers, clientResponseHandlers, err := ReadClientMITMConfig()
-	if err != nil {
-		fmt.Println(err)
+	content, mitmErr := ReadClientMITMConfig()
+	if mitmErr != nil {
+		return nil, mitmErr
 	}
+
+	clientRequestHandlers, clientResponseHandlers := CreateClientMITMHandlers(content)
+	clientRequestHandlersCount := len(clientRequestHandlers)
+	clientResponseHandlersCount := len(clientResponseHandlers)
+	totalClientHandlersCount := clientRequestHandlersCount + clientResponseHandlersCount
+
+	event.MustFire(events.ProxyStatusMessage, event.M{
+		"details": fmt.Sprintf("[%s] found %d override(s); %d request(s) and %d response(s)", YAMLFilename, totalClientHandlersCount, clientRequestHandlersCount, clientResponseHandlersCount),
+	})
 
 	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request,*http.Response) {
 		customCtx := context.ContextHandler(ctx)

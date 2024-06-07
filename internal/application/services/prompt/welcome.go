@@ -17,11 +17,12 @@ package MITMApplicationPromptService
 import (
 	"fmt"
 	"infinite-mitm/configs"
+	errors "infinite-mitm/pkg/modules/errors"
 
 	"github.com/charmbracelet/huh"
 )
 
-func Welcome(rootCertificateInstalled bool) (string, error) {
+func Welcome(rootCertificateInstalled bool) (string, *errors.MITMError) {
 	var selected string
 	var options []huh.Option[string]
 
@@ -43,5 +44,9 @@ func Welcome(rootCertificateInstalled bool) (string, error) {
 		Value(&selected).
 		Run()
 
-	return selected, err
+	if err != nil {
+		return "", errors.Create(errors.ErrAppException, err.Error())
+	}
+
+	return selected, nil
 }

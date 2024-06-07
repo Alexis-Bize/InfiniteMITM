@@ -19,6 +19,7 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
+	mitm "infinite-mitm/internal/application/services/mitm"
 	errors "infinite-mitm/pkg/modules/errors"
 	"io"
 	"os"
@@ -33,7 +34,7 @@ import (
 
 var certName = configs.GetConfig().Proxy.Certificate.Name
 
-func CreateRootAssets(f *embed.FS) error {
+func CreateRootAssets(f *embed.FS) *errors.MITMError {
 	spinner.New().Title("Checking local assets integrity...").Run()
 
 	projectDir := configs.GetConfig().Extra.ProjectDir
@@ -96,28 +97,33 @@ func CreateRootAssets(f *embed.FS) error {
 		}
 	}
 
-	return nil
+	_, mitmErr := mitm.ReadClientMITMConfig()
+	return mitmErr
 }
 
-func CheckForRootCertificate() (bool, error) {
+func CheckForRootCertificate() (bool, *errors.MITMError) {
 	spinner.New().Title("Checking root certificate...").Run()
 
 	var installed bool
-	var err error
+	var mitmErr *errors.MITMError
 
 	switch runtime.GOOS {
 	case "windows":
-		installed, err = checkForRootCertificateOnWindows()
+		installed, mitmErr = checkForRootCertificateOnWindows()
 	case "darwin":
-		installed, err = checkForRootCertificateOnDarwin()
+		installed, mitmErr = checkForRootCertificateOnDarwin()
 	default:
-		return false, nil
+		installed, mitmErr = false, nil
 	}
 
-	return installed, err
+	if mitmErr != nil {
+		return false, mitmErr
+	}
+
+	return installed, nil
 }
 
-func checkForRootCertificateOnWindows() (bool, error) {
+func checkForRootCertificateOnWindows() (bool, *errors.MITMError) {
 	cmd := exec.Command("certutil", "-verifystore", "-user", "root", certName)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -139,7 +145,7 @@ func checkForRootCertificateOnWindows() (bool, error) {
 	return true, nil
 }
 
-func checkForRootCertificateOnDarwin() (bool, error) {
+func checkForRootCertificateOnDarwin() (bool, *errors.MITMError) {
 	cmd := exec.Command("security", "find-certificate", "-a", "-c", certName)
 	var out bytes.Buffer
 	cmd.Stdout = &out

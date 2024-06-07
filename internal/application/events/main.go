@@ -20,6 +20,7 @@ const (
 	RestartServer = "server.restart"
 	ProxyRequestSent = "request.sent"
 	ProxyResponseReceived = "response.received"
+	ProxyStatusMessage = "proxy.status_message"
 )
 
 type ProxyRequestEventData struct {

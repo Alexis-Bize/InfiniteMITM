@@ -15,11 +15,11 @@
 package MITM
 
 import (
-	"context"
 	"embed"
 	"net/http"
+	"os"
 	"sync"
-	"time"
+	"syscall"
 
 	configs "infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
@@ -27,7 +27,7 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkTable "infinite-mitm/internal/application/services/ui/network"
+	networkUI "infinite-mitm/internal/application/services/ui/network"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
 	utilities "infinite-mitm/pkg/modules/utilities"
@@ -35,23 +35,24 @@ import (
 	"github.com/gookit/event"
 )
 
+var mu sync.Mutex
 var server *http.Server
 
-func Start(f *embed.FS) error {
+func Start(f *embed.FS) *errors.MITMError {
 	kill.Init()
 
-	if err := application.CreateRootAssets(f); err != nil {
-		return err
+	if mitmErr := application.CreateRootAssets(f); mitmErr != nil {
+		return mitmErr
 	}
 
-	installed, err := application.CheckForRootCertificate()
-	if err != nil {
-		return err
+	installed, mitmErr := application.CheckForRootCertificate()
+	if mitmErr != nil {
+		return mitmErr
 	}
 
-	option, err := prompt.Welcome(installed)
-	if err != nil {
-		return err
+	option, mitmErr := prompt.Welcome(installed)
+	if mitmErr != nil {
+		return mitmErr
 	}
 
 	if prompt.Start.Is(option) {
@@ -60,17 +61,18 @@ func Start(f *embed.FS) error {
 
 		go func() {
 			defer wg.Done()
-			networkTable.Create()
-		}()
+			mitmErr := networkUI.Create()
+			if mitmErr != nil {
+				errors.Log(mitmErr)
+			}
 
-		go func() {
-			defer wg.Done()
-			startServer(f, false, &wg)
+			killProcess()
 		}()
 
 		go func() {
 			defer wg.Done()
 			enableProxy()
+			startServer(f, false, &wg)
 		}()
 
 		go func() {
@@ -85,6 +87,7 @@ func Start(f *embed.FS) error {
 		proxy.ToggleProxy("off")
 	}
 
+	killProcess()
 	return nil
 }
 
@@ -100,9 +103,9 @@ func enableProxy() {
 }
 
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
-	s, err := mitm.InitializeServer(f)
-	if err != nil {
-		errors.Create(errors.ErrFatalException, err.Error()).Log()
+	s, mitmErr := mitm.CreateServer(f)
+	if mitmErr != nil {
+		mitmErr.Log()
 		return
 	}
 
@@ -110,12 +113,9 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if !isRestart {
 		event.On(events.RestartServer, event.ListenerFunc(func(e event.Event) error {
-			return restartServer(f, wg)
+			restartServer(f, wg)
+			return nil
 		}))
-	}
-
-	if isRestart {
-		wg.Done()
 	}
 
 	if err := server.ListenAndServe(); err != nil {
@@ -125,18 +125,28 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 	}
 }
 
-func restartServer(f *embed.FS, wg *sync.WaitGroup) error {
-	if server != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-		defer cancel()
-		if err := server.Shutdown(ctx); err != nil {
-			return err
-		}
+func shutdownServer() {
+	if err := server.Close(); err != nil {
+		errors.Create(errors.ErrFatalException, err.Error()).Log()
 	}
+}
 
-	time.Sleep(1 * time.Second)
+func restartServer(f *embed.FS, wg *sync.WaitGroup) {
+	mu.Lock()
+	defer mu.Unlock()
 
+	shutdownServer()
 	wg.Add(1)
-	go startServer(f, true, wg)
-	return nil
+
+	go func() {
+		defer wg.Done()
+		startServer(f, true, wg)
+	}()
+}
+
+func killProcess() {
+	process, err := os.FindProcess(os.Getpid())
+	if err == nil {
+		process.Signal(syscall.SIGINT)
+	}
 }

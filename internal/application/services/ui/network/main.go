@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkTable
+package MITMApplicationUIServiceNetworkUI
 
 import (
 	"fmt"
 	events "infinite-mitm/internal/application/events"
 	errors "infinite-mitm/pkg/modules/errors"
 	"net/http"
-	"net/url"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -28,44 +28,22 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gookit/event"
-	"golang.org/x/term"
 )
 
-type NetworkData struct {
-	Requests  []*events.ProxyRequestEventData
-	Responses []*events.ProxyResponseEventData
-}
-
 type model struct {
-	table             table.Model
-	details           string
-	selectedID        int
-	currentView       string
+	networkTable table.Model
+	statusBar    StatusBarModel
+	detailsView  string
+	selectedID   int
+	currentView  string
 }
 
-type tableRowPush struct {
-	ID           string
-	WithProxy    string
-	Method       string
-	Host         string
-	PathAndQuery string
-}
+const DefaultWidth = 200
 
-type tableRowUpdate struct {
-	ID          string
-	WithProxy   string
-	Status      int
-	ContentType string
-}
-
-var modelInstance *model
-var program *tea.Program
-var networkData = &NetworkData{
-	Requests:  make([]*events.ProxyRequestEventData, 0),
-	Responses: make([]*events.ProxyResponseEventData, 0),
-}
-
-var rowPositionIDMap = make(map[string]string)
+var (
+	modelInstance *model
+	program *tea.Program
+)
 
 var (
 	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
@@ -82,143 +60,90 @@ var (
 	colorWarn = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#bf9543", Dark: "#f5be73"}).Render
 	colorError =lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#bf4343", Dark: "#f57373"}).Render
 
-	docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
+	docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2).MaxWidth(GetTerminalWidth())
 )
 
-func (m *model) Init() tea.Cmd {
-	return nil
-}
-
-func Create() {
-	p := createProgram()
-	initEvents()
-	if _, err := p.Run(); err != nil {
-		errors.Create(errors.ErrFatalException, err.Error())
-		os.Exit(1)
-	}
-}
-
-func createProgram() *tea.Program {
-	modelInstance = &model{
-		createNetworkView(),
-		"",
-		-1,
-		"network",
-	}
-
+func Create() *errors.MITMError {
+	modelInstance = &model{createNetworkTable(), createStatusBar(), "", -1, "network"}
 	program = tea.NewProgram(modelInstance, tea.WithAltScreen())
-	return program
-}
 
-func createNetworkView() table.Model {
-	columns := []table.Column{
-		{Title: "✎", Width: 2},
-		{Title: "#", Width: 5},
-		{Title: "Method", Width: 10},
-		{Title: "Result", Width: 10},
-		{Title: "Host", Width: 40},
-		{Title: "Path", Width: 50},
-		{Title: "Content Type", Width: 40},
+	initEvents()
+	if _, err := program.Run(); err != nil {
+		return errors.Create(errors.ErrFatalException, err.Error())
 	}
 
-	rows := []table.Row{}
-
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-	)
-
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(s)
-
-	return t
+	return nil
 }
 
 func initEvents() {
 	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+		if modelInstance == nil {
+			return nil
+		}
+
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseRequestEventData(str)
-
 		networkData.Requests = append(networkData.Requests, &data)
-		pushRow(data)
+		pushNetworkTableRow(data)
 
 		return nil
 	}), event.Normal)
 
 	event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+		if modelInstance == nil {
+			return nil
+		}
+
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseResponseEventData(str)
-
 		networkData.Responses = append(networkData.Responses, &data)
-		updateRow(data)
+		updateNetworkTableRow(data)
+
+		return nil
+	}), event.Normal)
+
+	event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
+		if modelInstance == nil {
+			return nil
+		}
+
+		str := fmt.Sprintf("%s", e.Data()["details"])
+		updateStatusBarInfo(str)
 
 		return nil
 	}), event.Normal)
 }
 
-func pushRow(data events.ProxyRequestEventData) {
-	parse, _ := url.Parse(data.URL)
-	withProxy := ""
-	if data.Proxified {
-		withProxy = "✔"
+func GetTerminalWidth() int {
+	cmd := exec.Command("tput", "cols")
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return DefaultWidth
 	}
 
-	path := parse.Path
-	if path == "" {
-		path = "/"
+	width, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return DefaultWidth
 	}
 
-	query := parse.RawQuery
-	if query != "" {
-		path += "?" + query
-	}
-
-	program.Send(tableRowPush(tableRowPush{
-		ID: data.ID,
-		WithProxy: withProxy,
-		Method: data.Method,
-		Host: parse.Hostname(),
-		PathAndQuery: path,
-	}))
+	return width
 }
 
-func updateRow(data events.ProxyResponseEventData) {
-	withProxy := ""
-	if data.Proxified {
-		withProxy = "✔"
-	}
-
-	program.Send(tableRowUpdate(tableRowUpdate{
-		ID: data.ID,
-		WithProxy: withProxy,
-		Status: data.Status,
-		ContentType: data.Headers["Content-Type"],
-	}))
-}
-
-func getNextRowPosition() int {
-	rows := modelInstance.table.Rows()
-	position := len(rows) + 1
-	return position
+func (m *model) Init() tea.Cmd {
+	return nil
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tableRowPush:
+	case StatusBarInfoUpdate:
+		m.statusBar.info.content = msg.Message
+	case TableRowPush:
 		position := fmt.Sprintf("%d", getNextRowPosition())
 		rowPositionIDMap[msg.ID] = position
-		m.table.SetRows(append(m.table.Rows(), table.Row([]string{
+		m.networkTable.SetRows(append(m.networkTable.Rows(), table.Row([]string{
 			msg.WithProxy,
 			position,
 			msg.Method,
@@ -227,13 +152,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			msg.PathAndQuery,
 			"...",
 		})))
-	case tableRowUpdate:
+	case TableRowUpdate:
 		position := rowPositionIDMap[msg.ID]
 		if position != "" {
 			s, _ := strconv.Atoi(position)
 			contentType := msg.ContentType
 
-			target := m.table.Rows()[s - 1]
+			target := m.networkTable.Rows()[s - 1]
 			target[0] = msg.WithProxy
 			target[3] = fmt.Sprintf("%d", msg.Status)
 
@@ -246,12 +171,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
-			}
 		case "q":
 			if m.currentView == "details" {
 				m.currentView = "network"
@@ -259,17 +178,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			if len(m.table.SelectedRow()) != 0 {
+			if len(m.networkTable.SelectedRow()) != 0 {
 				doc := strings.Builder{}
 
-				method := lipgloss.NewStyle().Bold(true).Render(m.table.SelectedRow()[2])
-				statusCode, _ := strconv.Atoi(m.table.SelectedRow()[3])
+				method := lipgloss.NewStyle().Bold(true).Render(m.networkTable.SelectedRow()[2])
+				statusCode, _ := strconv.Atoi(m.networkTable.SelectedRow()[3])
 				statusText := http.StatusText(statusCode)
 				if statusText == "" {
 					statusText = "ongoing"
 				}
 
-				requestUrl := fmt.Sprintf("https://%s%s", m.table.SelectedRow()[4], m.table.SelectedRow()[5])
+				requestUrl := fmt.Sprintf("https://%s%s", m.networkTable.SelectedRow()[4], m.networkTable.SelectedRow()[5])
 
 				if statusCode >= 200 && statusCode < 300 {
 					requestUrl = colorSuccess(requestUrl)
@@ -284,7 +203,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				doc.WriteString(method + " [" + statusText + "] " + requestUrl)
 
-				m.details = lipgloss.JoinHorizontal(
+				m.detailsView = lipgloss.JoinHorizontal(
 					lipgloss.Top,
 					docStyle.Render(doc.String()),
 				)
@@ -294,34 +213,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.table, cmd = m.table.Update(msg)
+	m.networkTable, cmd = m.networkTable.Update(msg)
 	return m, cmd
 }
 
 func (m *model) View() string {
-	physicalWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
-
-	if physicalWidth > 0 {
-		docStyle = docStyle.MaxWidth(physicalWidth)
-	}
-
-	tableStyle := lipgloss.
-		NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240"))
-
-	elem := ""
+	statusBarView := lipgloss.NewStyle().PaddingTop(1).Render(m.statusBar.View())
+	activeView := ""
 
 	if m.currentView == "details" {
-		elem = m.details
+		activeView = lipgloss.NewStyle().Render(m.detailsView)
 	} else {
-		elem = tableStyle.Render(m.table.View())
+		activeView = lipgloss.NewStyle().Render(m.networkTable.View())
 	}
 
-	render := lipgloss.JoinVertical(
+	return docStyle.Render(lipgloss.JoinVertical(
 		lipgloss.Top,
-		elem,
-	)
-
-	return docStyle.Render(render)
+		activeView,
+		statusBarView,
+	))
 }

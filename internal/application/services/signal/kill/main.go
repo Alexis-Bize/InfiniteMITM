@@ -29,7 +29,9 @@ var (
 )
 
 func Init() {
-	initOnce.Do(handleSignals)
+	initOnce.Do(func() {
+		handleSignals()
+	})
 }
 
 func Register(cleanupFn func()) {

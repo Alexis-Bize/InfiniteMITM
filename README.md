@@ -31,7 +31,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 
 ## But Why Not Fiddler?
 
-While **Fiddler** remains a leading MITM (Man-In-The-Middle) proxy tool, it can quickly become overwhelming due to the numerous requests from various processes, making it quite complex to analyze requests and responses. **InfiniteMITM**, however, focuses solely on requests related to **Halo services**, providing an easy way to view and **rewrite everything on the fly** through a simple configuration file (`mitm.yaml`).
+While **Fiddler** remains a leading MITM (Man-In-The-Middle) proxy tool, it can quickly become overwhelming due to the numerous traffic from various processes, making it quite complex to analyze requests and responses. **InfiniteMITM**, however, focuses solely on the traffic related to **Halo services**, providing an easy way to view and **rewrite everything on the fly** through a simple configuration file (`mitm.yaml`).
 
 ## Building From Source
 

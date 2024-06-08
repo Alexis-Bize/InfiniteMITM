@@ -17,7 +17,7 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	MITMApplicationUIServiceNetworkUI "infinite-mitm/internal/application/services/ui/network"
+	MITMApplicationUIServiceNetworkDetailsView "infinite-mitm/internal/application/services/ui/network/views/details"
 	errors "infinite-mitm/pkg/modules/errors"
 )
 
@@ -26,11 +26,11 @@ import (
 //go:embed cert/*
 var f embed.FS
 
-const __DEBUG__ = false
+const __DEBUG__ = true
 
 func main() {
 	if __DEBUG__ {
-		MITMApplicationUIServiceNetworkUI.Create()
+		MITMApplicationUIServiceNetworkDetailsView.DEBUG__RunTrafficDetails()
 		return
 	}
 

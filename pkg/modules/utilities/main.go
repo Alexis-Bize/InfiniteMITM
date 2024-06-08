@@ -22,6 +22,8 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/huh/spinner"
 )
@@ -69,6 +71,57 @@ func GetHomeDirectory() (string, *errors.MITMError) {
 	}
 
 	return home, nil
+}
+
+func GetTerminalWidth() int {
+	const defaultValue = 100
+
+	cmd := exec.Command("tput", "cols")
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return defaultValue
+	}
+
+	width, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return defaultValue
+	}
+
+	return width
+}
+
+func IsEmpty(v interface{}) bool {
+	value := reflect.ValueOf(v)
+	return value.Kind() == reflect.Struct && value.IsZero()
+}
+
+func WrapText(text string, width int) string {
+	if width <= 0 {
+		return text
+	}
+
+	var sb strings.Builder
+	for len(text) > width {
+		cut := width
+		for cut > 0 && text[cut] != ' ' && text[cut] != '\n' {
+			cut--
+		}
+
+		if cut == 0 {
+			cut = width
+		}
+
+		sb.WriteString(text[:cut] + "\n")
+		text = text[cut:]
+		for len(text) > 0 && (text[0] == ' ' || text[0] == '\n') {
+			text = text[1:]
+		}
+	}
+
+	sb.WriteString(text)
+	return sb.String()
 }
 
 func OpenBrowser(url string) {

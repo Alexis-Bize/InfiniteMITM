@@ -27,6 +27,10 @@ import (
 )
 
 func Contains(slice []string, item string) bool {
+	defer func() {
+		_ = recover();
+	}()
+
 	for _, v := range slice {
 		if v == item {
 			return true
@@ -37,6 +41,10 @@ func Contains(slice []string, item string) bool {
 }
 
 func InterfaceToMap(i interface{}) map[string]string {
+	defer func() {
+		_ = recover();
+	}()
+
 	v := reflect.ValueOf(i)
 	output := make(map[string]string)
 
@@ -63,7 +71,6 @@ func GetHomeDirectory() (string, *errors.MITMError) {
 	return home, nil
 }
 
-// https://gist.github.com/hyg/9c4afcd91fe24316cbf0
 func OpenBrowser(url string) {
 	spinner.New().Title("Attempting to open your browser...").Run()
 

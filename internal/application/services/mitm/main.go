@@ -36,6 +36,9 @@ type emptyLogger struct{}
 var certName = configs.GetConfig().Proxy.Certificate.Name
 
 func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
+	var clientRequestHandlers []handlers.RequestHandlerStruct
+	var clientResponseHandlers []handlers.ResponseHandlerStruct
+
 	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName))
 	if err != nil {
 		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
@@ -66,17 +69,19 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 
 	content, mitmErr := ReadClientMITMConfig()
 	if mitmErr != nil {
-		return nil, mitmErr
+		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String(),})
 	}
 
-	clientRequestHandlers, clientResponseHandlers := CreateClientMITMHandlers(content)
-	clientRequestHandlersCount := len(clientRequestHandlers)
-	clientResponseHandlersCount := len(clientResponseHandlers)
-	totalClientHandlersCount := clientRequestHandlersCount + clientResponseHandlersCount
+	if mitmErr == nil {
+		clientRequestHandlers, clientResponseHandlers = CreateClientMITMHandlers(content)
+		clientRequestHandlersCount := len(clientRequestHandlers)
+		clientResponseHandlersCount := len(clientResponseHandlers)
+		totalClientHandlersCount := clientRequestHandlersCount + clientResponseHandlersCount
 
-	event.MustFire(events.ProxyStatusMessage, event.M{
-		"details": fmt.Sprintf("[%s] found %d override(s); %d request(s) and %d response(s)", YAMLFilename, totalClientHandlersCount, clientRequestHandlersCount, clientResponseHandlersCount),
-	})
+		event.MustFire(events.ProxyStatusMessage, event.M{
+			"details": fmt.Sprintf("[%s] found %d override(s); %d request(s) and %d response(s)", YAMLFilename, totalClientHandlersCount, clientRequestHandlersCount, clientResponseHandlersCount),
+		})
+	}
 
 	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request,*http.Response) {
 		customCtx := context.ContextHandler(ctx)

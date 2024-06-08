@@ -50,7 +50,7 @@ func Start(f *embed.FS) *errors.MITMError {
 		return mitmErr
 	}
 
-	option, mitmErr := prompt.Welcome(installed)
+	option, mitmErr := prompt.WelcomePrompt(installed)
 	if mitmErr != nil {
 		return mitmErr
 	}

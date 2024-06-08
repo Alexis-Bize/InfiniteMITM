@@ -18,6 +18,7 @@ import (
 	"embed"
 	MITM "infinite-mitm/internal"
 	MITMApplicationUIServiceNetworkUI "infinite-mitm/internal/application/services/ui/network"
+	errors "infinite-mitm/pkg/modules/errors"
 )
 
 //go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
@@ -35,6 +36,8 @@ func main() {
 
 	mitmErr := MITM.Start(&f)
 	if mitmErr != nil {
-		mitmErr.Log()
+		if mitmErr.Unwrap() != errors.ErrPromptException {
+			mitmErr.Log()
+		}
 	}
 }

@@ -15,7 +15,6 @@
 package MITMApplicationKillSignalService
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -45,8 +44,7 @@ func handleSignals() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		sig := <-c
-		log.Printf("Received signal: %v", sig)
+		<-c
 		executeCleanup()
 		os.Exit(0)
 	}()

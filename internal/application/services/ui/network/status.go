@@ -16,6 +16,7 @@ package MITMApplicationUIServiceNetworkUI
 
 import (
 	"infinite-mitm/configs"
+	ui "infinite-mitm/internal/application/services/ui"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -43,7 +44,7 @@ var (
 	statusStyle = lipgloss.NewStyle().
 		Inherit(statusBarStyle).
 		Foreground(lipgloss.Color("#FFFDF5")).
-		Background(lipgloss.Color("#FF5F87")).
+		Background(lipgloss.Color(ui.SunsetOrange.Light)).
 		Padding(0, 1).
 		MarginRight(1)
 

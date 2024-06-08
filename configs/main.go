@@ -16,6 +16,7 @@ package configs
 
 import (
 	"embed"
+	errors "infinite-mitm/pkg/modules/errors"
 	utilities "infinite-mitm/pkg/modules/utilities"
 	"log"
 	"path"
@@ -26,7 +27,7 @@ import (
 
 //go:embed application.yaml
 var f embed.FS
-var config Config
+var config *Config
 
 type Config struct {
 	Name        string `yaml:"name"`
@@ -47,25 +48,27 @@ type Config struct {
 }
 
 func GetConfig() *Config {
-	if config != (Config{}) {
-		return &config
+	if config != nil {
+		return config
 	}
 
 	yamlFile, err := f.ReadFile("application.yaml")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return nil
 	}
 
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		log.Fatalln(err)
+	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return nil
 	}
 
-	home, err := utilities.GetHomeDirectory()
-	if err != nil {
-		log.Fatalln(err)
+	home, mitmErr := utilities.GetHomeDirectory()
+	if mitmErr != nil {
+		log.Fatalln(mitmErr)
+		return nil
 	}
 
 	config.Extra.ProjectDir = path.Join(home, strings.Replace(config.Name, " ", "", -1))
-	return &config
+	return config
 }

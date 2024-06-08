@@ -22,6 +22,7 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	errors "infinite-mitm/pkg/modules/errors"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,28 +45,33 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
-		return errors.Create(errors.ErrFatalException, err.Error())
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return nil
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
 		templateFile, err := f.Open(sourceMITMTemplate)
 		if err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+			return nil
 		}
 		defer templateFile.Close()
 
 		destinationFile, err := os.Create(outputMITMTemplate)
 		if err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+			return nil
 		}
 		defer destinationFile.Close()
 
 		if _, err = io.Copy(destinationFile, templateFile); err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+			return nil
 		}
 
 		if err = destinationFile.Sync(); err != nil {
-			return errors.Create(errors.ErrFatalException, err.Error())
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+			return nil
 		}
 	}
 
@@ -135,7 +141,7 @@ func checkForRootCertificateOnWindows() (bool, *errors.MITMError) {
 			}
 		}
 
-		return false, errors.Create(errors.ErrRootCertificateException, err.Error())
+		return false, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
 	if strings.TrimSpace(out.String()) == "" {
@@ -151,7 +157,7 @@ func checkForRootCertificateOnDarwin() (bool, *errors.MITMError) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		return false, errors.Create(errors.ErrRootCertificateException, err.Error())
+		return false, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
 	if strings.TrimSpace(out.String()) == "" {

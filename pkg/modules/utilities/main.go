@@ -17,6 +17,7 @@ package Utilities
 import (
 	"fmt"
 	errors "infinite-mitm/pkg/modules/errors"
+	"log"
 	"os"
 	"os/exec"
 	"reflect"
@@ -52,10 +53,11 @@ func InterfaceToMap(i interface{}) map[string]string {
 	return output
 }
 
-func GetHomeDirectory() (string, error) {
+func GetHomeDirectory() (string, *errors.MITMError) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", errors.Create(errors.ErrFatalException, err.Error())
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return "", nil
 	}
 
 	return home, nil

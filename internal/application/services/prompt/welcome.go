@@ -45,7 +45,7 @@ func Welcome(rootCertificateInstalled bool) (string, *errors.MITMError) {
 		Run()
 
 	if err != nil {
-		return "", errors.Create(errors.ErrAppException, err.Error())
+		return "", errors.Create(errors.ErrPromptException, err.Error())
 	}
 
 	return selected, nil

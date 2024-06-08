@@ -18,6 +18,7 @@ import (
 	"fmt"
 	events "infinite-mitm/internal/application/events"
 	errors "infinite-mitm/pkg/modules/errors"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -69,7 +70,8 @@ func Create() *errors.MITMError {
 
 	initEvents()
 	if _, err := program.Run(); err != nil {
-		return errors.Create(errors.ErrFatalException, err.Error())
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return nil
 	}
 
 	return nil

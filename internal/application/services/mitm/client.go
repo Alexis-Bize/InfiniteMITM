@@ -27,6 +27,7 @@ import (
 	utilities "infinite-mitm/pkg/modules/utilities"
 	request "infinite-mitm/pkg/modules/utilities/request"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -124,13 +125,14 @@ func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
-		return YAML{}, errors.Create(errors.ErrFatalException, err.Error())
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return YAML{}, nil
 	}
 
 	var content YAML
 	err = yaml.Unmarshal(yamlFile, &content)
 	if err != nil {
-		return YAML{}, errors.Create(errors.ErrFatalException, err.Error())
+		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
 	return content, nil
@@ -205,7 +207,7 @@ func createRequestHandler(domain domains.Domain, node YAMLNode) handlers.Request
 				buffer, err := readBodyFile(body, req.Header, matches)
 
 				if err != nil {
-					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s", body))
+					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
 					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
@@ -249,7 +251,7 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 			if body != "" {
 				buffer, err := readBodyFile(body, resp.Header, matches)
 				if err != nil {
-					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s", body))
+					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
 					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
@@ -285,14 +287,20 @@ func createResponseHandler(domain domains.Domain, node YAMLNode) handlers.Respon
 
 func readBodyFile(body string, headers http.Header, matches []string) ([]byte, error) {
 	body = pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
-
+	var mitmErr *errors.MITMError
 	var buffer []byte
 	var err error
 
 	if isURL(body) {
-		buffer, err = request.Send("GET", body, nil, request.HeadersToMap(headers))
+		buffer, mitmErr = request.Send("GET", body, nil, request.HeadersToMap(headers))
+		if mitmErr != nil {
+			return nil, fmt.Errorf(mitmErr.Message)
+		}
 	} else if isSystemPath(body) {
 		buffer, err = os.ReadFile(body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return buffer, err

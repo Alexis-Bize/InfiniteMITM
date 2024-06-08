@@ -13,33 +13,41 @@ import (
 var proxyHost = configs.GetConfig().Proxy.Host
 var proxyPort = strconv.Itoa(configs.GetConfig().Proxy.Port)
 
-func ToggleProxy(command string) error {
-	err := toggle(command)
-	if err != nil {
-		return errors.Create(errors.ErrProxy, err.Error())
+func ToggleProxy(command string) *errors.MITMError {
+	if command != "on" && command != "off" {
+		return errors.Create(errors.ErrProxyToggleInvalidCommand, "invalid command")
+	}
+
+	if command == "on" {
+		if err := enableProxy(); err != nil {
+			return errors.Create(errors.ErrProxy, err.Error())
+		}
+	} else {
+		if err := disableProxy(); err != nil {
+			return errors.Create(errors.ErrProxy, err.Error())
+		}
 	}
 
 	return nil
 }
 
-func toggle(command string) error {
-	if command != "on" && command != "off" {
-		return errors.ErrProxyToggleInvalidCommand
-	}
-
+func enableProxy() error {
 	switch runtime.GOOS {
 	case "windows":
-		if command == "on" {
-			return enableProxyWindows()
-		} else {
-			return disableProxyWindows()
-		}
+		return enableProxyWindows()
 	case "darwin":
-		if command == "on" {
-			return enableProxyDarwin()
-		} else {
-			return disableProxyDarwin()
-		}
+		return enableProxyDarwin()
+	}
+
+	return nil
+}
+
+func disableProxy() error {
+	switch runtime.GOOS {
+	case "windows":
+		return disableProxyWindows()
+	case "darwin":
+		return disableProxyDarwin()
 	}
 
 	return nil
@@ -48,10 +56,6 @@ func toggle(command string) error {
 func enableProxyWindows() error {
 	proxyArg := fmt.Sprintf("proxy-server=\"http=%s:%s;https=%s:%s\"", proxyHost, proxyPort, proxyHost, proxyPort)
 	return exec.Command("netsh", "winhttp", "set", "proxy", proxyArg, "\"<-loopback>\"").Run()
-}
-
-func disableProxyWindows() error {
-	return exec.Command("netsh", "winhttp", "reset", "proxy").Run()
 }
 
 func enableProxyDarwin() error {
@@ -72,6 +76,10 @@ func enableProxyDarwin() error {
 	return nil
 }
 
+func disableProxyWindows() error {
+	return exec.Command("netsh", "winhttp", "reset", "proxy").Run()
+}
+
 func disableProxyDarwin() error {
 	commands := []string{
 		"networksetup -setwebproxystate Wi-Fi off",
@@ -86,13 +94,4 @@ func disableProxyDarwin() error {
 	}
 
 	return nil
-}
-
-func disableProxy() {
-	switch runtime.GOOS {
-	case "windows":
-		disableProxyWindows()
-	case "darwin":
-		disableProxyDarwin()
-	}
 }

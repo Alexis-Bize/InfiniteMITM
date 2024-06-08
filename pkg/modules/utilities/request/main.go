@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-func Send(method, url string, payload []byte, headers map[string]string) ([]byte, error) {
+func Send(method, url string, payload []byte, headers map[string]string) ([]byte, *errors.MITMError) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
@@ -41,7 +41,7 @@ func Send(method, url string, payload []byte, headers map[string]string) ([]byte
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, errors.Create(errors.ErrHTTPError, fmt.Sprintf("status code: %d", resp.StatusCode))
+		return nil, errors.Create(errors.ErrHTTPCodeError, fmt.Sprintf("status code: %d", resp.StatusCode))
 	}
 
 	body, err := io.ReadAll(resp.Body)

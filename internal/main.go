@@ -84,7 +84,9 @@ func Start(f *embed.FS) *errors.MITMError {
 	} else if prompt.InstallRootCertificate.Is(option) {
 		utilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/docs/Install-Root-Certificate.md")
 	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
-		proxy.ToggleProxy("off")
+		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
+			mitmErr.Log()
+		}
 	}
 
 	killProcess()
@@ -92,14 +94,15 @@ func Start(f *embed.FS) *errors.MITMError {
 }
 
 func enableProxy() {
-	if err := proxy.ToggleProxy("on"); err != nil {
-		errors.Create(errors.ErrFatalException, err.Error()).Log()
-		return
-	}
-
 	kill.Register(func() {
-		proxy.ToggleProxy("off")
+		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
+			mitmErr.Log()
+		}
 	})
+
+	if mitmErr := proxy.ToggleProxy("on"); mitmErr != nil {
+		mitmErr.Log()
+	}
 }
 
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
@@ -120,14 +123,14 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			errors.Create(errors.ErrFatalException, err.Error()).Log()
+			errors.Create(errors.ErrProxyServerException, err.Error()).Log()
 		}
 	}
 }
 
 func shutdownServer() {
 	if err := server.Close(); err != nil {
-		errors.Create(errors.ErrFatalException, err.Error()).Log()
+		errors.Create(errors.ErrProxyServerException, err.Error()).Log()
 	}
 }
 

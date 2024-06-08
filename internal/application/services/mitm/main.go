@@ -38,22 +38,22 @@ var certName = configs.GetConfig().Proxy.Certificate.Name
 func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName))
 	if err != nil {
-		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
 	CAKey, err := f.ReadFile(fmt.Sprintf("cert/%s.key", certName))
 	if err != nil {
-		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
 	cert, err := tls.X509KeyPair(CACert, CAKey)
 	if err != nil {
-		return nil, errors.Create(errors.ErrRootCertificateException, err.Error())
+		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
 	CACertPool := x509.NewCertPool()
 	if !CACertPool.AppendCertsFromPEM(CACert) {
-		return nil, errors.Create(errors.ErrRootCertificateException, "failed to add root CA certificate to pool")
+		return nil, errors.Create(errors.ErrProxyCertificateException, "failed to add root CA certificate to pool")
 	}
 
 	goproxy.GoproxyCa = cert

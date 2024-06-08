@@ -14,23 +14,21 @@ type MITMError struct {
 var (
 	// Proxy
 	ErrProxy = errors.New("proxy error")
+	ErrProxyServerException = errors.New("proxy server exception")
 	ErrProxyToggleInvalidCommand = errors.New("invalid proxy toggle command")
+	ErrProxyCertificateException = errors.New("proxy certificate exception")
 	// HTTP
-	ErrHTTPForbidden = errors.New("forbidden")
-	ErrHTTPUnauthorized = errors.New("unauthorized")
-	ErrHTTPNotFound = errors.New("not found")
-	ErrHTTPError = errors.New("http error")
+	ErrHTTPCodeError = errors.New("http code error")
 	ErrHTTPRequestException = errors.New("http request exception")
 	ErrHTTPBodyReadException = errors.New("http body read exception")
-	// JSON
-	ErrJSONUnmarshalException = errors.New("json unmarshal exception")
+	// JSON/YAML
+	ErrJSONReadException = errors.New("json read exception")
+	ErrYAMLReadException = errors.New("yaml read exception")
 	// Application
-	ErrAppException = errors.New("application exception")
-	ErrInvalidYAMLException = errors.New("invalid yaml exception")
 	ErrFatalException = errors.New("fatal exception")
+	ErrPromptException = errors.New("prompt exception")
 	ErrWatcherException = errors.New("watcher exception")
 	ErrIOReadException = errors.New("io read exception")
-	ErrRootCertificateException = errors.New("root certificate exception")
 )
 
 func (e *MITMError) Error() string {

@@ -24,6 +24,8 @@ var (
 	SunsetOrange = lipgloss.AdaptiveColor{Light: "#FF5F5D", Dark: "#FF6F6D"}
 	SunsetYellow = lipgloss.AdaptiveColor{Light: "#FFDD57", Dark: "#FFE066"}
 	TwilightBlue = lipgloss.AdaptiveColor{Light: "#1C2541", Dark: "#3A506B"}
+	Light = lipgloss.AdaptiveColor{Light: "#f5f5f5", Dark: "#dedede"}
+	Dark = lipgloss.AdaptiveColor{Light: "#020202", Dark: "#212121"}
 	Grey = lipgloss.AdaptiveColor{Light: "#3c3c3c", Dark: "#6c6c6c"}
 
 	Success      = lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}

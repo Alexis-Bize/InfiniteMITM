@@ -100,6 +100,7 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 			os.MkdirAll(filepath.Join(resourcesPath, "bin", "flags"), 0755)
 			os.MkdirAll(filepath.Join(resourcesPath, "tools", "InfiniteVariantToolCLI"), 0755)
 			os.MkdirAll(filepath.Join(resourcesPath, "json"), 0755)
+			os.MkdirAll(filepath.Join(resourcesPath, "traffic"), 0755)
 		}
 	}
 

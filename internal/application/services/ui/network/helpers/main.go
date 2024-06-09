@@ -22,7 +22,13 @@ import (
 )
 
 func FormatHexView(data []byte, width int) string {
-	bytesPerLine := (width - 10) / 4
+	bytesPerLine := (width - 10)
+	if bytesPerLine <= 10 {
+		bytesPerLine = 10
+	}
+
+	bytesPerLine = width / 4
+
 	var output string
 
 	for i := 0; i < len(data); i += bytesPerLine {

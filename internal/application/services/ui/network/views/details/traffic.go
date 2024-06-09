@@ -15,8 +15,9 @@
 package MITMApplicationUIServiceNetworkDetailsView
 
 import (
+	"encoding/hex"
+	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
 	ui "infinite-mitm/internal/application/services/ui"
 	helpers "infinite-mitm/internal/application/services/ui/network/helpers"
 	errors "infinite-mitm/pkg/modules/errors"
@@ -28,48 +29,58 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ncruces/zenity"
 )
 
 type activeViewportType string
-type updateRequest events.ProxyRequestEventData
-type updateResponse events.ProxyResponseEventData
+type TrafficData struct {
+	ID        string
+	URL       string
+	Status    int
+	Method    string
+	Headers   map[string]string
+	Body      []byte
+	Proxified  bool
+}
 
 type TrafficModel struct {
 	activeViewport  activeViewportType
 	headersViewport viewport.Model
 	bodyViewport    viewport.Model
-	req             events.ProxyRequestEventData
-	resp            events.ProxyResponseEventData
-
-	maxWidth int
+	data            TrafficData
+	width int
 }
 
 const (
-	HeadersViewport activeViewportType = "headers"
-	BodyViewport    activeViewportType = "body"
+	HeadersViewportKey activeViewportType = "headers"
+	BodyViewportKey    activeViewportType = "body"
+)
+
+var (
+	CopyCommand = "ctrl+p"
+	SaveCommand = "ctrl+o"
 )
 
 var TrafficDetailsModel *TrafficModel
 var requestDetailsProgram *tea.Program
 
-func NewTrafficDetailsModel(height int) *TrafficModel {
-	maxWidth := utilities.GetTerminalWidth() - 30
-	hvp := viewport.New(maxWidth, height)
-	bvp := viewport.New(maxWidth, height)
+func NewTrafficDetailsModel(width int, height int) *TrafficModel {
+	hvp := viewport.New(width, height)
+	bvp := viewport.New(width, height)
 
 	hvp.SetContent("...")
 	bvp.SetContent("...")
 
 	m := &TrafficModel{
-		activeViewport: "headers",
+		activeViewport:  HeadersViewportKey,
 		headersViewport: hvp,
 		bodyViewport:    bvp,
-		req:             events.ProxyRequestEventData{},
-		resp:            events.ProxyResponseEventData{},
-		maxWidth:        maxWidth,
+		data:            TrafficData{},
+		width:           width,
 	}
 
 	TrafficDetailsModel = m
@@ -77,12 +88,15 @@ func NewTrafficDetailsModel(height int) *TrafficModel {
 }
 
 func DEBUG__RunTrafficDetails() {
-	requestDetailsProgram = tea.NewProgram(NewTrafficDetailsModel(25), tea.WithAltScreen())
+	requestDetailsProgram = tea.NewProgram(
+		NewTrafficDetailsModel(utilities.GetTerminalWidth() - 20, 10),
+		tea.WithAltScreen(),
+	)
 
 	go func() {
 		time.Sleep(1 * time.Second)
 		data, _ := os.ReadFile(path.Join(configs.GetConfig().Extra.ProjectDir, "traffic", "test.jpg"))
-		requestDetailsProgram.Send(updateRequest{
+		requestDetailsProgram.Send(TrafficData{
 			ID: "1234",
 			URL: "https://example.com/foo",
 			Method: "GET",
@@ -91,6 +105,7 @@ func DEBUG__RunTrafficDetails() {
 				"Accept-Encoding":     "gzip, deflate, br",
 				"Accept-Language":     "en-US,en;q=0.5",
 				"Cache-Control":       "no-cache",
+				"Content-Type":        "image/jpeg",
 				"Connection":          "keep-alive",
 				"Host":                "example.com",
 				"Referer":             "https://www.example.com/",
@@ -107,68 +122,126 @@ func DEBUG__RunTrafficDetails() {
 	}
 }
 
-func (m *TrafficModel) SetRequest(req events.ProxyRequestEventData) {
-	m.req = req
-	m.SetContent(m.req.Headers, m.req.Body)
+func (m *TrafficModel) Init() tea.Cmd {
+	return nil
 }
 
-func (m *TrafficModel) SetResponse(resp events.ProxyResponseEventData) {
-	m.resp = resp
-	m.SetContent(m.resp.Headers, m.resp.Body)
+func (m *TrafficModel) SetTrafficData(data TrafficData) {
+	m.data = data
+	m.SetContent(m.data.Headers, m.data.Body)
 }
 
 func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
 	var headersString []string
 	for key, value := range headers {
-		headersString = append(headersString, lipgloss.NewStyle().Bold(true).Render(key) + ": " + utilities.WrapText(value, m.maxWidth))
+		headersString = append(
+			headersString,
+			lipgloss.NewStyle().Bold(true).Render(key) + ": " + utilities.WrapText(value, m.width),
+		)
 	}
 
 	sort.Strings(headersString)
 	m.headersViewport.SetContent(strings.Join(headersString, "\n"))
-	m.bodyViewport.SetContent(helpers.FormatHexView(body, m.maxWidth))
+	m.bodyViewport.SetContent(helpers.FormatHexView(body, m.width))
 }
 
-func (m *TrafficModel) Init() tea.Cmd {
-	return nil
+func (m *TrafficModel) CopyToClipboard() {
+	if utilities.IsEmpty(m.data) {
+		return
+	}
+
+	if m.activeViewport == HeadersViewportKey {
+		var headersString []string
+		for key, value := range m.data.Headers {
+			headersString = append(
+				headersString,
+				key + ": " + utilities.WrapText(value, m.width),
+			)
+		}
+
+		sort.Strings(headersString)
+		clipboard.WriteAll(strings.Join(headersString, "\n"))
+	} else if m.activeViewport == BodyViewportKey {
+		clipboard.WriteAll(hex.EncodeToString(m.data.Body))
+	}
+}
+
+func (m *TrafficModel) SaveToDrive() {
+	if utilities.IsEmpty(m.data) {
+		return
+	}
+
+	if m.activeViewport == BodyViewportKey {
+		var extension string
+
+		switch m.data.Headers["Content-Type"] {
+		case "application/json":
+				extension = "json"
+		case "image/jpg":
+		case "image/jpeg":
+				extension = "jpg"
+		case "image/png":
+				extension = "png"
+		default:
+				extension = "bin"
+		}
+
+		filename := fmt.Sprintf("body.%s", extension)
+		filePath, err := zenity.SelectFileSave(
+			zenity.Title("Save File"),
+			zenity.Filename(path.Join(configs.GetConfig().Extra.ProjectDir, "traffic", filename)),
+			zenity.ConfirmOverwrite(),
+		)
+
+		if err == nil {
+			os.WriteFile(filePath, m.data.Body, 0644)
+		}
+	}
 }
 
 func (m *TrafficModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.maxWidth = utilities.GetTerminalWidth() - 20
-		if m.activeViewport == "headers" && !utilities.IsEmpty(m.req) {
-			m.headersViewport.Width = m.maxWidth
-			m.SetContent(m.req.Headers, m.req.Body)
-		} else if m.activeViewport == "body" && !utilities.IsEmpty(m.resp) {
-			m.bodyViewport.Width = m.maxWidth
-			m.SetContent(m.resp.Headers, m.resp.Body)
+		utilities.ClearTerminal()
+
+		m.width = msg.Width
+		m.headersViewport.Width = m.width
+		m.bodyViewport.Width = m.width
+
+		if !utilities.IsEmpty(m.data) {
+			m.SetContent(m.data.Headers, m.data.Body)
 		}
-	case updateRequest:
-		m.SetRequest(events.ProxyRequestEventData(msg))
-	case updateResponse:
-		m.SetResponse(events.ProxyResponseEventData(msg))
+	case TrafficData:
+		m.SetTrafficData(TrafficData(msg))
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
+		case "q", "ctlr+c":
 			return m, tea.Quit
+		case CopyCommand:
+			m.CopyToClipboard()
+		case SaveCommand:
+			m.SaveToDrive()
 		case "tab":
-			if m.activeViewport == "headers" {
-				m.activeViewport = "body"
+			if m.activeViewport == HeadersViewportKey {
+				m.activeViewport = BodyViewportKey
 			} else {
-				m.activeViewport = "headers"
+				m.activeViewport = HeadersViewportKey
 			}
 		}
-
 	}
 
-	var cmds []tea.Cmd
+	cmds := []tea.Cmd{cmd}
 
-	m.headersViewport, cmd = m.headersViewport.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.activeViewport == HeadersViewportKey {
+		m.headersViewport, cmd = m.headersViewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
-	m.bodyViewport, cmd = m.bodyViewport.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.activeViewport == BodyViewportKey {
+		m.bodyViewport, cmd = m.bodyViewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -176,28 +249,47 @@ func (m *TrafficModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TrafficModel) View() string {
 	var content string
 	var sectionTitle string
+	var viewportActions string
 
+	viewportActionsList := []string{"Loading..."}
 	sectionHint := "(use mouse whell or arrows keys to scroll)"
 
-	if m.activeViewport == HeadersViewport {
+	if m.activeViewport == HeadersViewportKey {
 		content = m.headersViewport.View()
 		sectionTitle = "Headers"
-	} else if m.activeViewport == BodyViewport {
+	} else if m.activeViewport == BodyViewportKey {
 		content = m.bodyViewport.View()
 		sectionTitle = "Body"
+	}
+
+	if !utilities.IsEmpty(m.data) {
+		viewportActionsList = []string{}
+
+		if m.activeViewport == HeadersViewportKey {
+			viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy headers to clipboard (%s)", CopyCommand))
+		} else if m.activeViewport == BodyViewportKey {
+			viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy hex to clipboard (%s)", CopyCommand))
+			viewportActionsList = append(viewportActionsList, fmt.Sprintf("Save (%s)", SaveCommand))
+		}
 	}
 
 	contentStyle := lipgloss.NewStyle().Padding(1, 2)
 	sectionStyle := lipgloss.NewStyle().Bold(true)
 	sectionHintStyle := lipgloss.NewStyle().Bold(false).Foreground(ui.Grey)
+	viewportActionsStyle := lipgloss.NewStyle().Padding(0, 1).MarginRight(1).Foreground(ui.Light).Background(ui.Grey)
 
 	if content == "" {
 		content = "..."
 	}
 
-	return lipgloss.NewStyle().Render(lipgloss.JoinVertical(
+	for _, k := range viewportActionsList {
+		viewportActions += viewportActionsStyle.Render(k)
+	}
+
+	return lipgloss.NewStyle().MaxWidth(m.width).Render(lipgloss.JoinVertical(
 		lipgloss.Top,
 		sectionStyle.Render(sectionTitle + " " + sectionHintStyle.Render(sectionHint)),
 		contentStyle.Render(content),
+		viewportActions,
 	))
 }

@@ -92,6 +92,18 @@ func GetTerminalWidth() int {
 	return width
 }
 
+func ClearTerminal() {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "cls")
+	default:
+		cmd = exec.Command("clear")
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
 func IsEmpty(v interface{}) bool {
 	value := reflect.ValueOf(v)
 	return value.Kind() == reflect.Struct && value.IsZero()

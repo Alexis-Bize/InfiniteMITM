@@ -17,7 +17,7 @@ package MITMApplicationPromptService
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	ui "infinite-mitm/internal/application/services/ui"
+	theme "infinite-mitm/internal/application/services/ui/theme"
 	errors "infinite-mitm/pkg/modules/errors"
 	utilities "infinite-mitm/pkg/modules/utilities"
 
@@ -85,7 +85,7 @@ func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
 		Title(fmt.Sprintf("%s - %s", configs.GetConfig().Name, configs.GetConfig().Version)).
 		Options(options...).
 		Value(&selected).
-		WithTheme(ui.ThemeMITM()).
+		WithTheme(theme.ThemeMITM()).
 		Run()
 
 	if err != nil {
@@ -115,7 +115,7 @@ func showCredits(rootCertificateInstalled bool) (string, *errors.MITMError) {
 		Title("Credits:").
 		Options(options...).
 		Value(&selected).
-		WithTheme(ui.ThemeMITM()).
+		WithTheme(theme.ThemeMITM()).
 		Run()
 
 	switch selected {

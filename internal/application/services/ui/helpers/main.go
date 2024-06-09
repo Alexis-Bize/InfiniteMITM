@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkUIHelpers
+package MITMApplicationUIServiceUIHelpers
 
 import (
 	"encoding/hex"
 	"fmt"
+	"infinite-mitm/configs"
+	"os"
+	"path"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gabriel-vasile/mimetype"
+	"github.com/ncruces/zenity"
 )
 
 func FormatHexView(data []byte, width int) string {
@@ -61,4 +67,29 @@ func toASCII(data []byte, minByte byte, maxByte byte) string {
 	}
 
 	return string(ascii)
+}
+
+func CopyToClipboard(data string) {
+	clipboard.WriteAll(data)
+}
+
+func SaveToDisk(data []byte, contentType string) {
+	var extension string
+
+	ext := mimetype.Lookup(contentType)
+	extension = ext.String()
+	if extension == "" {
+		extension = "bin"
+	}
+
+	filename := fmt.Sprintf("body.%s", extension)
+	filePath, err := zenity.SelectFileSave(
+		zenity.Title("Save body content"),
+		zenity.Filename(path.Join(configs.GetConfig().Extra.ProjectDir, "traffic", filename)),
+		zenity.ConfirmOverwrite(),
+	)
+
+	if err == nil {
+		os.WriteFile(filePath, data, 0644)
+	}
 }

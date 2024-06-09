@@ -16,7 +16,7 @@ package MITMApplicationUIServiceNetworkUI
 
 import (
 	"infinite-mitm/configs"
-	ui "infinite-mitm/internal/application/services/ui"
+	theme "infinite-mitm/internal/application/services/ui/theme"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -44,7 +44,7 @@ var (
 	statusStyle = lipgloss.NewStyle().
 		Inherit(statusBarStyle).
 		Foreground(lipgloss.Color("#FFFDF5")).
-		Background(lipgloss.Color(ui.SunsetOrange.Light)).
+		Background(lipgloss.Color(theme.ColorSunsetOrange.Light)).
 		Padding(0, 1).
 		MarginRight(1)
 
@@ -67,14 +67,9 @@ func createStatusBar() StatusBarModel {
 }
 
 func getStatusBarWidth() int {
-	w := GetTerminalWidth() - statusBarStyle.GetHorizontalPadding()
+	// w := GetTerminalWidth() - statusBarStyle.GetHorizontalPadding()
+	w := 320
 	return w
-}
-
-func updateStatusBarInfo(message string) {
-	program.Send(StatusBarInfoUpdate(StatusBarInfoUpdate{
-		Message: message,
-	}))
 }
 
 func (m *StatusBarModel) View() string {

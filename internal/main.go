@@ -27,7 +27,7 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkUI "infinite-mitm/internal/application/services/ui/network"
+	networkView "infinite-mitm/internal/application/services/ui/views/network"
 	errors "infinite-mitm/pkg/modules/errors"
 	proxy "infinite-mitm/pkg/modules/proxy"
 	utilities "infinite-mitm/pkg/modules/utilities"
@@ -61,11 +61,7 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		go func() {
 			defer wg.Done()
-			mitmErr := networkUI.Create()
-			if mitmErr != nil {
-				errors.Log(mitmErr)
-			}
-
+			networkView.Create()
 			killProcess()
 		}()
 

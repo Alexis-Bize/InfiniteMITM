@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkUI
+package MITMApplicationUIServiceNetworkPartialTable
 
 import (
-	events "infinite-mitm/internal/application/events"
-	"net/url"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-type NetworkData struct {
-	Requests  []*events.ProxyRequestEventData
-	Responses []*events.ProxyResponseEventData
+type TableModel struct {
+	Width int
+	Table table.Model
 }
 
 type TableRowPush struct {
@@ -42,13 +44,9 @@ type TableRowUpdate struct {
 	ContentType string
 }
 
-var rowPositionIDMap = make(map[string]string)
-var networkData = &NetworkData{
-	Requests:  make([]*events.ProxyRequestEventData, 0),
-	Responses: make([]*events.ProxyResponseEventData, 0),
-}
+var RowPositionIDMap = make(map[string]string)
 
-func createNetworkTable() table.Model {
+func NewNetworkModel(width int) TableModel {
 	columns := []table.Column{
 		{Title: "✎", Width: 2},
 		{Title: "#", Width: 5},
@@ -79,51 +77,68 @@ func createNetworkTable() table.Model {
 		Bold(false)
 	t.SetStyles(s)
 
-	return t
+	m := TableModel{
+		Width: width,
+		Table: t,
+	}
+
+	return m
 }
 
-func pushNetworkTableRow(data events.ProxyRequestEventData) {
-	parse, _ := url.Parse(data.URL)
-	withProxy := ""
-	if data.Proxified {
-		withProxy = "✔"
-	}
-
-	path := parse.Path
-	if path == "" {
-		path = "/"
-	}
-
-	query := parse.RawQuery
-	if query != "" {
-		path += "?" + query
-	}
-
-	program.Send(TableRowPush(TableRowPush{
-		ID: data.ID,
-		WithProxy: withProxy,
-		Method: data.Method,
-		Host: parse.Hostname(),
-		PathAndQuery: path,
-	}))
-}
-
-func updateNetworkTableRow(data events.ProxyResponseEventData) {
-	withProxy := ""
-	if data.Proxified {
-		withProxy = "✔"
-	}
-
-	program.Send(TableRowUpdate(TableRowUpdate{
-		ID: data.ID,
-		WithProxy: withProxy,
-		Status: data.Status,
-		ContentType: data.Headers["Content-Type"],
-	}))
-}
-
-func getNextRowPosition() int {
-	rows := modelInstance.networkTable.Rows()
+func (m TableModel) GetNextRowPosition() int {
+	rows := m.Table.Rows()
 	position := len(rows) + 1
 	return position
+}
+
+func (m *TableModel) SetWidth(width int) {
+	m.Width = width
+}
+
+func (m TableModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.SetWidth(msg.Width)
+	case TableRowPush:
+		position := fmt.Sprintf("%d", m.GetNextRowPosition())
+		RowPositionIDMap[msg.ID] = position
+		m.Table.SetRows(append(m.Table.Rows(), table.Row([]string{
+			msg.WithProxy,
+			position,
+			msg.Method,
+			"...",
+			msg.Host,
+			msg.PathAndQuery,
+			"...",
+		})))
+	case TableRowUpdate:
+		position := RowPositionIDMap[msg.ID]
+		if position != "" {
+			s, _ := strconv.Atoi(position)
+			contentType := msg.ContentType
+
+			target := m.Table.Rows()[s - 1]
+			target[0] = msg.WithProxy
+			target[3] = fmt.Sprintf("%d", msg.Status)
+
+			if contentType == "" {
+				target[6] = contentType
+			} else {
+				explode := strings.Split(contentType, ";")
+				target[6] = explode[0]
+			}
+		}
+	}
+
+	m.Table, cmd = m.Table.Update(msg)
+	return m, cmd
+}
+
+func (m *TableModel) View() string {
+	return m.Table.View()
 }

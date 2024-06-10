@@ -17,7 +17,6 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
-	networkView "infinite-mitm/internal/application/services/ui/views/network"
 	errors "infinite-mitm/pkg/modules/errors"
 )
 
@@ -26,14 +25,7 @@ import (
 //go:embed cert/*
 var f embed.FS
 
-const __DEBUG__ = false
-
 func main() {
-	if __DEBUG__ {
-		networkView.Create()
-		return
-	}
-
 	mitmErr := MITM.Start(&f)
 	if mitmErr != nil {
 		if mitmErr.Unwrap() != errors.ErrPromptException {

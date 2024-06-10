@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkPartialTrafficDetails
+package MITMApplicationUIServiceNetworkTrafficDetailsComponent
 
 import (
 	"encoding/hex"
@@ -28,7 +28,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type activeViewportType string
+type activeViewType string
 type TrafficData struct {
 	Headers   map[string]string
 	Body      []byte
@@ -37,18 +37,18 @@ type TrafficData struct {
 type TrafficModel struct {
 	Width int
 
-	HeadersViewportModel viewport.Model
-	BodyViewportModel    viewport.Model
+	headersModel viewport.Model
+	bodyModel    viewport.Model
 
-	data            TrafficData
-	activeViewport  activeViewportType
-	copyPressed     bool
-	focused bool
+	data        TrafficData
+	activeView  activeViewType
+	copyPressed bool
+	focused     bool
 }
 
 const (
-	HeadersViewport activeViewportType = "headers"
-	BodyViewport    activeViewportType = "body"
+	HeadersViewKey activeViewType = "headers"
+	BodyViewKey    activeViewType = "body"
 )
 
 var (
@@ -64,9 +64,9 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 	bvp.SetContent("...")
 
 	m := TrafficModel{
-		HeadersViewportModel: hvp,
-		BodyViewportModel:    bvp,
-		activeViewport:  HeadersViewport,
+		headersModel: hvp,
+		bodyModel:    bvp,
+		activeView:  HeadersViewKey,
 		data:            TrafficData{},
 		Width:           width,
 		copyPressed:     false,
@@ -77,22 +77,35 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 
 func (m *TrafficModel) Focus() {
 	m.focused = true
-	m.activeViewport = HeadersViewport
-	m.ResetCopyPress()
+	m.SetCopyPress(false)
 }
 
 func (m *TrafficModel) Blur() {
 	m.focused = false
-	m.activeViewport = HeadersViewport
-	m.ResetCopyPress()
+	m.SetCopyPress(false)
 }
 
-func (m TrafficModel) Init() tea.Cmd {
-	return nil
+func (m *TrafficModel) SetCopyPress(pressed bool) {
+	m.copyPressed = pressed
 }
 
 func (m *TrafficModel) SetWidth(width int) {
 	m.Width = width
+}
+
+func (m *TrafficModel) SetActiveView(key activeViewType) {
+	m.activeView = key
+	m.headersModel.SetYOffset(0)
+	m.bodyModel.SetYOffset(0)
+	m.SetCopyPress(false)
+}
+
+func (m *TrafficModel) SwitchActiveView() {
+	if m.activeView == HeadersViewKey {
+		m.SetActiveView(BodyViewKey)
+	} else if m.activeView == BodyViewKey {
+		m.SetActiveView(HeadersViewKey)
+	}
 }
 
 func (m *TrafficModel) SetTrafficData(data TrafficData) {
@@ -110,18 +123,18 @@ func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
 	}
 
 	sort.Strings(headersString)
-	m.HeadersViewportModel.SetContent(strings.Join(headersString, "\n"))
-	m.BodyViewportModel.SetContent(helpers.FormatHexView(body, m.Width))
+	m.headersModel.SetContent(strings.Join(headersString, "\n"))
+	m.bodyModel.SetContent(helpers.FormatHexView(body, m.Width))
 }
 
 func (m *TrafficModel) CopyToClipboard() {
-	if utilities.IsEmpty(m.data) {
+	if len(m.data.Headers) == 0 {
 		return
 	}
 
-	m.copyPressed = true
+	m.SetCopyPress(true)
 
-	if m.activeViewport == HeadersViewport {
+	if m.activeView == HeadersViewKey {
 		var headersString []string
 		for key, value := range m.data.Headers {
 			headersString = append(headersString, key + ": " + utilities.WrapText(value, m.Width))
@@ -129,19 +142,15 @@ func (m *TrafficModel) CopyToClipboard() {
 
 		sort.Strings(headersString)
 		helpers.CopyToClipboard(strings.Join(headersString, "\n"))
-	} else if m.activeViewport == BodyViewport {
+	} else if m.activeView == BodyViewKey {
 		helpers.CopyToClipboard(hex.EncodeToString(m.data.Body))
 	}
 }
 
-func (m *TrafficModel) SaveToDisk() {
-	if !utilities.IsEmpty(m.data) && m.activeViewport == BodyViewport {
+func (m TrafficModel) SaveToDisk() {
+	if len(m.data.Body) != 0 && m.activeView == BodyViewKey {
 		helpers.SaveToDisk(m.data.Body, m.data.Headers["Content-Type"])
 	}
-}
-
-func (m *TrafficModel) ResetCopyPress() {
-	m.copyPressed = false
 }
 
 func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
@@ -149,9 +158,6 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.SetWidth(msg.Width)
-		if !utilities.IsEmpty(m.data) {
-			m.SetContent(m.data.Headers, m.data.Body)
-		}
 	case TrafficData:
 		m.SetTrafficData(TrafficData(msg))
 	case tea.KeyMsg:
@@ -162,25 +168,20 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 			case SaveCommand:
 				m.SaveToDisk()
 			case "left", "right":
-				m.ResetCopyPress()
-				if m.activeViewport == HeadersViewport {
-					m.activeViewport = BodyViewport
-				} else {
-					m.activeViewport = HeadersViewport
-				}
+				m.SwitchActiveView()
 			}
 		}
 	}
 
 	cmds := []tea.Cmd{cmd}
 
-	if m.activeViewport == HeadersViewport {
-		m.HeadersViewportModel, cmd = m.HeadersViewportModel.Update(msg)
+	if m.activeView == HeadersViewKey {
+		m.headersModel, cmd = m.headersModel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
-	if m.activeViewport == BodyViewport {
-		m.BodyViewportModel, cmd = m.BodyViewportModel.Update(msg)
+	if m.activeView == BodyViewKey {
+		m.bodyModel, cmd = m.bodyModel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -207,19 +208,19 @@ func (m TrafficModel) View() string {
 	copiedText := "✓ Copied"
 	content := "..."
 
-	if m.activeViewport == HeadersViewport {
-		content = m.HeadersViewportModel.View()
+	if m.activeView == HeadersViewKey {
+		content = m.headersModel.View()
 		sectionTitle = "Headers"
-	} else if m.activeViewport == BodyViewport {
-		content = m.BodyViewportModel.View()
+	} else if m.activeView == BodyViewKey {
+		content = m.bodyModel.View()
 		sectionTitle = "Body"
 	}
 
 	if !utilities.IsEmpty(m.data) {
 		viewportActionsList = []string{}
 
-		switch m.activeViewport {
-		case HeadersViewport:
+		switch m.activeView {
+		case HeadersViewKey:
 			if len(m.data.Headers) != 0 {
 				if m.copyPressed {
 					viewportActionsList = append(viewportActionsList, copiedText)
@@ -230,7 +231,7 @@ func (m TrafficModel) View() string {
 				content = "Empty headers"
 				contentStyle = emptyContentStyle
 			}
-		case BodyViewport:
+		case BodyViewKey:
 			if len(m.data.Body) != 0 {
 				if m.copyPressed {
 					viewportActionsList = append(viewportActionsList, copiedText)

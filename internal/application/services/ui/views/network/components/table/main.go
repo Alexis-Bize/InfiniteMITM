@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkPartialTable
+package MITMApplicationUIServiceNetworkComponentTable
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 type TableModel struct {
 	Width int
 	TableModel table.Model
-	RowPositionIDMap map[string]int
+	RowPositionIDMap *map[string]int
 }
 
 type TableRowPush struct {
@@ -78,13 +78,13 @@ func NewNetworkModel(width int) TableModel {
 	m := TableModel{
 		Width: width,
 		TableModel: t,
-		RowPositionIDMap: make(map[string]int),
+		RowPositionIDMap: &map[string]int{},
 	}
 
 	return m
 }
 
-func (m TableModel) GetNextRowPosition() int {
+func (m *TableModel) GetNextRowPosition() int {
 	rows := m.TableModel.Rows()
 	position := len(rows) + 1
 	return position
@@ -94,16 +94,12 @@ func (m *TableModel) SetWidth(width int) {
 	m.Width = width
 }
 
-func (m TableModel) Init() tea.Cmd {
-	return nil
-}
-
 func (m *TableModel) AssignRowPosition(id string, position int) {
-	m.RowPositionIDMap[id] = position
+	(*m.RowPositionIDMap)[id] = position
 }
 
 func (m *TableModel) GetRowPosition(id string) int {
-	return m.RowPositionIDMap[id]
+	return (*m.RowPositionIDMap)[id]
 }
 
 func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {

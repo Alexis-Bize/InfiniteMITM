@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/url"
 	"strconv"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -107,6 +108,7 @@ func PushNetworkTableRow(data events.ProxyRequestEventData) {
 		path = "/"
 	}
 
+	path = strings.Replace(path, " ", "%20", -1)
 	query := parse.RawQuery
 	if query != "" {
 		path += "?" + query
@@ -192,12 +194,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.networkTableModel.SetWidth(msg.Width)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
-			if m.activeElement == NetworkElementKey {
-				return m, tea.Quit
+		case "q":
+			if m.activeElement == DetailsElementKey {
+				m.SetActiveElement(NetworkElementKey)
 			}
-
-			m.SwitchActiveElement()
+		case "ctrl+c":
+			return m, tea.Quit
 		case "enter":
 			if m.activeElement != NetworkElementKey {
 				break

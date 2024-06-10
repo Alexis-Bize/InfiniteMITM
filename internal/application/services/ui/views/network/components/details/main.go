@@ -219,7 +219,7 @@ func (m DetailsModel) View() string {
 		statusText = otherColor.Render(statusText)
 	}
 
-	details := method + " " + "[" + statusText + "]" + " " + utilities.WrapText(url, m.width)
+	details := method + " " + "[" + statusText + "]" + " " + utilities.WrapText(url, m.width - 2)
 
 	if m.activeTab == RequestTabKey {
 		tabs = append(tabs, activeTabStyle.Render("Request"), tabStyle.Render("Response"))

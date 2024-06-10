@@ -84,6 +84,8 @@ func (m *TrafficModel) Focus() {
 func (m *TrafficModel) Blur() {
 	m.focused = false
 	m.SetCopyPress(false)
+	m.headersModel.SetYOffset(0)
+	m.bodyModel.SetYOffset(0)
 }
 
 func (m *TrafficModel) SetCopyPress(pressed bool) {

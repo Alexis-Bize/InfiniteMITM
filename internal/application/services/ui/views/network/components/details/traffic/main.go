@@ -35,7 +35,7 @@ type TrafficData struct {
 }
 
 type TrafficModel struct {
-	Width int
+	width int
 
 	headersModel viewport.Model
 	bodyModel    viewport.Model
@@ -66,10 +66,11 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 	m := TrafficModel{
 		headersModel: hvp,
 		bodyModel:    bvp,
-		activeView:  HeadersViewKey,
-		data:            TrafficData{},
-		Width:           width,
-		copyPressed:     false,
+		activeView:   HeadersViewKey,
+		data:         TrafficData{},
+		width:        width,
+		copyPressed:  false,
+		focused:      false,
 	}
 
 	return m
@@ -90,7 +91,9 @@ func (m *TrafficModel) SetCopyPress(pressed bool) {
 }
 
 func (m *TrafficModel) SetWidth(width int) {
-	m.Width = width
+	m.width = width
+	m.headersModel.Width = width - 20
+	m.bodyModel.Width = width - 20
 }
 
 func (m *TrafficModel) SetActiveView(key activeViewType) {
@@ -118,13 +121,13 @@ func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
 	for key, value := range headers {
 		headersString = append(
 			headersString,
-			lipgloss.NewStyle().Bold(true).Render(key) + ": " + utilities.WrapText(value, m.Width),
+			lipgloss.NewStyle().Bold(true).Render(key) + ": " + utilities.WrapText(value, m.headersModel.Width),
 		)
 	}
 
 	sort.Strings(headersString)
 	m.headersModel.SetContent(strings.Join(headersString, "\n"))
-	m.bodyModel.SetContent(helpers.FormatHexView(body, m.Width))
+	m.bodyModel.SetContent(helpers.FormatHexView(body, m.bodyModel.Width))
 }
 
 func (m *TrafficModel) CopyToClipboard() {
@@ -137,7 +140,7 @@ func (m *TrafficModel) CopyToClipboard() {
 	if m.activeView == HeadersViewKey {
 		var headersString []string
 		for key, value := range m.data.Headers {
-			headersString = append(headersString, key + ": " + utilities.WrapText(value, m.Width))
+			headersString = append(headersString, key + ":" + value)
 		}
 
 		sort.Strings(headersString)
@@ -155,9 +158,13 @@ func (m TrafficModel) SaveToDisk() {
 
 func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 	var cmd tea.Cmd
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.SetWidth(msg.Width)
+		if !utilities.IsEmpty(m.data) {
+			m.SetContent(m.data.Headers, m.data.Body)
+		}
 	case TrafficData:
 		m.SetTrafficData(TrafficData(msg))
 	case tea.KeyMsg:
@@ -167,13 +174,11 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 				m.CopyToClipboard()
 			case SaveCommand:
 				m.SaveToDisk()
-			case "left", "right":
+			case "enter":
 				m.SwitchActiveView()
 			}
 		}
 	}
-
-	cmds := []tea.Cmd{cmd}
 
 	if m.activeView == HeadersViewKey {
 		m.headersModel, cmd = m.headersModel.Update(msg)
@@ -192,57 +197,59 @@ func (m TrafficModel) View() string {
 	var sectionTitle string
 	var viewportActions string
 
-	contentStyle := lipgloss.NewStyle().Padding(1, 2)
-	emptyContentStyle := lipgloss.NewStyle().Padding(1, 2).Foreground(theme.ColorGrey).Italic(true)
-
-	sectionStyle := lipgloss.NewStyle().Bold(true)
-	sectionHintStyle := lipgloss.NewStyle().Foreground(theme.ColorGrey).MarginLeft(1)
-	sectionHint := "(use the mouse wheel or arrow keys ⭥ to scroll)"
-
-	switchHintStyle := lipgloss.NewStyle()
-	switchHint := "Use arrow keys ↔ to switch between headers and body"
-
-	viewportActionsStyle := lipgloss.NewStyle().Padding(0, 1).MarginRight(1).Foreground(theme.ColorLight).Background(theme.ColorGrey)
-	viewportActionsList := []string{"Waiting..."}
-
-	copiedText := "✓ Copied"
-	content := "..."
-
 	if m.activeView == HeadersViewKey {
-		content = m.headersModel.View()
 		sectionTitle = "Headers"
 	} else if m.activeView == BodyViewKey {
-		content = m.bodyModel.View()
 		sectionTitle = "Body"
 	}
 
-	if !utilities.IsEmpty(m.data) {
-		viewportActionsList = []string{}
+	baseContentStyle := lipgloss.NewStyle().Padding(1, 2)
+	contentStyle := baseContentStyle
+	emptyContentStyle := lipgloss.NewStyle().Padding(1, 2).Foreground(theme.ColorGrey).Italic(true)
+	viewportActionsStyle := lipgloss.NewStyle().Padding(0, 1).MarginRight(1).Foreground(theme.ColorLight).Background(theme.ColorGrey)
 
-		switch m.activeView {
-		case HeadersViewKey:
-			if len(m.data.Headers) != 0 {
-				if m.copyPressed {
-					viewportActionsList = append(viewportActionsList, copiedText)
-				} else {
-					viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy headers to clipboard (%s)", CopyCommand))
-				}
-			} else {
+	viewportActionsList := []string{"q: Go back"}
+	content := "Waiting..."
+
+	hasData := !utilities.IsEmpty(m.data)
+	if !hasData {
+		contentStyle = emptyContentStyle
+	}
+
+	if hasData {
+		copiedText := "✓ Copied"
+
+		if m.activeView == HeadersViewKey {
+			headersLength := len(m.data.Headers)
+			if headersLength == 0 {
 				content = "Empty headers"
 				contentStyle = emptyContentStyle
 			}
-		case BodyViewKey:
-			if len(m.data.Body) != 0 {
+
+			if headersLength != 0 {
+				content = m.headersModel.View()
 				if m.copyPressed {
 					viewportActionsList = append(viewportActionsList, copiedText)
 				} else {
-					viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy hex to clipboard (%s)", CopyCommand))
+					viewportActionsList = append(viewportActionsList, fmt.Sprintf("%s: Copy headers to clipboard", CopyCommand))
 				}
-
-				viewportActionsList = append(viewportActionsList, fmt.Sprintf("Save (%s)", SaveCommand))
-			} else {
+			}
+		} else if m.activeView == BodyViewKey {
+			bodyLength := len(m.data.Body)
+			if bodyLength == 0 {
 				content = "Empty body"
 				contentStyle = emptyContentStyle
+			}
+
+			if bodyLength != 0 {
+				content = m.bodyModel.View()
+				if m.copyPressed {
+					viewportActionsList = append(viewportActionsList, copiedText)
+				} else {
+					viewportActionsList = append(viewportActionsList, fmt.Sprintf("%s: Copy hex to clipboard", CopyCommand))
+				}
+
+				viewportActionsList = append(viewportActionsList, fmt.Sprintf("%s: Save", SaveCommand))
 			}
 		}
 	}
@@ -251,15 +258,15 @@ func (m TrafficModel) View() string {
 		viewportActions += viewportActionsStyle.Render(k)
 	}
 
-	return lipgloss.NewStyle().MaxWidth(m.Width).Render(lipgloss.JoinVertical(
+	return lipgloss.NewStyle().MaxWidth(m.width).Render(lipgloss.JoinVertical(
 		lipgloss.Top,
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			sectionStyle.Render(sectionTitle),
-			sectionHintStyle.Render(sectionHint),
+			lipgloss.NewStyle().Bold(true).Render(sectionTitle),
+			lipgloss.NewStyle().MarginLeft(2).Foreground(theme.ColorGrey).Render("Enter ↵: Switch between headers and body"),
 		),
-		switchHintStyle.Render(switchHint),
 		contentStyle.Render(content),
+		lipgloss.NewStyle().Foreground(theme.ColorGrey).MarginBottom(1).Render("↑/↓: Scroll"),
 		viewportActions,
 	))
 }

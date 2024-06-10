@@ -24,9 +24,11 @@ import (
 )
 
 type TableModel struct {
-	Width int
-	TableModel table.Model
-	RowPositionIDMap *map[string]int
+	width int
+	tableModel table.Model
+
+	rowPositionIDMap *map[string]int
+	focused   bool
 }
 
 type TableRowPush struct {
@@ -45,14 +47,29 @@ type TableRowUpdate struct {
 }
 
 func NewNetworkModel(width int) TableModel {
+	columnWidths := []int{
+		int(0.02 * float64(width)),  // 2% 		- ✎
+		int(0.04 * float64(width)),  // 4%		- #
+		int(0.07 * float64(width)),  // 7%		- Method
+		int(0.07 * float64(width)),  // 7%		- Result
+		int(0.30 * float64(width)),  // 30%		- Host
+		int(0.30 * float64(width)),  // 30%		- Path
+	}
+
+	remainingWidth := width
+	for _, width := range columnWidths {
+		remainingWidth -= width
+	}
+
+	columnWidths = append(columnWidths, remainingWidth)
 	columns := []table.Column{
-		{Title: "✎", Width: 2},
-		{Title: "#", Width: 5},
-		{Title: "Method", Width: 10},
-		{Title: "Result", Width: 10},
-		{Title: "Host", Width: 40},
-		{Title: "Path", Width: 50},
-		{Title: "Content Type", Width: 40},
+		{Title: "✎", Width: columnWidths[0]},
+		{Title: "#", Width: columnWidths[1]},
+		{Title: "Method", Width: columnWidths[2]},
+		{Title: "Result", Width: columnWidths[3]},
+		{Title: "Host", Width: columnWidths[4]},
+		{Title: "Path", Width: columnWidths[5]},
+		{Title: "Content Type", Width: columnWidths[6]},
 	}
 
 	rows := []table.Row{}
@@ -60,7 +77,6 @@ func NewNetworkModel(width int) TableModel {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
-		table.WithFocused(true),
 	)
 
 	s := table.DefaultStyles()
@@ -76,41 +92,58 @@ func NewNetworkModel(width int) TableModel {
 	t.SetStyles(s)
 
 	m := TableModel{
-		Width: width,
-		TableModel: t,
-		RowPositionIDMap: &map[string]int{},
+		width: width,
+		tableModel: t,
+		rowPositionIDMap: &map[string]int{},
+		focused: false,
 	}
 
 	return m
 }
 
+func (m *TableModel) Focus() {
+	m.focused = true
+	m.tableModel.Focus()
+}
+
+func (m *TableModel) Blur() {
+	m.focused = false
+	m.tableModel.Blur()
+}
+
 func (m *TableModel) GetNextRowPosition() int {
-	rows := m.TableModel.Rows()
+	rows := m.tableModel.Rows()
 	position := len(rows) + 1
 	return position
 }
 
+func (m *TableModel) GetSelectedRowData() table.Row {
+	return m.tableModel.SelectedRow()
+}
+
 func (m *TableModel) SetWidth(width int) {
-	m.Width = width
+	m.width = width
 }
 
 func (m *TableModel) AssignRowPosition(id string, position int) {
-	(*m.RowPositionIDMap)[id] = position
+	(*m.rowPositionIDMap)[id] = position
 }
 
 func (m *TableModel) GetRowPosition(id string) int {
-	return (*m.RowPositionIDMap)[id]
+	return (*m.rowPositionIDMap)[id]
+}
+
+func (m *TableModel) GetRowPositionMap() *map[string]int {
+	return m.rowPositionIDMap
 }
 
 func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.SetWidth(msg.Width)
 	case TableRowPush:
 		position := m.GetNextRowPosition()
 		m.AssignRowPosition(msg.ID, position)
-		m.TableModel.SetRows(append(m.TableModel.Rows(), table.Row([]string{
+		m.tableModel.SetRows(append(m.tableModel.Rows(), table.Row([]string{
 			msg.WithProxy,
 			fmt.Sprintf("%d", position),
 			msg.Method,
@@ -120,11 +153,14 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			"...",
 		})))
 	case TableRowUpdate:
+		rows := m.tableModel.Rows()
 		position := m.GetRowPosition(msg.ID)
-		if position != 0 {
-			contentType := msg.ContentType
+		index := position - 1
 
-			target := m.TableModel.Rows()[position - 1]
+		if index >= 0 && index < len(rows) {
+			index := position - 1
+			contentType := msg.ContentType
+			target := rows[index]
 			target[0] = msg.WithProxy
 			target[3] = fmt.Sprintf("%d", msg.Status)
 
@@ -135,12 +171,16 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 				target[6] = explode[0]
 			}
 		}
+
+		if m.focused {
+			m.tableModel.Focus()
+		}
 	}
 
-	m.TableModel, cmd = m.TableModel.Update(msg)
+	m.tableModel, cmd = m.tableModel.Update(msg)
 	return m, cmd
 }
 
-func (m *TableModel) View() string {
-	return m.TableModel.View()
+func (m TableModel) View() string {
+	return m.tableModel.View()
 }

@@ -58,13 +58,12 @@ var activeNetworkData = &networkData{
 	Responses: make(map[string]*events.ProxyResponseEventData),
 }
 
-var (
-	docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
-)
+var docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
 
 func Create() {
-	width := utilities.GetTerminalWidth()
+	width := utilities.GetTerminalWidth() - 10
 	m := &model{width, table.NewNetworkModel(width), details.NewDetailsModel("", "", "", width), NetworkElementKey}
+	m.networkTableModel.Focus()
 
 	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
 		str := fmt.Sprintf("%s", e.Data()["details"])
@@ -97,12 +96,12 @@ func Create() {
 }
 
 func PushNetworkTableRow(data events.ProxyRequestEventData) {
-	parse, _ := url.Parse(data.URL)
 	withProxy := ""
 	if data.Proxified {
 		withProxy = "✔"
 	}
 
+	parse, _ := url.Parse(data.URL)
 	path := parse.Path
 	if path == "" {
 		path = "/"
@@ -111,6 +110,11 @@ func PushNetworkTableRow(data events.ProxyRequestEventData) {
 	query := parse.RawQuery
 	if query != "" {
 		path += "?" + query
+	}
+
+	hash := parse.Fragment
+	if hash != "" {
+		path += "#" + hash
 	}
 
 	program.Send(table.TableRowPush(table.TableRowPush{
@@ -146,6 +150,11 @@ func UpdateNetworkTableRow(data events.ProxyResponseEventData) {
 		Headers: data.Headers,
 		Body: data.Body,
 	}))
+
+	program.Send(details.ResponseStatus(details.ResponseStatus{
+		ID: data.ID,
+		Status: data.Status,
+	}))
 }
 
 func (m *model) Init() tea.Cmd {
@@ -156,11 +165,11 @@ func (m *model) SetActiveElement(key activeKeyType) {
 	m.activeElement = key
 
 	if m.activeElement == NetworkElementKey {
-		m.networkTableModel.TableModel.Focus()
+		m.networkTableModel.Focus()
 		m.networkDetailsModel.Blur()
 	} else if m.activeElement == DetailsElementKey {
 		m.networkDetailsModel.Focus()
-		m.networkTableModel.TableModel.Blur()
+		m.networkTableModel.Blur()
 	}
 }
 
@@ -174,9 +183,13 @@ func (m *model) SwitchActiveElement() {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		utilities.ClearTerminal()
+		m.networkDetailsModel.SetWidth(msg.Width)
+		m.networkTableModel.SetWidth(msg.Width)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -186,39 +199,46 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.SwitchActiveElement()
 		case "enter":
-			if len(m.networkTableModel.TableModel.SelectedRow()) < 2 {
-				break
-			} else if m.activeElement != NetworkElementKey {
+			if m.activeElement != NetworkElementKey {
 				break
 			}
 
-			selectedRowID := m.networkTableModel.TableModel.SelectedRow()[1]
+			rowData := m.networkTableModel.GetSelectedRowData()
+			if len(rowData) == 0 {
+				break
+			}
 
-			for v, k := range *m.networkTableModel.RowPositionIDMap {
-				if strconv.Itoa(k) == selectedRowID {
+			selectedRowPositionID := rowData[1]
+
+			for v, k := range *m.networkTableModel.GetRowPositionMap() {
+				if strconv.Itoa(k) == selectedRowPositionID {
 					m.networkDetailsModel.SetID(v)
 
 					if req, exists := activeNetworkData.Requests[v]; exists {
 						m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
 						trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
 						m.networkDetailsModel.SetRequestTrafficData(trafficData)
+					} else {
+						break
 					}
 
 					if resp, exists := activeNetworkData.Responses[v]; exists {
-						m.networkDetailsModel.SetResponseInfo(resp.Status)
+						m.networkDetailsModel.SetResponseStatusCode(resp.Status)
 						trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
 						m.networkDetailsModel.SetResponseTrafficData(trafficData)
+					} else {
+						m.networkDetailsModel.SetResponseStatusCode(0)
+						m.networkDetailsModel.SetResponseTrafficData(traffic.TrafficData{})
 					}
 
+					m.SetActiveElement(DetailsElementKey)
 					break
 				}
 			}
 
-			m.SetActiveElement(DetailsElementKey)
+			return m, tea.Batch(cmds...)
 		}
 	}
-
-	cmds := []tea.Cmd{cmd}
 
 	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
 	cmds = append(cmds, cmd)

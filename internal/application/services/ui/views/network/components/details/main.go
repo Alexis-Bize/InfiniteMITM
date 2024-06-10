@@ -17,6 +17,7 @@ package MITMApplicationUIServiceNetworkDetailsComponent
 import (
 	theme "infinite-mitm/internal/application/services/ui/theme"
 	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
+	utilities "infinite-mitm/pkg/modules/utilities"
 	"net/http"
 	"strings"
 
@@ -27,7 +28,7 @@ import (
 
 type activeTabType string
 type DetailsModel struct {
-	Width int
+	width int
 
 	requestTrafficModel  traffic.TrafficModel
 	responseTrafficModel traffic.TrafficModel
@@ -35,7 +36,8 @@ type DetailsModel struct {
 	trafficID     string
 	requestMethod string
 	requestUrl    string
-	responseCode  int
+
+	responseStatusCode  int
 
 	activeTab activeTabType
 	focused   bool
@@ -53,6 +55,11 @@ type ResponseTraffic struct {
 	Body    []byte
 }
 
+type ResponseStatus struct {
+	ID     string
+	Status int
+}
+
 const (
 	RequestTabKey  activeTabType = "request"
 	ResponseTabKey activeTabType = "response"
@@ -66,6 +73,8 @@ func NewDetailsModel(id string, method string, url string, width int) DetailsMod
 		requestTrafficModel: traffic.NewTrafficDetailsModel(width, 10),
 		responseTrafficModel: traffic.NewTrafficDetailsModel(width, 10),
 		activeTab: RequestTabKey,
+		focused: false,
+		width: width,
 	}
 
 	return m
@@ -130,26 +139,32 @@ func (m *DetailsModel) SetRequestInfo(activeURL string, activeMethod string) {
 	m.requestMethod = activeMethod
 }
 
-func (m *DetailsModel) SetResponseInfo(activeResponseCode int) {
-	m.responseCode = activeResponseCode
+func (m *DetailsModel) SetResponseStatusCode(statusCode int) {
+	m.responseStatusCode = statusCode
 }
 
 func (m *DetailsModel) SetWidth(width int) {
-	m.Width = width
+	m.width = width
+	m.requestTrafficModel.SetWidth(width)
+	m.responseTrafficModel.SetWidth(width)
 }
 
 func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 	var cmd tea.Cmd
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.SetWidth(msg.Width)
 	case RequestTraffic:
-		if msg.ID == m.trafficID {
+		if m.focused && msg.ID == m.trafficID {
 			m.SetRequestTrafficData(traffic.TrafficData{Headers: msg.Headers, Body: msg.Body})
 		}
 	case ResponseTraffic:
-		if msg.ID == m.trafficID {
+		if m.focused && msg.ID == m.trafficID {
 			m.SetResponseTrafficData(traffic.TrafficData{Headers: msg.Headers, Body: msg.Body})
+		}
+	case ResponseStatus:
+		if m.focused && msg.ID == m.trafficID {
+			m.SetResponseStatusCode(msg.Status)
 		}
 	case tea.KeyMsg:
 		if m.focused {
@@ -159,8 +174,6 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 			}
 		}
 	}
-
-	cmds := []tea.Cmd{cmd}
 
 	m.requestTrafficModel, cmd = m.requestTrafficModel.Update(msg)
 	cmds = append(cmds, cmd)
@@ -176,32 +189,27 @@ func (m DetailsModel) View() string {
 	var tabs []string
 
 	detailsStyle := lipgloss.NewStyle().MarginBottom(1)
-	switchHintStyle := lipgloss.NewStyle().MarginLeft(1)
+	tabStyle := lipgloss.NewStyle().Padding(0, 1)
+	activeTabStyle := lipgloss.NewStyle().Padding(0, 1).Foreground(theme.ColorLightYellow).Background(theme.ColorNeonBlue).Bold(true)
+	tabsGroupStyle := lipgloss.NewStyle()
 
-	tabStyle := lipgloss.NewStyle().MarginRight(2)
-	activeTabStyle := lipgloss.NewStyle().MarginRight(2).Foreground(theme.ColorSunsetOrange).Bold(true).Underline(true)
-	tabsGroupStyle := lipgloss.NewStyle().Padding(0, 1)
-
-	trafficViewStyle := lipgloss.NewStyle().Padding(1, 2)
-
-	methodStyle := lipgloss.NewStyle().Bold(true)
-
-	url := m.requestUrl
-	method := methodStyle.Render(m.requestMethod)
-	statusText := http.StatusText(m.responseCode)
+	url := strings.Replace(m.requestUrl, ":443", "", -1)
+	method := lipgloss.NewStyle().Bold(true).Render(m.requestMethod)
+	statusCode := m.responseStatusCode
+	statusText := http.StatusText(statusCode)
 	if statusText == "" {
 		statusText = "Ongoing"
 	}
 
-	if m.responseCode >= 200 && m.responseCode < 300 {
+	if statusCode >= 200 && statusCode < 300 {
 		successColor := lipgloss.NewStyle().Foreground(theme.ColorSuccess)
 		url = successColor.Render(url)
 		statusText = successColor.Render(statusText)
-	} else if m.responseCode >= 400 && m.responseCode < 500 {
+	} else if statusCode >= 400 && statusCode < 500 {
 		warnColor := lipgloss.NewStyle().Foreground(theme.ColorWarn)
 		url = warnColor.Render(url)
 		statusText =  warnColor.Render(statusText)
-	} else if m.responseCode >= 500 {
+	} else if statusCode >= 500 {
 		errorColor := lipgloss.NewStyle().Foreground(theme.ColorError)
 		url = errorColor.Render(url)
 		statusText = errorColor.Render(statusText)
@@ -211,8 +219,7 @@ func (m DetailsModel) View() string {
 		statusText = otherColor.Render(statusText)
 	}
 
-	details := method + " " + "[" + statusText + "]" + " " + url
-	switchHint := "Use Tab ↹ to switch between request and response"
+	details := method + " " + "[" + statusText + "]" + " " + utilities.WrapText(url, m.width)
 
 	if m.activeTab == RequestTabKey {
 		tabs = append(tabs, activeTabStyle.Render("Request"), tabStyle.Render("Response"))
@@ -222,11 +229,14 @@ func (m DetailsModel) View() string {
 		trafficView = m.responseTrafficModel.View()
 	}
 
-	return lipgloss.NewStyle().MaxWidth(m.Width).Render(lipgloss.JoinVertical(
+	return lipgloss.NewStyle().Render(lipgloss.JoinVertical(
 		lipgloss.Top,
 		detailsStyle.Render(details),
-		tabsGroupStyle.Render(strings.Join(tabs, " ")),
-		switchHintStyle.Render(switchHint),
-		trafficViewStyle.Render(trafficView),
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			tabsGroupStyle.Render(strings.Join(tabs, " ")),
+			lipgloss.NewStyle().MarginLeft(2).Foreground(theme.ColorGrey).Render("Tab ↹: Switch"),
+		),
+		lipgloss.NewStyle().Padding(1, 2).Render(trafficView),
 	))
 }

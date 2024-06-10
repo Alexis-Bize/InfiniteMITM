@@ -27,6 +27,8 @@ var (
 	ColorLight = lipgloss.AdaptiveColor{Light: "#f5f5f5", Dark: "#dedede"}
 	ColorDark = lipgloss.AdaptiveColor{Light: "#020202", Dark: "#212121"}
 	ColorGrey = lipgloss.AdaptiveColor{Light: "#3c3c3c", Dark: "#6c6c6c"}
+	ColorLightYellow = lipgloss.Color("229")
+	ColorNeonBlue = lipgloss.Color("57")
 
 	ColorSuccess      = lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}
 	ColorError        = lipgloss.AdaptiveColor{Light: "#bf4343", Dark: "#f57373"}

@@ -78,11 +78,13 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 func (m *TrafficModel) Focus() {
 	m.focused = true
 	m.activeViewport = HeadersViewport
+	m.ResetCopyPress()
 }
 
 func (m *TrafficModel) Blur() {
 	m.focused = false
 	m.activeViewport = HeadersViewport
+	m.ResetCopyPress()
 }
 
 func (m TrafficModel) Init() tea.Cmd {

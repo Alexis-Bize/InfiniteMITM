@@ -68,6 +68,9 @@ func NewDetailsModel(id string, method string, url string, width int) DetailsMod
 		activeTab: RequestTab,
 	}
 
+	m.RequestTrafficModel.Focus()
+	m.ResponseTrafficModel.Blur()
+
 	return m
 }
 
@@ -131,8 +134,12 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 			case "tab":
 				if m.activeTab == ResponseTab {
 					m.activeTab = RequestTab
+					m.ResponseTrafficModel.Blur()
+					m.RequestTrafficModel.Focus()
 				} else if m.activeTab == RequestTab {
 					m.activeTab = ResponseTab
+					m.RequestTrafficModel.Blur()
+					m.ResponseTrafficModel.Focus()
 				}
 			}
 		}

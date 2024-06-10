@@ -24,6 +24,7 @@ import (
 	utilities "infinite-mitm/pkg/modules/utilities"
 	"log"
 	"net/url"
+	"strconv"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -42,8 +43,8 @@ type model struct {
 }
 
 type NetworkData struct {
-	Requests  []*events.ProxyRequestEventData
-	Responses []*events.ProxyResponseEventData
+	Requests  map[string]*events.ProxyRequestEventData
+	Responses map[string]*events.ProxyResponseEventData
 }
 
 const (
@@ -57,8 +58,8 @@ var (
 )
 
 var networkData = &NetworkData{
-	Requests:  make([]*events.ProxyRequestEventData, 0),
-	Responses: make([]*events.ProxyResponseEventData, 0),
+    Requests:  make(map[string]*events.ProxyRequestEventData),
+    Responses: make(map[string]*events.ProxyResponseEventData),
 }
 
 var (
@@ -81,7 +82,7 @@ func Create() {
 
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseRequestEventData(str)
-		networkData.Requests = append(networkData.Requests, &data)
+		networkData.Requests[data.ID] = &data
 		PushNetworkTableRow(data)
 
 		return nil
@@ -94,7 +95,7 @@ func Create() {
 
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseResponseEventData(str)
-		networkData.Responses = append(networkData.Responses, &data)
+		networkData.Responses[data.ID] = &data
 		UpdateNetworkTableRow(data)
 
 		return nil
@@ -179,9 +180,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q":
 			if m.activeModel == Details {
-				m.networkTableModel.TableModel.Focus()
-				m.networkDetailsModel.Blur()
 				m.activeModel = Network
+				m.networkDetailsModel.Blur()
+				m.networkTableModel.TableModel.Focus()
 			} else {
 				return m, tea.Quit
 			}
@@ -189,37 +190,31 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			if m.activeModel == Network && m.networkTableModel.TableModel.SelectedRow() != nil {
-				go func() {
-					for v, k := range m.networkTableModel.RowPositionIDMap {
-						if fmt.Sprintf("%d", k) == m.networkTableModel.TableModel.SelectedRow()[1] {
-							m.networkDetailsModel.SetID(v)
+				selectedRowID := m.networkTableModel.TableModel.SelectedRow()[1]
 
-							for _, k := range networkData.Requests {
-								if k.ID == v {
-									m.networkDetailsModel.SetRequestInfo(k.URL, k.Method)
-									trafficData := traffic.TrafficData{Headers: k.Headers, Body: k.Body}
-									m.networkDetailsModel.RequestTrafficModel.SetTrafficData(trafficData)
-									break
-								}
-							}
+				for v, k := range m.networkTableModel.RowPositionIDMap {
+					if strconv.Itoa(k) == selectedRowID {
+						m.networkDetailsModel.SetID(v)
 
-							for _, k := range networkData.Responses {
-								if k.ID == v {
-									m.networkDetailsModel.SetResponseInfo(k.Status)
-									trafficData := traffic.TrafficData{Headers: k.Headers, Body: k.Body}
-									m.networkDetailsModel.ResponseTrafficModel.SetTrafficData(trafficData)
-									break
-								}
-							}
-
-							break
+						if req, exists := networkData.Requests[v]; exists {
+							m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
+							trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
+							m.networkDetailsModel.RequestTrafficModel.SetTrafficData(trafficData)
 						}
-					}
 
-					m.networkTableModel.TableModel.Blur()
-					m.networkDetailsModel.Focus()
-					m.activeModel = Details
-				}()
+						if resp, exists := networkData.Responses[v]; exists {
+							m.networkDetailsModel.SetResponseInfo(resp.Status)
+							trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
+							m.networkDetailsModel.ResponseTrafficModel.SetTrafficData(trafficData)
+						}
+
+						break
+					}
+				}
+
+				m.activeModel = Details
+				m.networkTableModel.TableModel.Blur()
+				m.networkDetailsModel.Focus()
 			}
 		}
 	}

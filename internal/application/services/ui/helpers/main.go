@@ -20,10 +20,10 @@ import (
 	"infinite-mitm/configs"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/ncruces/zenity"
 )
 
@@ -70,14 +70,32 @@ func toASCII(data []byte, minByte byte, maxByte byte) string {
 }
 
 func CopyToClipboard(data string) {
+	defer func() {
+		_ = recover();
+	}()
+
 	clipboard.WriteAll(data)
 }
 
 func SaveToDisk(data []byte, contentType string) {
-	var extension string
+	defer func() {
+		_ = recover();
+	}()
 
-	ext := mimetype.Lookup(contentType)
-	extension = ext.String()
+	contentType = strings.Split(contentType, ";")[0]
+	var mimeExtensions = map[string]string{
+		"application/json":         "json",
+		"application/xml":          "xml",
+		"text/html":                "html",
+		"text/plain":               "txt",
+		"image/jpeg":               "jpeg",
+		"image/jpg":                "jpg",
+		"image/png":                "png",
+		"image/gif":                "gif",
+		"application/octet-stream": "bin",
+	}
+
+	extension := mimeExtensions[contentType]
 	if extension == "" {
 		extension = "bin"
 	}

@@ -94,7 +94,7 @@ func (m *TrafficModel) SetWidth(width int) {
 }
 
 func (m *TrafficModel) SetTrafficData(data TrafficData) {
-	m.data = data
+	m.data = TrafficData(data)
 	m.SetContent(m.data.Headers, m.data.Body)
 }
 
@@ -159,7 +159,7 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 				m.CopyToClipboard()
 			case SaveCommand:
 				m.SaveToDisk()
-			case "tab":
+			case "left", "right":
 				m.ResetCopyPress()
 				if m.activeViewport == HeadersViewport {
 					m.activeViewport = BodyViewport
@@ -186,14 +186,24 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 }
 
 func (m TrafficModel) View() string {
-	var content string
 	var sectionTitle string
 	var viewportActions string
 
-	viewportActionsList := []string{"Waiting..."}
-	switchHint := "Use Tab ↹ to switch between headers and body"
+	contentStyle := lipgloss.NewStyle().Padding(1, 2)
+	emptyContentStyle := lipgloss.NewStyle().Padding(1, 2).Foreground(theme.ColorGrey).Italic(true)
+
+	sectionStyle := lipgloss.NewStyle().Bold(true)
+	sectionHintStyle := lipgloss.NewStyle().Foreground(theme.ColorGrey).MarginLeft(1)
 	sectionHint := "(use the mouse wheel or arrow keys ⭥ to scroll)"
+
+	switchHintStyle := lipgloss.NewStyle()
+	switchHint := "Use arrow keys ↔ to switch between headers and body"
+
+	viewportActionsStyle := lipgloss.NewStyle().Padding(0, 1).MarginRight(1).Foreground(theme.ColorLight).Background(theme.ColorGrey)
+	viewportActionsList := []string{"Waiting..."}
+
 	copiedText := "✓ Copied"
+	content := "..."
 
 	if m.activeViewport == HeadersViewport {
 		content = m.HeadersViewportModel.View()
@@ -208,30 +218,30 @@ func (m TrafficModel) View() string {
 
 		switch m.activeViewport {
 		case HeadersViewport:
-			if m.copyPressed {
-				viewportActionsList = append(viewportActionsList, copiedText)
+			if len(m.data.Headers) != 0 {
+				if m.copyPressed {
+					viewportActionsList = append(viewportActionsList, copiedText)
+				} else {
+					viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy headers to clipboard (%s)", CopyCommand))
+				}
 			} else {
-				viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy headers to clipboard (%s)", CopyCommand))
+				content = "Empty headers"
+				contentStyle = emptyContentStyle
 			}
 		case BodyViewport:
-			if m.copyPressed {
-				viewportActionsList = append(viewportActionsList, copiedText)
+			if len(m.data.Body) != 0 {
+				if m.copyPressed {
+					viewportActionsList = append(viewportActionsList, copiedText)
+				} else {
+					viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy hex to clipboard (%s)", CopyCommand))
+				}
+
+				viewportActionsList = append(viewportActionsList, fmt.Sprintf("Save (%s)", SaveCommand))
 			} else {
-				viewportActionsList = append(viewportActionsList, fmt.Sprintf("Copy hex to clipboard (%s)", CopyCommand))
+				content = "Empty body"
+				contentStyle = emptyContentStyle
 			}
-
-			viewportActionsList = append(viewportActionsList, fmt.Sprintf("Save (%s)", SaveCommand))
 		}
-	}
-
-	contentStyle := lipgloss.NewStyle().Padding(1, 2)
-	sectionStyle := lipgloss.NewStyle().Bold(true)
-	sectionHintStyle := lipgloss.NewStyle().Foreground(theme.ColorGrey).MarginLeft(1)
-	switchHintStyle := lipgloss.NewStyle().MarginBottom(1)
-	viewportActionsStyle := lipgloss.NewStyle().Padding(0, 1).MarginRight(1).Foreground(theme.ColorLight).Background(theme.ColorGrey)
-
-	if content == "" {
-		content = "..."
 	}
 
 	for _, k := range viewportActionsList {
@@ -245,8 +255,8 @@ func (m TrafficModel) View() string {
 			sectionStyle.Render(sectionTitle),
 			sectionHintStyle.Render(sectionHint),
 		),
-		contentStyle.Render(content),
 		switchHintStyle.Render(switchHint),
+		contentStyle.Render(content),
 		viewportActions,
 	))
 }

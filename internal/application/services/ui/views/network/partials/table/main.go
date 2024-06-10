@@ -16,7 +16,6 @@ package MITMApplicationUIServiceNetworkPartialTable
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -26,7 +25,8 @@ import (
 
 type TableModel struct {
 	Width int
-	Table table.Model
+	TableModel table.Model
+	RowPositionIDMap map[string]int
 }
 
 type TableRowPush struct {
@@ -43,8 +43,6 @@ type TableRowUpdate struct {
 	Status      int
 	ContentType string
 }
-
-var RowPositionIDMap = make(map[string]string)
 
 func NewNetworkModel(width int) TableModel {
 	columns := []table.Column{
@@ -79,14 +77,15 @@ func NewNetworkModel(width int) TableModel {
 
 	m := TableModel{
 		Width: width,
-		Table: t,
+		TableModel: t,
+		RowPositionIDMap: make(map[string]int),
 	}
 
 	return m
 }
 
 func (m TableModel) GetNextRowPosition() int {
-	rows := m.Table.Rows()
+	rows := m.TableModel.Rows()
 	position := len(rows) + 1
 	return position
 }
@@ -99,17 +98,25 @@ func (m TableModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *TableModel) AssignRowPosition(id string, position int) {
+	m.RowPositionIDMap[id] = position
+}
+
+func (m *TableModel) GetRowPosition(id string) int {
+	return m.RowPositionIDMap[id]
+}
+
 func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.SetWidth(msg.Width)
 	case TableRowPush:
-		position := fmt.Sprintf("%d", m.GetNextRowPosition())
-		RowPositionIDMap[msg.ID] = position
-		m.Table.SetRows(append(m.Table.Rows(), table.Row([]string{
+		position := m.GetNextRowPosition()
+		m.AssignRowPosition(msg.ID, position)
+		m.TableModel.SetRows(append(m.TableModel.Rows(), table.Row([]string{
 			msg.WithProxy,
-			position,
+			fmt.Sprintf("%d", position),
 			msg.Method,
 			"...",
 			msg.Host,
@@ -117,12 +124,11 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			"...",
 		})))
 	case TableRowUpdate:
-		position := RowPositionIDMap[msg.ID]
-		if position != "" {
-			s, _ := strconv.Atoi(position)
+		position := m.GetRowPosition(msg.ID)
+		if position != 0 {
 			contentType := msg.ContentType
 
-			target := m.Table.Rows()[s - 1]
+			target := m.TableModel.Rows()[position - 1]
 			target[0] = msg.WithProxy
 			target[3] = fmt.Sprintf("%d", msg.Status)
 
@@ -135,10 +141,10 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 		}
 	}
 
-	m.Table, cmd = m.Table.Update(msg)
+	m.TableModel, cmd = m.TableModel.Update(msg)
 	return m, cmd
 }
 
 func (m *TableModel) View() string {
-	return m.Table.View()
+	return m.TableModel.View()
 }

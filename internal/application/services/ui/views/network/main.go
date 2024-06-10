@@ -18,6 +18,7 @@ import (
 	"fmt"
 	events "infinite-mitm/internal/application/events"
 	details "infinite-mitm/internal/application/services/ui/views/network/partials/details"
+	traffic "infinite-mitm/internal/application/services/ui/views/network/partials/details/traffic"
 	table "infinite-mitm/internal/application/services/ui/views/network/partials/table"
 	errors "infinite-mitm/pkg/modules/errors"
 	utilities "infinite-mitm/pkg/modules/utilities"
@@ -29,19 +30,26 @@ import (
 	"github.com/gookit/event"
 )
 
+
+type activeModelType string
 type model struct {
 	Width int
 
-	tableModel   table.TableModel
-	detailsModel details.DetailsModel
+	networkTableModel   table.TableModel
+	networkDetailsModel details.DetailsModel
 
-	currentView  string
+	activeModel  activeModelType
 }
 
 type NetworkData struct {
 	Requests  []*events.ProxyRequestEventData
 	Responses []*events.ProxyResponseEventData
 }
+
+const (
+	Network activeModelType = "network"
+	Details activeModelType = "details"
+)
 
 var (
 	modelInstance *model
@@ -63,7 +71,7 @@ func Create() {
 		width,
 		table.NewNetworkModel(width),
 		details.NewDetailsModel("", "", "", width),
-		"network",
+		Network,
 	}
 
 	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
@@ -132,6 +140,12 @@ func PushNetworkTableRow(data events.ProxyRequestEventData) {
 		Host: parse.Hostname(),
 		PathAndQuery: path,
 	}))
+
+	program.Send(details.RequestTraffic(details.RequestTraffic{
+		ID: data.ID,
+		Headers: data.Headers,
+		Body: data.Body,
+	}))
 }
 
 func UpdateNetworkTableRow(data events.ProxyResponseEventData) {
@@ -146,6 +160,12 @@ func UpdateNetworkTableRow(data events.ProxyResponseEventData) {
 		Status: data.Status,
 		ContentType: data.Headers["Content-Type"],
 	}))
+
+	program.Send(details.ResponseTraffic(details.ResponseTraffic{
+		ID: data.ID,
+		Headers: data.Headers,
+		Body: data.Body,
+	}))
 }
 
 func (m *model) Init() tea.Cmd {
@@ -158,46 +178,74 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
-			if m.currentView == "details" {
-				m.tableModel.Table.Focus()
-				m.detailsModel.Blur()
-				m.currentView = "network"
+			if m.activeModel == Details {
+				m.networkTableModel.TableModel.Focus()
+				m.networkDetailsModel.Blur()
+				m.activeModel = Network
 			} else {
 				return m, tea.Quit
 			}
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			if m.currentView == "network" && m.tableModel.Table.SelectedRow() != nil {
-				m.tableModel.Table.Blur()
-				m.detailsModel.Focus()
-				m.currentView = "details"
+			if m.activeModel == Network && m.networkTableModel.TableModel.SelectedRow() != nil {
+				go func() {
+					for v, k := range m.networkTableModel.RowPositionIDMap {
+						if fmt.Sprintf("%d", k) == m.networkTableModel.TableModel.SelectedRow()[1] {
+							m.networkDetailsModel.SetID(v)
+
+							for _, k := range networkData.Requests {
+								if k.ID == v {
+									m.networkDetailsModel.SetRequestInfo(k.URL, k.Method)
+									trafficData := traffic.TrafficData{Headers: k.Headers, Body: k.Body}
+									m.networkDetailsModel.RequestTrafficModel.SetTrafficData(trafficData)
+									break
+								}
+							}
+
+							for _, k := range networkData.Responses {
+								if k.ID == v {
+									m.networkDetailsModel.SetResponseInfo(k.Status)
+									trafficData := traffic.TrafficData{Headers: k.Headers, Body: k.Body}
+									m.networkDetailsModel.ResponseTrafficModel.SetTrafficData(trafficData)
+									break
+								}
+							}
+
+							break
+						}
+					}
+
+					m.networkTableModel.TableModel.Blur()
+					m.networkDetailsModel.Focus()
+					m.activeModel = Details
+				}()
 			}
 		}
 	}
 
 	cmds := []tea.Cmd{cmd}
 
-	m.tableModel, cmd = m.tableModel.Update(msg)
+	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
 	cmds = append(cmds, cmd)
 
-	m.detailsModel, cmd = m.detailsModel.Update(msg)
+	m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m *model) View() string {
-	var activeView string
+	var activeModel string
 
-	if m.currentView == "network" {
-		activeView = lipgloss.NewStyle().Render(m.tableModel.View())
-	} else if m.currentView == "details" {
-		activeView = lipgloss.NewStyle().Render(m.detailsModel.View())
+	if m.activeModel == Network {
+		activeModel = lipgloss.NewStyle().Render(m.networkTableModel.View())
+	} else if m.activeModel == Details {
+		activeModel = lipgloss.NewStyle().Render(m.networkDetailsModel.View())
 	}
 
 	return docStyle.Render(lipgloss.JoinVertical(
 		lipgloss.Top,
-		activeView,
+		activeModel,
 	))
 }

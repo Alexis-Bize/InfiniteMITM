@@ -15,7 +15,6 @@
 package MITMApplicationUIServiceNetworkPartialDetails
 
 import (
-	MITMApplicationEvents "infinite-mitm/internal/application/events"
 	theme "infinite-mitm/internal/application/services/ui/theme"
 	traffic "infinite-mitm/internal/application/services/ui/views/network/partials/details/traffic"
 	"net/http"
@@ -42,8 +41,17 @@ type DetailsModel struct {
 	focused bool
 }
 
-type RequestTraffic MITMApplicationEvents.ProxyRequestEventData
-type ResponseTraffic MITMApplicationEvents.ProxyRequestEventData
+type RequestTraffic struct {
+	ID      string
+	Headers map[string] string
+	Body    []byte
+}
+
+type ResponseTraffic struct {
+	ID      string
+	Headers map[string] string
+	Body    []byte
+}
 
 const (
 	RequestTab  activeTabType = "request"
@@ -77,6 +85,19 @@ func (m *DetailsModel) Blur() {
 	m.ResponseTrafficModel.Blur()
 }
 
+func (m *DetailsModel) SetID(id string) {
+	m.trafficID = id
+}
+
+func (m *DetailsModel) SetRequestInfo(url string, method string) {
+	m.requestUrl = url
+	m.requestMethod = method
+}
+
+func (m *DetailsModel) SetResponseInfo(code int) {
+	m.responseCode = code
+}
+
 func (m *DetailsModel) SetWidth(width int) {
 	m.Width = width
 }
@@ -107,7 +128,7 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.focused {
 			switch msg.String() {
-			case "left", "right":
+			case "tab":
 				if m.activeTab == ResponseTab {
 					m.activeTab = RequestTab
 				} else if m.activeTab == RequestTab {
@@ -169,7 +190,7 @@ func (m DetailsModel) View() string {
 	}
 
 	details := method + " " + "[" + statusText + "]" + " " + url
-	switchHint := "Use arrow keys ↔ to switch"
+	switchHint := "Use Tab ↹ to switch between request and response"
 
 	if m.activeTab == RequestTab {
 		tabs = append(tabs, activeTabStyle.Render("Request"), tabStyle.Render("Response"))

@@ -19,6 +19,7 @@ import (
 	events "infinite-mitm/internal/application/events"
 	details "infinite-mitm/internal/application/services/ui/views/network/components/details"
 	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
+	status "infinite-mitm/internal/application/services/ui/views/network/components/status"
 	table "infinite-mitm/internal/application/services/ui/views/network/components/table"
 	errors "infinite-mitm/pkg/modules/errors"
 	utilities "infinite-mitm/pkg/modules/utilities"
@@ -35,10 +36,12 @@ import (
 
 type activeKeyType string
 type model struct {
-	Width int
+	width int
+	height int
 
 	networkTableModel   table.TableModel
 	networkDetailsModel details.DetailsModel
+	statusBarModel      status.StatusBarModel
 
 	activeElement  activeKeyType
 }
@@ -62,15 +65,23 @@ var activeNetworkData = &networkData{
 var docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
 
 func Create() {
-	width := utilities.GetTerminalWidth() - 10
-	m := &model{width, table.NewNetworkModel(width), details.NewDetailsModel("", "", "", width), NetworkElementKey}
+	width := utilities.GetTerminalWidth()
+	m := &model{
+		width,
+		50,
+		table.NewNetworkModel(width),
+		details.NewDetailsModel("", "", "", width),
+		status.NewStatusBarModel(width),
+		NetworkElementKey,
+	}
+
 	m.networkTableModel.Focus()
 
 	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseRequestEventData(str)
 		activeNetworkData.Requests[data.ID] = &data
-		PushNetworkTableRow(data)
+		pushNetworkTableRow(data)
 
 		return nil
 	}), event.Normal)
@@ -79,13 +90,14 @@ func Create() {
 		str := fmt.Sprintf("%s", e.Data()["details"])
 		data := events.ParseResponseEventData(str)
 		activeNetworkData.Responses[data.ID] = &data
-		UpdateNetworkTableRow(data)
+		updateNetworkTableRow(data)
 
 		return nil
 	}), event.Normal)
 
 	event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
-		// str := fmt.Sprintf("%s", e.Data()["details"])
+		str := fmt.Sprintf("%s", e.Data()["details"])
+		updateStatusBarInfoMessage(str)
 
 		return nil
 	}), event.Normal)
@@ -96,7 +108,7 @@ func Create() {
 	}
 }
 
-func PushNetworkTableRow(data events.ProxyRequestEventData) {
+func pushNetworkTableRow(data events.ProxyRequestEventData) {
 	withProxy := ""
 	if data.Proxified {
 		withProxy = "✔"
@@ -134,7 +146,7 @@ func PushNetworkTableRow(data events.ProxyRequestEventData) {
 	}))
 }
 
-func UpdateNetworkTableRow(data events.ProxyResponseEventData) {
+func updateNetworkTableRow(data events.ProxyResponseEventData) {
 	withProxy := ""
 	if data.Proxified {
 		withProxy = "✔"
@@ -159,6 +171,12 @@ func UpdateNetworkTableRow(data events.ProxyResponseEventData) {
 	}))
 }
 
+func updateStatusBarInfoMessage(message string) {
+	program.Send(status.StatusBarInfoUpdate(status.StatusBarInfoUpdate{
+		Message: message,
+	}))
+}
+
 func (m *model) Init() tea.Cmd {
 	return nil
 }
@@ -166,10 +184,10 @@ func (m *model) Init() tea.Cmd {
 func (m *model) SetActiveElement(key activeKeyType) {
 	m.activeElement = key
 
-	if m.activeElement == NetworkElementKey {
+	if key == NetworkElementKey {
 		m.networkTableModel.Focus()
 		m.networkDetailsModel.Blur()
-	} else if m.activeElement == DetailsElementKey {
+	} else if key == DetailsElementKey {
 		m.networkDetailsModel.Focus()
 		m.networkTableModel.Blur()
 	}
@@ -189,9 +207,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		utilities.ClearTerminal()
+		m.width = msg.Width
+		m.height = msg.Height
 		m.networkDetailsModel.SetWidth(msg.Width)
 		m.networkTableModel.SetWidth(msg.Width)
+		m.statusBarModel.SetWidth(msg.Width)
+		utilities.ClearTerminal()
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
@@ -248,6 +269,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
 	cmds = append(cmds, cmd)
 
+	m.statusBarModel, cmd = m.statusBarModel.Update(msg)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -260,8 +284,12 @@ func (m *model) View() string {
 		activeModel = lipgloss.NewStyle().Render(m.networkDetailsModel.View())
 	}
 
+	activeModel = lipgloss.NewStyle().MarginBottom(1).Render(activeModel)
+	statusBar := m.statusBarModel.View()
+
 	return docStyle.Render(lipgloss.JoinVertical(
 		lipgloss.Top,
 		activeModel,
+		lipgloss.NewStyle().MarginTop(2 + (m.height - lipgloss.Height(activeModel) - (lipgloss.Height(statusBar) * 5))).Render(statusBar),
 	))
 }

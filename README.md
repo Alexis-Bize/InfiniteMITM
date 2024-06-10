@@ -11,7 +11,7 @@
 
 **Note:** While this interactive CLI is primarily designed to work with Halo Infinite, other Halo titles may also be supported.
 
-<img alt="InfiniteMITM CLI" title="InfiniteMITM CLI" src="./assets/preview.png?v=2" />
+<img alt="InfiniteMITM CLI" title="InfiniteMITM CLI" src="./assets/preview.gif?v=2" width="800" />
 
 ## Disclaimer
 

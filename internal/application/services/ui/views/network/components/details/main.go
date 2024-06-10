@@ -99,10 +99,10 @@ func (m *DetailsModel) SetActiveTab(key activeTabType) {
 	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
 	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
 
-	if m.activeTab == RequestTabKey {
+	if key == RequestTabKey {
 		m.requestTrafficModel.Focus()
 		m.responseTrafficModel.Blur()
-	} else if m.activeTab == ResponseTabKey {
+	} else if key == ResponseTabKey {
 		m.responseTrafficModel.Focus()
 		m.requestTrafficModel.Blur()
 	}
@@ -167,11 +167,13 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 			m.SetResponseStatusCode(msg.Status)
 		}
 	case tea.KeyMsg:
-		if m.focused {
-			switch msg.String() {
-			case "tab":
-				m.SwitchActiveTab()
-			}
+		if !m.focused {
+			return m, tea.Batch(cmds...)
+		}
+
+		switch msg.String() {
+		case "tab":
+			m.SwitchActiveTab()
 		}
 	}
 

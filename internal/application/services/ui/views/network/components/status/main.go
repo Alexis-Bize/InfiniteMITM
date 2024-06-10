@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkUI
+package MITMApplicationUIServiceNetworkStatusBarComponent
 
 import (
 	"infinite-mitm/configs"
 	theme "infinite-mitm/internal/application/services/ui/theme"
-	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type StatusBarModel struct {
-	name ItemProperties
+	width int
+
+	name  ItemProperties
 	info ItemProperties
 }
 
@@ -45,20 +47,19 @@ var (
 		Inherit(statusBarStyle).
 		Foreground(lipgloss.Color("#FFFDF5")).
 		Background(lipgloss.Color(theme.ColorSunsetOrange.Light)).
-		Padding(0, 1).
-		MarginRight(1)
+		Padding(0, 1)
 
-	statusInfoStyle = lipgloss.NewStyle().Inherit(statusBarStyle)
+	statusInfoStyle = lipgloss.NewStyle().Inherit(statusBarStyle).MarginLeft(2)
 )
 
-func createStatusBar() StatusBarModel {
+func NewStatusBarModel(width int) StatusBarModel {
 	m := StatusBarModel{
 		name: ItemProperties{
 			content: configs.GetConfig().Name,
 			style: statusStyle,
 		},
 		info: ItemProperties{
-			content: "",
+			content: "Loading...",
 			style: statusInfoStyle,
 		},
 	}
@@ -66,20 +67,29 @@ func createStatusBar() StatusBarModel {
 	return m
 }
 
-func getStatusBarWidth() int {
-	// w := GetTerminalWidth() - statusBarStyle.GetHorizontalPadding()
-	w := 320
-	return w
+func (m *StatusBarModel) SetWidth(width int) {
+	m.width = width
 }
 
-func (m *StatusBarModel) View() string {
-	doc := strings.Builder{}
+func (m *StatusBarModel) SetInfoContent(text string) {
+	m.info.content = text
+}
 
+func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case StatusBarInfoUpdate:
+		m.SetInfoContent(msg.Message)
+	}
+
+	return m, cmd
+}
+
+func (m StatusBarModel) View() string {
 	bar := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.name.style.Render(m.name.content),
 		m.info.style.Render(m.info.content),
 	)
 
-	doc.WriteString(statusBarStyle.Width(getStatusBarWidth()).Render(bar))
-	return doc.String()
+	return statusBarStyle.Width(m.width).Render(bar)
 }

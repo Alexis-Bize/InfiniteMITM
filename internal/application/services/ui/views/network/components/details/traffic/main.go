@@ -84,8 +84,12 @@ func (m *TrafficModel) Focus() {
 func (m *TrafficModel) Blur() {
 	m.focused = false
 	m.SetCopyPress(false)
-	m.headersModel.SetYOffset(0)
-	m.bodyModel.SetYOffset(0)
+
+	if m.activeView == HeadersViewKey {
+		m.headersModel.SetYOffset(0)
+	} else if m.activeView == BodyViewKey {
+		m.bodyModel.SetYOffset(0)
+	}
 }
 
 func (m *TrafficModel) SetCopyPress(pressed bool) {
@@ -100,9 +104,13 @@ func (m *TrafficModel) SetWidth(width int) {
 
 func (m *TrafficModel) SetActiveView(key activeViewType) {
 	m.activeView = key
-	m.headersModel.SetYOffset(0)
-	m.bodyModel.SetYOffset(0)
 	m.SetCopyPress(false)
+
+	if key == HeadersViewKey {
+		m.headersModel.SetYOffset(0)
+	} else if key == BodyViewKey {
+		m.bodyModel.SetYOffset(0)
+	}
 }
 
 func (m *TrafficModel) SwitchActiveView() {
@@ -170,15 +178,17 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 	case TrafficData:
 		m.SetTrafficData(TrafficData(msg))
 	case tea.KeyMsg:
-		if m.focused {
-			switch msg.String() {
-			case CopyCommand:
-				m.CopyToClipboard()
-			case SaveCommand:
-				m.SaveToDisk()
-			case "enter":
-				m.SwitchActiveView()
-			}
+		if !m.focused {
+			return m, tea.Batch(cmds...)
+		}
+
+		switch msg.String() {
+		case CopyCommand:
+			m.CopyToClipboard()
+		case SaveCommand:
+			m.SaveToDisk()
+		case "enter":
+			m.SwitchActiveView()
 		}
 	}
 

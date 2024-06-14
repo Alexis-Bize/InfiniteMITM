@@ -1,0 +1,14 @@
+.DS_Store
+.vscode
+.env
+
+build/*/*
+!build/*/.gitkeep
+
+resource.syso
+versioninfo.json
+
+*.key
+*.pfx
+
+InfiniteVariantToolCLI.exe

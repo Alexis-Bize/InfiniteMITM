@@ -2,7 +2,10 @@
 
 **InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and **regex** support.
 
-**Note:** When changing the request `body`, the `Content-Length` header will be automatically calculated.
+### Notes:
+
+-   When changing the request `body`, the `Content-Length` header will be automatically recalculated.
+-   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
 
 ## Example
 

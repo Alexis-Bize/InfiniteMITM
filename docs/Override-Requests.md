@@ -20,7 +20,7 @@ domains:
       response:
         body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
         headers: # Additional headers to include in the response
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
       methods:
@@ -28,7 +28,7 @@ domains:
       response:
         body: :mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin
         headers:
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
       methods:
@@ -36,7 +36,7 @@ domains:
       response:
         body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
         headers:
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/* # Match all after /ugcstorage/
       methods:

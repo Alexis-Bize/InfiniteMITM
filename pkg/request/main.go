@@ -25,8 +25,9 @@ import (
 	"time"
 )
 const (
-	CacheHeaderKey = "X-Infinite-MITM-Smart-Cache"
-	VersionHeaderKey = "X-Infinite-MITM"
+	MITMCacheHeaderKey    = "X-Infinite-MITM-Smart-Cache"
+	MITMVersionHeaderKey  = "X-Infinite-MITM-Version"
+	MITMProxyHeaderKey    = "X-Infinite-MITM-Proxy"
 
 	CacheControlHeaderKey = "Cache-Control"
 	ContentTypeHeaderKey  = "Content-Type"
@@ -37,8 +38,9 @@ const (
 )
 
 const (
-	CacheHeaderHitValue = "HIT"
-	CacheHeaderMissValue = "MISS"
+	MITMCacheHeaderHitValue  = "HIT"
+	MITMCacheHeaderMissValue = "MISS"
+	MITMProxyEnabledValue    = "ENABLED"
 )
 
 func Send(method, url string, payload []byte, header http.Header) ([]byte, *errors.MITMError) {

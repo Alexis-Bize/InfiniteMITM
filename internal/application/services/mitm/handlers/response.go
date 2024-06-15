@@ -50,6 +50,7 @@ func HandleRootResponses(options traffic.TrafficOptions) ResponseHandlerStruct {
 			isProxified := proxified["resp"]
 
 			if isProxified {
+				resp.Header.Set(request.MITMProxyHeaderKey, request.MITMProxyEnabledValue)
 				resp.Header.Set(request.CacheControlHeaderKey, "no-store, no-cache, must-revalidate, max-age=0")
 				resp.Header.Set(request.PragmaHeaderKey, "no-cache")
 				resp.Header.Set(request.ExpiresHeaderKey, "0")
@@ -87,14 +88,14 @@ func HandleRootResponses(options traffic.TrafficOptions) ResponseHandlerStruct {
 
 				if smartCachedItem == nil {
 					if isSmartCachable {
-						resp.Header.Set(request.CacheHeaderKey, request.CacheHeaderMissValue)
+						resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
 						smartCache.Write(smartCache.CreateKey(resp.Request.URL.String()), &smartcache.SmartCacheItem{
 							Body: bodyBytes,
 							Header: resp.Header,
 						})
 					}
 				} else {
-					resp.Header.Set(request.CacheHeaderKey, request.CacheHeaderHitValue)
+					resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 				}
 			}
 

@@ -161,7 +161,8 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	s.items[key] = item
 
 	if !item.persisted && s.strategy == Persistent {
-		file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key)); if err != nil {
+		file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key));
+		if err != nil {
 			return
 		}
 

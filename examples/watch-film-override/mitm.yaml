@@ -1,0 +1,8 @@
+domains:
+  # authoring-infiniteugc.svc.halowaypoint.com
+  authoring:
+    - path: :title/films/matches/:guid/spectate
+      methods:
+        - GET
+      response:
+        body: :title/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate

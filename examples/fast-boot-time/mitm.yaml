@@ -1,5 +1,6 @@
 domains:
-  gamecms: # gamecms-hacs.svc.halowaypoint.com
+  # gamecms-hacs.svc.halowaypoint.com
+  gamecms:
     - path: /:title/progression/file/(inventory|configuration)/*
       methods:
         - GET

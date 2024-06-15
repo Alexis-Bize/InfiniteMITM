@@ -1,20 +1,20 @@
 domains:
-  blobs: # blobs-infiniteugc.svc.halowaypoint.com
+  # blobs-infiniteugc.svc.halowaypoint.com
+  blobs:
     - path: /ugcstorage/*.(jpg|png)
       methods:
         - GET
       response:
         body: https://cataas.com/cat
         headers:
-          cache-control: no-cache
           content-type: image/jpeg
 
-  gamecms: # gamecms-hacs.svc.halowaypoint.com
+  # gamecms-hacs.svc.halowaypoint.com
+  gamecms:
     - path: /:title/images/file/news/*.(jpg|png)
       methods:
         - GET
       response:
         body: https://cataas.com/cat
         headers:
-          cache-control: no-cache
           content-type: image/jpeg

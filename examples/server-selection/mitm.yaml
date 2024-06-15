@@ -1,5 +1,6 @@
 domains:
-  lobby: # lobby-hi.svc.halowaypoint.com
+  # lobby-hi.svc.halowaypoint.com
+  lobby:
     - path: /titles/:title/qosservers
       methods:
         - GET

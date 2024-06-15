@@ -257,22 +257,23 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 }
 
 func readBodyFile(body string, headers http.Header, matches []string) ([]byte, error) {
-	body = pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
-	var mitmErr *errors.MITMError
-	var buffer []byte
-	var err error
+	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
-	if isURL(body) {
-		buffer, mitmErr = request.Send("GET", body, nil, request.HeadersToMap(headers)); if mitmErr != nil {
+	if isURL(str) {
+		buffer, mitmErr := request.Send("GET", body, nil, request.HeadersToMap(headers));
+		if mitmErr != nil {
 			return nil, fmt.Errorf(mitmErr.Message)
 		}
-	} else if isSystemPath(body) {
-		buffer, err = os.ReadFile(body); if err != nil {
-			return nil, err
-		}
+
+		return buffer, nil
 	}
 
-	return buffer, err
+	buffer, err := os.ReadFile(cleanSystemPath(str));
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer, nil
 }
 
 func isURL(str string) bool {
@@ -284,16 +285,15 @@ func isURL(str string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
-func isSystemPath(str string) bool {
+func cleanSystemPath(str string) string {
 	if strings.HasPrefix(str, "~/") {
-		home, err := utilities.GetHomeDirectory(); if err != nil {
-			return false
+		home, err := utilities.GetHomeDirectory();
+		if err != nil {
+			return str
 		}
 
 		str = filepath.Join(home, str[2:])
 	}
 
-	matched, _ := regexp.MatchString(`^[a-zA-Z]:\\|^\/`, str)
-	return matched || filepath.IsAbs(str)
+	return filepath.Clean(str)
 }
-

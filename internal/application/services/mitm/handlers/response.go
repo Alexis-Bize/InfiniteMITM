@@ -49,6 +49,12 @@ func HandleRootResponses(options traffic.TrafficOptions) ResponseHandlerStruct {
 			proxified := customCtx.GetUserData("proxified").(map[string]bool)
 			isProxified := proxified["resp"]
 
+			if isProxified {
+				resp.Header.Set(request.CacheControlHeaderKey, "no-store, no-cache, must-revalidate, max-age=0")
+				resp.Header.Set(request.PragmaHeaderKey, "no-cache")
+				resp.Header.Set(request.ExpiresHeaderKey, "0")
+			}
+
 			var smartCache *smartcache.SmartCache
 			cacheCtx := customCtx.GetUserData("cache")
 			if cacheCtx != nil {

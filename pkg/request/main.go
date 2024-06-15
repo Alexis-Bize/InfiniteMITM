@@ -27,10 +27,12 @@ const (
 	CacheHeaderKey = "X-Infinite-MITM-Smart-Cache"
 	VersionHeaderKey = "X-Infinite-MITM"
 
-	ContentTypeHeaderKey = "Content-Type"
-	ExpiresHeaderKey     = "Expires"
-	DateHeaderKey        = "Date"
-	AgeHeaderKey         = "Age"
+	CacheControlHeaderKey = "Cache-Control"
+	ContentTypeHeaderKey  = "Content-Type"
+	ExpiresHeaderKey      = "Expires"
+	PragmaHeaderKey       = "Pragma"
+	DateHeaderKey         = "Date"
+	AgeHeaderKey          = "Age"
 )
 
 const (

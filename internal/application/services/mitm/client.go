@@ -179,7 +179,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
-			if body != "" && req.Method != http.MethodGet && req.Method != http.MethodDelete {
+			if body != "" {
 				buffer, err := readBodyFile(body, matches, req.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))

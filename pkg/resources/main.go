@@ -31,10 +31,14 @@ import (
 )
 
 var certName = configs.GetConfig().Proxy.Certificate.Name
+
 var projectDir = configs.GetConfig().Extra.ProjectDir
 var resourcesPath = filepath.Join(projectDir, "resources")
-var resourcesDirPaths = map[string]string{
-	"root": resourcesPath,
+var dirPaths = map[string]string{
+	// ~/InfiniteMITM
+	"smartcache":       filepath.Join(projectDir, "cache"),
+	"downloads":        filepath.Join(projectDir, "downloads"),
+	// ~/InfiniteMITM/resources
 	"ugc":              filepath.Join(resourcesPath, "ugc"),
 	"ugc-maps":         filepath.Join(resourcesPath, "ugc", "maps"),
 	"ugc-egv":          filepath.Join(resourcesPath, "ugc", "enginegamevariants"),
@@ -44,16 +48,14 @@ var resourcesDirPaths = map[string]string{
 	"tools":            filepath.Join(resourcesPath, "tools"),
 	"tools-ivt":        filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
 	"json":             filepath.Join(resourcesPath, "json"),
-	"smartcache":       filepath.Join(resourcesPath, "cache"),
-	"downloads":        filepath.Join(resourcesPath, "downloads"),
 }
 
 func GetSmartCacheDirPath() string {
-	return resourcesDirPaths["smartcache"]
+	return dirPaths["smartcache"]
 }
 
 func GetDownloadsDirPath() string {
-	return resourcesDirPaths["downloads"]
+	return dirPaths["downloads"]
 }
 
 func CreateRootAssets(f *embed.FS) *errors.MITMError {
@@ -93,7 +95,7 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 		}
 	}
 
-	for _, v := range resourcesDirPaths {
+	for _, v := range dirPaths {
 		os.MkdirAll(v, 0755)
 	}
 

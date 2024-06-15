@@ -29,7 +29,7 @@ options:
     enabled: false
     strategy: memory
     ### ├── memory:     will write cached responses in memory
-    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/resources/cache)
+    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
   traffic_display: overrides
   ## ├── all:           will show all requests/responses in the network table
   ## ├── overrides:     will only display overridden requests/responses in the network table

@@ -6,7 +6,7 @@
 
 -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
 -   When changing the request `body`, the `Content-Length` header will be automatically recalculated.
--   Make sure not to send sensitive information (e.g., `X-343-Authorization-Spartan-Token`) when altering the request `body`.
+-   Make sure not to send sensitive information (e.g., `X-343-Authorization-Spartan`) when altering the request `body`.
     - Example: https://github.com/Alexis-Bize/InfiniteMITM/blob/main/examples/surasia/mitm.yaml#L9
 
 ## Example

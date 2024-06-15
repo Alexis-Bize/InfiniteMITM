@@ -260,7 +260,7 @@ func readBodyFile(body string, headers http.Header, matches []string) ([]byte, e
 	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
 	if isURL(str) {
-		buffer, mitmErr := request.Send("GET", body, nil, request.HeadersToMap(headers));
+		buffer, mitmErr := request.Send("GET", str, nil, request.HeadersToMap(headers));
 		if mitmErr != nil {
 			return nil, fmt.Errorf(mitmErr.Message)
 		}

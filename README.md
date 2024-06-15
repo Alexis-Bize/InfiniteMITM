@@ -36,6 +36,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 ## Examples (Snippet)
 
 -   [Server Selection](/examples/server-selection)
+-   [Watch Film Override](/examples/watch-film-override)
 -   [Flags Override](/examples/flags-override)
 
 ## But Why Not Fiddler?

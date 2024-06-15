@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 const (
 	CacheHeaderKey = "X-Infinite-MITM-Smart-Cache"
@@ -40,17 +41,22 @@ const (
 	CacheHeaderMissValue = "MISS"
 )
 
-func Send(method, url string, payload []byte, headers map[string]string) ([]byte, *errors.MITMError) {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
+func Send(method, url string, payload []byte, header http.Header) ([]byte, *errors.MITMError) {
+	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
 		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
 	}
 
-	for key, value := range headers {
-		req.Header.Set(key, value)
+	for key, values := range header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
 	}
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())

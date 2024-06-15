@@ -4,6 +4,10 @@ domains:
     - path: /ugcstorage/*.(jpg|png)
       methods:
         - GET
+      request:
+        headers:
+          # DO NOT SEND YOUR AUTHORIZATION TOKEN TO AN EXTERNAL DOMAIN
+          x-343-authorization-spartan:
       response:
         body: https://cataas.com/cat
         headers:
@@ -14,6 +18,10 @@ domains:
     - path: /:title/images/file/news/*.(jpg|png)
       methods:
         - GET
+      request:
+        headers:
+          # DO NOT SEND YOUR AUTHORIZATION TOKEN TO AN EXTERNAL DOMAIN
+          x-343-authorization-spartan:
       response:
         body: https://cataas.com/cat
         headers:

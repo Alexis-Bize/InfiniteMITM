@@ -6,4 +6,4 @@ domains:
         - GET
       response:
         # replace the GUID (e04e566e-834f-452a-8764-6fea1cd9dfa3) by the desired match ID
-        body: $1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
+        body: :authoring-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate

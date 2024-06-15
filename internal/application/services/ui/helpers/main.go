@@ -20,7 +20,7 @@ import (
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/resources"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -101,7 +101,7 @@ func SaveToDisk(data []byte, filename string, contentType string) {
 		extension = "bin"
 	}
 
-	outputDir := path.Join(resources.GetDownloadsDirPath())
+	outputDir := filepath.Join(resources.GetDownloadsDirPath())
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		outputDir = configs.GetConfig().Extra.ProjectDir;
 	}
@@ -109,7 +109,7 @@ func SaveToDisk(data []byte, filename string, contentType string) {
 	filename = fmt.Sprintf("%s.%s", filename, extension)
 	filePath, err := zenity.SelectFileSave(
 		zenity.Title("Save body content"),
-		zenity.Filename(path.Join(outputDir, filename)),
+		zenity.Filename(filepath.Join(outputDir, filename)),
 		zenity.ConfirmOverwrite(),
 	)
 

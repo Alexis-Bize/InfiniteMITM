@@ -31,4 +31,4 @@ Additionally, you could switch the `traffic_display` option to `silent` or `smar
 - `memory`
     - Will write cached responses in memory, which will be flushed once the CLI is closed.
 - `persistent`
-    - Will write cached responses to the disk (`~/InfiniteMITM/resources/cache`), making them available after a restart.
+    - Will write cached responses to the disk (`~/InfiniteMITM/cache`), making them available after a restart.

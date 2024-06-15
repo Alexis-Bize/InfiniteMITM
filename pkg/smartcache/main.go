@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -125,7 +125,7 @@ func (s *SmartCache) Read(key string) *SmartCacheItem {
 	}
 
 	if s.strategy == Persistent {
-		file, err := os.Open(path.Join(resources.GetSmartCacheDirPath(), key))
+		file, err := os.Open(filepath.Join(resources.GetSmartCacheDirPath(), key))
 		if err == nil {
 			defer file.Close()
 
@@ -161,7 +161,8 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	s.items[key] = item
 
 	if !item.persisted && s.strategy == Persistent {
-		file, err := os.Create(path.Join(resources.GetSmartCacheDirPath(), key)); if err != nil {
+		file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key));
+		if err != nil {
 			return
 		}
 

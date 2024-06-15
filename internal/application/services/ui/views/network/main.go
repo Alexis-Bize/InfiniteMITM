@@ -124,7 +124,7 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 	if data.SmartCached {
 		prefix = "⧖"
 	} else if data.Proxified {
-		prefix = "⭑"
+		prefix = "✓"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -159,13 +159,13 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 
 		var smartCacheHeaderValue string
 		for k, v := range data.Headers {
-			if strings.EqualFold(k, request.CacheHeaderKey) {
+			if strings.EqualFold(k, request.MITMCacheHeaderKey) {
 				smartCacheHeaderValue = v
 				break
 			}
 		}
 
-		if smartCacheHeaderValue != request.CacheHeaderHitValue {
+		if smartCacheHeaderValue != request.MITMCacheHeaderHitValue {
 			if data.Status == 200 {
 				prefix = "⧗"
 			} else if data.Status != 302 && (data.Status < 200 || data.Status >= 300) {
@@ -173,7 +173,7 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 			}
 		}
 	} else if data.Proxified {
-		prefix = "⭑"
+		prefix = "✓"
 	}
 
 	hostname, path := explodeURL(data.URL)

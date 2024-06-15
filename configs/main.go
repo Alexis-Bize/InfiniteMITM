@@ -19,7 +19,7 @@ import (
 	errors "infinite-mitm/pkg/errors"
 	utilities "infinite-mitm/pkg/utilities"
 	"log"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -67,6 +67,6 @@ func GetConfig() *Config {
 		return nil
 	}
 
-	config.Extra.ProjectDir = path.Join(home, strings.Replace(config.Name, " ", "", -1))
+	config.Extra.ProjectDir = filepath.Join(home, strings.Replace(config.Name, " ", "", -1))
 	return config
 }

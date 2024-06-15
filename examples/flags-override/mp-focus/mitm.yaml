@@ -1,5 +1,6 @@
 domains:
-  settings: # settings.svc.halowaypoint.com
+  # settings.svc.halowaypoint.com
+  settings:
     - path: /featureflags/:title
       methods:
         - GET

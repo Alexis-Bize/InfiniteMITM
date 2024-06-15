@@ -174,9 +174,13 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 			body := node.Request.Body
 			matches := pattern.Match(target, req.URL.String())
 
-			if body != "" && req.Method != http.MethodGet && req.Method != http.MethodDelete {
-				buffer, err := readBodyFile(body, req.Header, matches)
+			kv := utilities.InterfaceToMap(node.Request.Headers)
+			for key, value := range kv {
+				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
+			}
 
+			if body != "" {
+				buffer, err := readBodyFile(body, matches, req.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
 					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
@@ -186,11 +190,6 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 					req.ContentLength = int64(bufferLength)
 					req.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 				}
-			}
-
-			kv := utilities.InterfaceToMap(node.Request.Headers)
-			for key, value := range kv {
-				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			customCtx := context.ContextHandler(ctx)
@@ -219,8 +218,13 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			body := node.Response.Body
 			matches := pattern.Match(target, resp.Request.URL.String())
 
+			kv := utilities.InterfaceToMap(node.Response.Headers)
+			for key, value := range kv {
+				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
+			}
+
 			if body != "" {
-				buffer, err := readBodyFile(body, resp.Header, matches)
+				buffer, err := readBodyFile(body, matches, resp.Request.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
 					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
@@ -230,11 +234,6 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 					resp.ContentLength = int64(bufferLength)
 					resp.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 				}
-			}
-
-			kv := utilities.InterfaceToMap(node.Response.Headers)
-			for key, value := range kv {
-				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			if node.Response.StatusCode != 0 {
@@ -256,23 +255,24 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 	}
 }
 
-func readBodyFile(body string, headers http.Header, matches []string) ([]byte, error) {
-	body = pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
-	var mitmErr *errors.MITMError
-	var buffer []byte
-	var err error
+func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
+	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
-	if isURL(body) {
-		buffer, mitmErr = request.Send("GET", body, nil, request.HeadersToMap(headers)); if mitmErr != nil {
+	if isURL(str) {
+		buffer, mitmErr := request.Send("GET", str, nil, header);
+		if mitmErr != nil {
 			return nil, fmt.Errorf(mitmErr.Message)
 		}
-	} else if isSystemPath(body) {
-		buffer, err = os.ReadFile(body); if err != nil {
-			return nil, err
-		}
+
+		return buffer, nil
 	}
 
-	return buffer, err
+	buffer, err := os.ReadFile(cleanSystemPath(str));
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer, nil
 }
 
 func isURL(str string) bool {
@@ -284,16 +284,15 @@ func isURL(str string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
-func isSystemPath(str string) bool {
+func cleanSystemPath(str string) string {
 	if strings.HasPrefix(str, "~/") {
-		home, err := utilities.GetHomeDirectory(); if err != nil {
-			return false
+		home, err := utilities.GetHomeDirectory();
+		if err != nil {
+			return str
 		}
 
 		str = filepath.Join(home, str[2:])
 	}
 
-	matched, _ := regexp.MatchString(`^[a-zA-Z]:\\|^\/`, str)
-	return matched || filepath.IsAbs(str)
+	return filepath.Clean(str)
 }
-

@@ -2,7 +2,12 @@
 
 **InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the root of the generated folder located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and **regex** support.
 
-**Note:** When changing the request `body`, the `Content-Length` header will be automatically calculated.
+### Notes:
+
+-   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
+-   When changing the request `body`, the `Content-Length` header will be automatically recalculated.
+-   Make sure not to send sensitive information (e.g., `X-343-Authorization-Spartan-Token`) when altering the request `body`.
+    - Example: https://github.com/Alexis-Bize/InfiniteMITM/blob/main/examples/surasia/mitm.yaml#L9
 
 ## Example
 
@@ -15,7 +20,7 @@ domains:
       response:
         body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
         headers: # Additional headers to include in the response
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
       methods:
@@ -23,7 +28,7 @@ domains:
       response:
         body: :mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin
         headers:
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
       methods:
@@ -31,7 +36,7 @@ domains:
       response:
         body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
         headers:
-          x-infinite-mitm: :mitm-version
+          x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
     - path: /ugcstorage/* # Match all after /ugcstorage/
       methods:

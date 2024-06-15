@@ -1,9 +1,9 @@
 domains:
-  # authoring-infiniteugc.svc.halowaypoint.com
-  authoring:
+  # discovery-infiniteugc.svc.halowaypoint.com
+  discovery:
     - path: :title/films/matches/:guid/spectate
       methods:
         - GET
       response:
         # replace the GUID (e04e566e-834f-452a-8764-6fea1cd9dfa3) by the desired match ID
-        body: :authoring-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
+        body: :discovery-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate

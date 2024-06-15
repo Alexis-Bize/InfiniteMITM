@@ -124,7 +124,7 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 	if data.SmartCached {
 		prefix = "⧖"
 	} else if data.Proxified {
-		prefix = "⭑"
+		prefix = "✓"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -173,7 +173,7 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 			}
 		}
 	} else if data.Proxified {
-		prefix = "⭑"
+		prefix = "✓"
 	}
 
 	hostname, path := explodeURL(data.URL)

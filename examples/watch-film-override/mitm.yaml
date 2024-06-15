@@ -1,7 +1,7 @@
 domains:
   # discovery-infiniteugc.svc.halowaypoint.com
   discovery:
-    # :guid will catch all GUIDs, but you can specify a specific one, e.g., 23c1de01-4749-4c0c-98be-7beabcb61abb
+    # :guid will catch all GUIDs (even 00000000-0000-0000-0000-000000000000), but you can specify a specific one, e.g., 23c1de01-4749-4c0c-98be-7beabcb61abb
     - path: :title/films/matches/:guid/spectate
       methods:
         - GET

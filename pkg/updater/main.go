@@ -63,7 +63,7 @@ func CheckForUpdates() (bool, string, *errors.MITMError) {
 		return false, "", nil
 	}
 
-	return false, latestRelease.TagName, nil
+	return true, latestRelease.TagName, nil
 }
 
 func isNewVersionAvailable(currentVersion, latestVersion string) (bool, error) {

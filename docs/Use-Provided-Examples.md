@@ -126,7 +126,7 @@ options:
 
 -   Save the file, and you are ready to go.
 
-## Notes:
+## Notes
 
 -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
 -   Some changes may require to restart **Halo Infinite**.

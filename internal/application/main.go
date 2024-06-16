@@ -24,6 +24,7 @@ import (
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/updater"
+	"os"
 	"runtime"
 
 	"github.com/charmbracelet/huh"
@@ -51,7 +52,7 @@ func Init(f *embed.FS) *errors.MITMError {
 
 		if !ignoreUpdate {
 			sysutilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
-			return nil
+			os.Exit(1)
 		}
 	}
 

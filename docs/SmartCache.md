@@ -33,4 +33,4 @@ Additionally, you could switch the `traffic_display` option to `silent` or `smar
 ### Time-To-Live (TTL)
 
 -   `ttl`: Allows you to define the cache duration (default is 7 days).
-   - Supported suffixes: `h` (hour) | `d` (day) | `w` (week)
+    -   Supported suffixes: `h` (hour) | `d` (day) | `w` (week)

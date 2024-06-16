@@ -88,6 +88,7 @@ domains:
   blobs:
   # discovery-infiniteugc.svc.halowaypoint.com
   discovery:
+    # pasted ↓↓↓
     - path: :title/films/matches/:guid/spectate
       methods:
         - GET
@@ -96,6 +97,7 @@ domains:
         body: :discovery-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
         headers:
           content-type: :ct-bond
+    # ↑↑↑ pasted
   # economy.svc.halowaypoint.com
   economy:
   # gamecms-hacs.svc.halowaypoint.com

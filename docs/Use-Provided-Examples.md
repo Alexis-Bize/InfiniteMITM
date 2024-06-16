@@ -1,6 +1,6 @@
 # Use Provided Examples
 
-**InfiniteMITM** offers various (examples)[/examples] of rewriting incoming and outgoing traffic. To make your task easier, this documentation will explain how to incorporate these examples into your own `mitm.yaml` file, located in your home directory at `C:\Users\<username>\InfiniteMITM`.
+**InfiniteMITM** offers various [examples](/examples) of rewriting incoming and outgoing traffic. To make your task easier, this documentation will explain how to incorporate these examples into your own `mitm.yaml` file, located in your home directory at `C:\Users\<username>\InfiniteMITM`.
 
 ## Step-by-Step Guide
 

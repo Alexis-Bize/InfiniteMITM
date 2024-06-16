@@ -18,7 +18,7 @@ Override the available servers by keeping only desired ones to force their selec
 
 ### Schema (Example)
 
-In the following example (partial, must not be used as is), all `serverUrl` instances are replaced with the **West Europe** one
+In the following example (partial, must not be used as is), instances of `serverUrl` are replaced with the **West Europe** one. This means that the game will search for matches in `SouthAfricaNorth` and `EastUs2` even for EU players.
 
 ```json
 [

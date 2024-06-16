@@ -22,13 +22,13 @@ import (
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
-	domains "infinite-mitm/pkg/domains"
+	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
-	pattern "infinite-mitm/pkg/pattern"
-	request "infinite-mitm/pkg/request"
-	cache "infinite-mitm/pkg/smartcache"
+	"infinite-mitm/pkg/pattern"
+	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/smartcache"
 	"infinite-mitm/pkg/sysutilities"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/utilities"
 	"io"
 	"log"
 	"net/http"
@@ -47,7 +47,7 @@ import (
 
 type SmartCacheYAMLOptions struct {
 	Enabled  bool
-	Strategy cache.StrategyType
+	Strategy smartcache.StrategyType
 }
 
 type YAMLOptions struct {

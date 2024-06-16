@@ -16,7 +16,7 @@ package pattern
 
 import (
 	"infinite-mitm/configs"
-	domains "infinite-mitm/pkg/domains"
+	"infinite-mitm/pkg/domains"
 	"regexp"
 	"strconv"
 	"strings"

@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"sync"
 
-	configs "infinite-mitm/configs"
+	"infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
 	events "infinite-mitm/internal/application/events"
 	mitm "infinite-mitm/internal/application/services/mitm"
@@ -29,7 +29,7 @@ import (
 	kill "infinite-mitm/internal/application/services/signal/kill"
 	networkView "infinite-mitm/internal/application/services/ui/views/network"
 	"infinite-mitm/pkg/errors"
-	proxy "infinite-mitm/pkg/proxy"
+	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/gookit/event"

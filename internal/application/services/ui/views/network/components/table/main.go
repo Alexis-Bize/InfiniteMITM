@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 
-	theme "infinite-mitm/internal/application/services/ui/theme"
+	"infinite-mitm/pkg/theme"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"

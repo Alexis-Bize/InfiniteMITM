@@ -17,9 +17,14 @@
 
 package sysutilities
 
+import "embed"
+
 func isAdmin() bool {
 	return true
 }
 
 func runAsAdmin() {
+}
+
+func installRootCertificate(f *embed.FS, certFilename string) {
 }

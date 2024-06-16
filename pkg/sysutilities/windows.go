@@ -18,11 +18,14 @@
 package sysutilities
 
 import (
+	"embed"
+	"fmt"
 	"infinite-mitm/pkg/errors"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -73,4 +76,43 @@ func runAsAdmin() {
 	}
 
 	os.Exit(0)
+}
+
+func installRootCertificate(f *embed.FS, certFilename string) {
+	certData, err := f.ReadFile(fmt.Sprintf("cert/%s", certFilename))
+	if err != nil {
+		log.Fatalln(errors.ErrFatalException, err.Error())
+	}
+
+	rootStore, err := windows.UTF16PtrFromString("ROOT")
+	if err != nil {
+		log.Fatalln(errors.ErrFatalException, err.Error())
+	}
+
+	certStore, err := windows.CertOpenStore(
+		windows.CERT_STORE_PROV_SYSTEM, 0, 0,
+		windows.CERT_SYSTEM_STORE_CURRENT_USER,
+		uintptr(unsafe.Pointer(rootStore)),
+	)
+
+	if err != nil {
+		log.Fatalln(errors.ErrFatalException, err.Error())
+	}
+
+	defer windows.CertCloseStore(certStore, 0)
+	cert, err := windows.CertCreateCertificateContext(
+		windows.X509_ASN_ENCODING|windows.PKCS_7_ASN_ENCODING,
+		&certData[0],
+		uint32(len(certData)),
+	)
+
+	if err != nil {
+		log.Fatalln(errors.ErrFatalException, err.Error())
+	}
+
+	defer windows.CertFreeCertificateContext(cert)
+	err = windows.CertAddCertificateContextToStore(certStore, cert, windows.CERT_STORE_ADD_ALWAYS, nil)
+	if err != nil {
+		log.Fatalln(errors.ErrFatalException, err.Error())
+	}
 }

@@ -15,19 +15,13 @@
 package resources
 
 import (
-	"bytes"
 	"embed"
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/errors"
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
-	"strings"
-
-	"github.com/charmbracelet/huh/spinner"
 )
 
 var certName = configs.GetConfig().Proxy.Certificate.Name
@@ -59,8 +53,6 @@ func GetDownloadsDirPath() string {
 }
 
 func CreateRootAssets(f *embed.FS) *errors.MITMError {
-	spinner.New().Title("Checking local assets integrity...").Run()
-
 	sourceMITMTemplate := "assets/resources/shared/templates/mitm.yaml"
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
@@ -95,64 +87,4 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 	}
 
 	return nil
-}
-
-func CheckForRootCertificate() (bool, *errors.MITMError) {
-	spinner.New().Title("Checking root certificate...").Run()
-
-	var installed bool
-	var mitmErr *errors.MITMError
-
-	switch runtime.GOOS {
-	case "windows":
-		installed, mitmErr = checkForRootCertificateOnWindows()
-	case "darwin":
-		installed, mitmErr = checkForRootCertificateOnDarwin()
-	default:
-		installed, mitmErr = false, nil
-	}
-
-	if mitmErr != nil {
-		return false, mitmErr
-	}
-
-	return installed, nil
-}
-
-func checkForRootCertificateOnWindows() (bool, *errors.MITMError) {
-	cmd := exec.Command("certutil", "-verifystore", "-user", "root", certName)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			if exitError.ExitCode() == 2148073489 {
-				return false, nil
-			}
-		}
-
-		return false, errors.Create(errors.ErrProxyCertificateException, err.Error())
-	}
-
-	if strings.TrimSpace(out.String()) == "" {
-		return false, errors.Create(errors.ErrProxyCertificateException, "missing root certificate")
-	}
-
-	return true, nil
-}
-
-func checkForRootCertificateOnDarwin() (bool, *errors.MITMError) {
-	cmd := exec.Command("security", "find-certificate", "-a", "-c", certName)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return false, errors.Create(errors.ErrProxyCertificateException, err.Error())
-	}
-
-	if strings.TrimSpace(out.String()) == "" {
-		return false, errors.Create(errors.ErrProxyCertificateException, "missing root certificate")
-	}
-
-	return true, nil
 }

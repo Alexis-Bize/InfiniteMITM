@@ -17,9 +17,11 @@ package MITMApplicationUIServiceNetworkTrafficDetailsComponent
 import (
 	"encoding/hex"
 	"fmt"
+	"infinite-mitm/configs"
 	helpers "infinite-mitm/internal/application/services/ui/helpers"
-	theme "infinite-mitm/internal/application/services/ui/theme"
 	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/utilities"
 	"net/url"
 	"path"
@@ -222,9 +224,9 @@ func (m *TrafficModel) CopyToClipboard() {
 		}
 
 		sort.Strings(headersString)
-		helpers.CopyToClipboard(strings.Join(headersString, "\n"))
+		sysutilities.CopyToClipboard(strings.Join(headersString, "\n"))
 	} else if m.activeView == BodyViewKey {
-		helpers.CopyToClipboard(hex.EncodeToString(m.data.Body))
+		sysutilities.CopyToClipboard(hex.EncodeToString(m.data.Body))
 	}
 }
 
@@ -244,7 +246,7 @@ func (m TrafficModel) SaveToDisk() {
 			filename = strings.Split(path.Base(parse.Path), ".")[0]
 		}
 
-		helpers.SaveToDisk(m.data.Body, filename, ct)
+		sysutilities.SaveToDisk(m.data.Body, configs.GetConfig().Extra.ProjectDir, filename, ct)
 	}
 }
 

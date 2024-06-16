@@ -15,9 +15,9 @@
 package MITMApplicationUIServiceNetworkDetailsComponent
 
 import (
-	theme "infinite-mitm/internal/application/services/ui/theme"
 	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
 	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/theme"
 	utilities "infinite-mitm/pkg/utilities"
 	"net/http"
 	"strings"

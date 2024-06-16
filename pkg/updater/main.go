@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/charmbracelet/huh/spinner"
 )
 
 type Release struct {
@@ -34,8 +33,6 @@ type Release struct {
 type Releases []Release
 
 func CheckForUpdates() (bool, string, *errors.MITMError) {
-	spinner.New().Title("Checking for updates...").Run()
-
 	owner, repo := extractOwnerAndRepo()
 	if owner == "" || repo == "" {
 		return false, "", errors.Create(errors.ErrUpdaterException, "could not extract repository details")

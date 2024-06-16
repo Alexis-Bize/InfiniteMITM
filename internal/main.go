@@ -16,7 +16,9 @@ package MITM
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
+	"runtime"
 	"sync"
 
 	configs "infinite-mitm/configs"
@@ -77,7 +79,12 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		wg.Wait()
 	} else if prompt.InstallRootCertificate.Is(option) {
-		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/docs/Install-Root-Certificate.md")
+		if runtime.GOOS == "windows" {
+			sysutilities.InstallRootCertificate(f, fmt.Sprintf("%s.cer", configs.GetConfig().Proxy.Certificate.Name))
+			return Start(f)
+		}
+
+		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
 	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()

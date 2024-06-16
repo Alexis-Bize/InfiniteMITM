@@ -1,5 +1,7 @@
 # Install Root Certificate
 
+## Windows
+
 1. Download the [**InfiniteMITMRootCA.cer**](/cert/InfiniteMITMRootCA.cer) certificate (View RAW) and double-click on it.
 2. Click **Install Certificate**, install it for the **Current User** and click **Next**.
 3. Select **Place all certificates in the following store**.

@@ -22,13 +22,22 @@ import (
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/updater"
+	"runtime"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func Init(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
+
+	spinner.New().Title("Looking for updates...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
 
 	updateAvailable, latest, _ := updater.CheckForUpdates()
 	if updateAvailable {
@@ -46,15 +55,23 @@ func Init(f *embed.FS) *errors.MITMError {
 		}
 	}
 
-	if !sysutilities.IsAdmin() {
-		sysutilities.RunAsAdmin()
+	if runtime.GOOS == "windows" {
+		spinner.New().Title("Verifying admin privileges...").
+			TitleStyle(lipgloss.NewStyle().
+				Foreground(theme.ColorNormalFg)).
+				Run()
+
+		if !sysutilities.IsAdmin() {
+			sysutilities.RunAsAdmin()
+		}
 	}
+
+	spinner.New().Title("Verifying local assets integrity...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
 
 	mitmErr = resources.CreateRootAssets(f); if mitmErr != nil {
-		return mitmErr
-	}
-
-	_, mitmErr = resources.CheckForRootCertificate(); if mitmErr != nil {
 		return mitmErr
 	}
 
@@ -63,5 +80,15 @@ func Init(f *embed.FS) *errors.MITMError {
 		return nil
 	}
 
-	return mitmErr
+	spinner.New().Title("Looking for root certificate...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
+
+	_, mitmErr = sysutilities.CheckForRootCertificate(configs.GetConfig().Proxy.Certificate.Name);
+	if mitmErr != nil {
+		return mitmErr
+	}
+
+	return nil
 }

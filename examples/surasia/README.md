@@ -11,3 +11,4 @@ Will replace all images (maps, modes, playlists, etc.) with random cat images.
 ## Installation
 
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+    -   Documentation: [/docs/Use-Provided-Examples.md](Use Provided Examples)

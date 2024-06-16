@@ -5,3 +5,4 @@ Will replace the film you want to watch with another one by switching the match 
 ## Installation
 
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+    -   Documentation: [/docs/Use-Provided-Examples.md](Use Provided Examples)

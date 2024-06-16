@@ -37,6 +37,7 @@ Please refer to our [documentation](/docs/Feature-Flags.md) for more details abo
 -   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.
 -   Download and move [`mp-focus.bin`](./resources/bin/flags/mp-focus.bin) into the `flags` directory.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+    -   Documentation: [/docs/Use-Provided-Examples.md](Use Provided Examples)
 
 ## Notice
 

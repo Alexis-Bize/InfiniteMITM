@@ -20,8 +20,6 @@ Override the available servers by keeping only desired ones to force their selec
 
 In the following example (partial, must not be used as is), instances of `serverUrl` are replaced with the **West Europe** one. This means that the game will search for matches in `SouthAfricaNorth` and `EastUs2` even for EU players.
 
-If you want to force `EastUs2`, for example, you can replace all `serverUrl` instances, except for the `EastUs2` one, with a distant server such as `AustraliaEast`.
-
 ```json
 [
   {
@@ -34,6 +32,8 @@ If you want to force `EastUs2`, for example, you can replace all `serverUrl` ins
   }
 ]
 ```
+
+If you want to force `EastUs2`, for example, you can replace all `serverUrl` instances, except for the `EastUs2` one, with a distant server such as `AustraliaEast`.
 
 ## Notice
 

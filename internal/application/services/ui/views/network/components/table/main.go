@@ -185,7 +185,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 
 		contentType := "..."
 		if msg.ContentType != "" || msg.Status != 0 {
-			contentType = msg.ContentType
+			contentType = strings.Split(msg.ContentType, ";")[0]
 		}
 
 		m.AssignRowPosition(msg.ID, position)

@@ -1,0 +1,128 @@
+# Use Provided Examples
+
+**InfiniteMITM** offers various (examples)[/examples] of rewriting incoming and outgoing traffic. To make your task easier, this documentation will explain how to incorporate these examples into your own `mitm.yaml` file, located in your home directory at `C:\Users\<username>\InfiniteMITM`.
+
+## Step-by-Step Guide
+
+### Step 1
+
+-   Using a file editor, open the `mitm.yaml` file located in your home directory at `C:\Users\<username>\InfiniteMITM`.
+    -   The following content represents the default template for this file.
+
+```yaml
+# do not edit
+version: 1
+
+domains:
+  # *.svc.halowaypoint.com
+  root:
+  # authoring-infiniteugc.svc.halowaypoint.com
+  authoring:
+  # blobs-infiniteugc.svc.halowaypoint.com
+  blobs:
+  # discovery-infiniteugc.svc.halowaypoint.com
+  discovery:
+  # economy.svc.halowaypoint.com
+  economy:
+  # gamecms-hacs.svc.halowaypoint.com
+  gamecms:
+  # lobby-hi.svc.halowaypoint.com
+  lobby:
+  # settings.svc.halowaypoint.com
+  settings:
+  # halostats.svc.halowaypoint.com
+  stats:
+  # skill.svc.halowaypoint.com
+  skill:
+
+options:
+  # cache static content in memory or on the disk to minimize network usage and enhance game's performance
+  smart_cache:
+    enabled: false
+    strategy: memory
+    ### ├── memory:     will write cached responses in memory
+    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
+  traffic_display: overrides
+  ## ├── all:           will show all requests/responses in the network table
+  ## ├── overrides:     will only display overridden requests/responses in the network table
+  ## ├── smart_cached:  will only display smart cached requests/responses in the network table
+  ## └── silent:        will silent (hide) all requests/responses
+```
+
+### Step 2
+
+-   Open the desired `mitm.yaml` file in on of our [examples](/examples).
+    -   For this guide, we will use the [Watch Film Override](/examples/watch-film-override) one.
+-   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy` under `domains` → `discovery`, where `discovery` will be the overridden service.
+
+```yaml
+domains:
+  discovery:
+    # copy ↓↓↓
+    - path: :title/films/matches/:guid/spectate
+      methods:
+        - GET
+      response:
+        code: 200
+        body: :discovery-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
+        headers:
+          content-type: :ct-bond
+    # ↑↑↑ copy
+```
+
+### Step 3
+
+-   Paste the copied content under `domains` → `discovery` as follows.
+    -   Make sure to respect the indentation (spaces).
+
+```yaml
+# do not edit
+version: 1
+
+domains:
+  # *.svc.halowaypoint.com
+  root:
+  # authoring-infiniteugc.svc.halowaypoint.com
+  authoring:
+  # blobs-infiniteugc.svc.halowaypoint.com
+  blobs:
+  # discovery-infiniteugc.svc.halowaypoint.com
+  discovery:
+    - path: :title/films/matches/:guid/spectate
+      methods:
+        - GET
+      response:
+        code: 200
+        body: :discovery-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
+        headers:
+          content-type: :ct-bond
+  # economy.svc.halowaypoint.com
+  economy:
+  # gamecms-hacs.svc.halowaypoint.com
+  gamecms:
+  # lobby-hi.svc.halowaypoint.com
+  lobby:
+  # settings.svc.halowaypoint.com
+  settings:
+  # halostats.svc.halowaypoint.com
+  stats:
+  # skill.svc.halowaypoint.com
+  skill:
+
+options:
+  # cache static content in memory or on the disk to minimize network usage and enhance game's performance
+  smart_cache:
+    enabled: false
+    strategy: memory
+    ### ├── memory:     will write cached responses in memory
+    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
+  traffic_display: overrides
+  ## ├── all:           will show all requests/responses in the network table
+  ## ├── overrides:     will only display overridden requests/responses in the network table
+  ## ├── smart_cached:  will only display smart cached requests/responses in the network table
+  ## └── silent:        will silent (hide) all requests/responses
+```
+
+-   Save the file, and you are ready to go.
+    -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
+    -   Some changes may require to restart **Halo Infinite**.

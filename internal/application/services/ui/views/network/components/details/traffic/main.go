@@ -51,7 +51,7 @@ type TrafficModel struct {
 	focused     bool
 }
 
-const BodyMaxViewLength = 200 * 1024
+const BodyMaxViewLength = 100 * 1024
 
 const (
 	HeadersViewKey activeViewType = "headers"

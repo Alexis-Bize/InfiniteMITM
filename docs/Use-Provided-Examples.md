@@ -7,7 +7,7 @@
 ### Step 1
 
 -   Using a file editor, open the `mitm.yaml` file located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`).
--   The following content represents the default template for this file.
+    -   The following content represents the default template for this file.
 
 ```yaml
 # do not edit
@@ -72,7 +72,7 @@ domains:
 ### Step 3
 
 -   Paste the copied content under the same example node as follows (`domains` → `discovery`).
--   Make sure to respect the indentation (spaces).
+    -   Make sure to respect the indentation (spaces).
 
 ```yaml
 # do not edit
@@ -125,5 +125,8 @@ options:
 ```
 
 -   Save the file, and you are ready to go.
+
+## Notes:
+
 -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
 -   Some changes may require to restart **Halo Infinite**.

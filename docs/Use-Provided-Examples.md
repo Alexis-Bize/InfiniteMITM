@@ -6,7 +6,7 @@
 
 ### Step 1:
 
--   Using a file editor, open the `mitm.yaml`
+-   Using a file editor, open your `mitm.yaml` file.
     -   This file is located in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`).
     -   The following content represents the default template for this file.
 

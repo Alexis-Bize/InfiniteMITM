@@ -112,7 +112,10 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	if !smartCacheEnabled {
 		smartCache = nil
 	} else if smartCache == nil {
-		smartCache = smartcache.New(smartcache.StrategyType(content.Options.SmartCache.Strategy))
+		smartCache = smartcache.New(
+			smartcache.StrategyType(content.Options.SmartCache.Strategy),
+			content.Options.SmartCache.TTL,
+		)
 	}
 
 	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {

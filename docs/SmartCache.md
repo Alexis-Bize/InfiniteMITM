@@ -21,14 +21,16 @@ Open the `mitm.yaml` file in the **InfiniteMITM** directory within your home dir
 options:
   smart_cache:
     enabled: true
-    strategy: persistent
 ```
 
 Additionally, you could switch the `traffic_display` option to `silent` or `smart_cached` to reduce network table updates.
 
-## Strategies
+### Strategies
 
-- `memory`
-    - Will write cached responses in memory, which will be flushed once the CLI is closed.
-- `persistent`
-    - Will write cached responses to the disk (`<drive>:\Users\<username>\InfiniteMITM\cache`), making them available after a restart.
+-   `memory`: Will write cached responses in memory, which will be flushed once the CLI is closed.
+-   `persistent`: Will write cached responses to the disk (`<drive>:\Users\<username>\InfiniteMITM\cache`), making them available after a restart.
+
+### Time-To-Live (TTL)
+
+-   `ttl`: Allows you to define the cache duration (default is 7 days).
+   - Supported suffixes: `h` (hour) | `d` (day) | `w` (week)

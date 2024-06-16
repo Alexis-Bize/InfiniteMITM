@@ -45,13 +45,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type SmartCacheYAMLOptions struct {
-	Enabled  bool
-	Strategy smartcache.StrategyType
-}
-
 type YAMLOptions struct {
-	SmartCache     SmartCacheYAMLOptions `yaml:"smart_cache"`
+	SmartCache     smartcache.SmartCacheYAMLOptions `yaml:"smart_cache"`
 	TrafficDisplay traffic.TrafficDisplay `yaml:"traffic_display"`
 }
 

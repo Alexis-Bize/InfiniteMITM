@@ -52,7 +52,7 @@ options:
 ### Step 2:
 
 -   Open the desired `mitm.yaml` file in one of our provided [examples](/examples).
--   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy`.
+-   Copy the configuration (specified here between `copy ↓↓↓` and `↑↑↑ copy`).
 
 ```yaml
 domains:

@@ -7,7 +7,7 @@
 ### Step 1
 
 -   Using a file editor, open the `mitm.yaml` file located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`).
-    -   The following content represents the default template for this file.
+-   The following content represents the default template for this file.
 
 ```yaml
 # do not edit
@@ -52,8 +52,7 @@ options:
 ### Step 2
 
 -   Open the desired `mitm.yaml` file in one of provided our [examples](/examples).
-    -   For this guide, we will use [Watch Film Override](/examples/watch-film-override).
--   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy` under `domains` → `discovery`, where `discovery` will be the overridden service.
+-   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy`.
 
 ```yaml
 domains:
@@ -73,7 +72,7 @@ domains:
 ### Step 3
 
 -   Paste the copied content under `domains` → `discovery` as follows.
-    -   Make sure to respect the indentation (spaces).
+-   Make sure to respect the indentation (spaces).
 
 ```yaml
 # do not edit
@@ -126,5 +125,5 @@ options:
 ```
 
 -   Save the file, and you are ready to go.
-    -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
-    -   Some changes may require to restart **Halo Infinite**.
+-   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
+-   Some changes may require to restart **Halo Infinite**.

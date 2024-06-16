@@ -1,6 +1,6 @@
 # Install Root Certificate
 
-When starting the application for the first time, you must install the root certificate. This certificate allows the CLI to listen for the game's network traffic. The CLI should provide the option to do this. If you prefer to install the root certificate manually, please follow the steps below.
+When you launch the application for the first time, you must install the root certificate. This certificate enables the CLI to monitor the game's network traffic. The CLI should offer an option to do this automatically. If you prefer to install the root certificate manually, please follow the instructions below.
 
 ## Install the Root Certificate manually
 

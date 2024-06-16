@@ -51,7 +51,7 @@ options:
 
 ### Step 2:
 
--   Open the desired `mitm.yaml` file in one of provided our [examples](/examples).
+-   Open the desired `mitm.yaml` file in one of our provided [examples](/examples).
 -   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy`.
 
 ```yaml

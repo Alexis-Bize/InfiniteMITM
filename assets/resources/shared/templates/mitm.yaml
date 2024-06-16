@@ -16,13 +16,6 @@ domains:
   gamecms:
   # lobby-hi.svc.halowaypoint.com
   lobby:
-    - path: /titles/:title/qosservers
-      methods:
-        - GET
-      response:
-        body: :mitm-dir/resources/json/server-selection.json
-        headers:
-          content-type: :ct-json
   # settings.svc.halowaypoint.com
   settings:
   # halostats.svc.halowaypoint.com

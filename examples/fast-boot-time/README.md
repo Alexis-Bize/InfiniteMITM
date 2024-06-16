@@ -11,6 +11,8 @@ Will "deactivate" all related customization requests (such as emblems, armors, e
 ## Installation
 
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+    -   Documentation: [Use Provided Examples](/docs/Use-Provided-Examples.md)
+-   Restart the game.
 
 ## Notice
 

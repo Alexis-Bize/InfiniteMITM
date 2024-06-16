@@ -12,23 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build !windows
+// +build !windows
 
-import (
-	"embed"
-	MITM "infinite-mitm/internal"
-	"infinite-mitm/pkg/errors"
-)
+package sysutilities
 
-//go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
-//go:embed assets/resources/shared/templates/*
-//go:embed cert/*
-var f embed.FS
+import "embed"
 
-func main() {
-	if mitmErr := MITM.Start(&f); mitmErr != nil {
-		if mitmErr.Unwrap() != errors.ErrPromptException {
-			mitmErr.Log()
-		}
-	}
+func isAdmin() bool {
+	return true
+}
+
+func runAsAdmin() {
+}
+
+func installRootCertificate(f *embed.FS, certFilename string) {
 }

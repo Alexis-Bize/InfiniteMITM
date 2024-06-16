@@ -1,3 +1,4 @@
+## ... (yaml)
 domains:
   # discovery-infiniteugc.svc.halowaypoint.com
   discovery:
@@ -11,3 +12,4 @@ domains:
         body: :discovery-svc/$1/films/matches/e04e566e-834f-452a-8764-6fea1cd9dfa3/spectate
         headers:
           content-type: :ct-bond
+## ... (yaml)

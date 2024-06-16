@@ -21,14 +21,23 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/resources"
+	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/updater"
-	"infinite-mitm/pkg/utilities"
+	"runtime"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func Init(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
+
+	spinner.New().Title("Looking for updates...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
 
 	updateAvailable, latest, _ := updater.CheckForUpdates()
 	if updateAvailable {
@@ -41,16 +50,28 @@ func Init(f *embed.FS) *errors.MITMError {
 			Run()
 
 		if !ignoreUpdate {
-			utilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
+			sysutilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
 			return nil
 		}
 	}
 
-	mitmErr = resources.CreateRootAssets(f); if mitmErr != nil {
-		return mitmErr
+	if runtime.GOOS == "windows" {
+		spinner.New().Title("Verifying admin privileges...").
+			TitleStyle(lipgloss.NewStyle().
+				Foreground(theme.ColorNormalFg)).
+				Run()
+
+		if !sysutilities.IsAdmin() {
+			sysutilities.RunAsAdmin()
+		}
 	}
 
-	_, mitmErr = resources.CheckForRootCertificate(); if mitmErr != nil {
+	spinner.New().Title("Verifying local assets integrity...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
+
+	mitmErr = resources.CreateRootAssets(f); if mitmErr != nil {
 		return mitmErr
 	}
 
@@ -59,5 +80,15 @@ func Init(f *embed.FS) *errors.MITMError {
 		return nil
 	}
 
-	return mitmErr
+	spinner.New().Title("Looking for root certificate...").
+		TitleStyle(lipgloss.NewStyle().
+		Foreground(theme.ColorNormalFg)).
+		Run()
+
+	_, mitmErr = sysutilities.CheckForRootCertificate(configs.GetConfig().Proxy.Certificate.Name);
+	if mitmErr != nil {
+		return mitmErr
+	}
+
+	return nil
 }

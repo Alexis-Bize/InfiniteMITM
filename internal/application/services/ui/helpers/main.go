@@ -17,15 +17,8 @@ package MITMApplicationUIServiceUIHelpers
 import (
 	"encoding/hex"
 	"fmt"
-	"infinite-mitm/configs"
-	"infinite-mitm/pkg/resources"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ncruces/zenity"
 )
 
 func FormatHexView(data []byte, width int) string {
@@ -74,46 +67,3 @@ func toASCII(data []byte, minByte byte, maxByte byte) string {
 	return string(ascii)
 }
 
-func CopyToClipboard(data string) {
-	clipboard.WriteAll(data)
-}
-
-func SaveToDisk(data []byte, filename string, contentType string) {
-	defer func() {
-		_ = recover();
-	}()
-
-	contentType = strings.Split(contentType, ";")[0]
-	var mimeExtensions = map[string]string{
-		"application/json":         "json",
-		"application/xml":          "xml",
-		"text/html":                "html",
-		"text/plain":               "txt",
-		"image/jpeg":               "jpeg",
-		"image/jpg":                "jpg",
-		"image/png":                "png",
-		"image/gif":                "gif",
-		"application/octet-stream": "bin",
-	}
-
-	extension := mimeExtensions[contentType]
-	if extension == "" {
-		extension = "bin"
-	}
-
-	outputDir := filepath.Join(resources.GetDownloadsDirPath())
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		outputDir = configs.GetConfig().Extra.ProjectDir;
-	}
-
-	filename = fmt.Sprintf("%s.%s", filename, extension)
-	filePath, err := zenity.SelectFileSave(
-		zenity.Title("Save body content"),
-		zenity.Filename(filepath.Join(outputDir, filename)),
-		zenity.ConfirmOverwrite(),
-	)
-
-	if err == nil {
-		os.WriteFile(filePath, data, 0644)
-	}
-}

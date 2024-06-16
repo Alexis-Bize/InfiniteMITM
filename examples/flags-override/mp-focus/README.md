@@ -34,9 +34,11 @@ Please refer to our [documentation](/docs/Feature-Flags.md) for more details abo
 
 ## Installation
 
--   Create a `resources/bin/flags` directory in `~/InfiniteMITM`.
+-   Create a `resources/bin/flags` directory in  `<drive>:\Users\<username>\InfiniteMITM`.
 -   Download and move [`mp-focus.bin`](./resources/bin/flags/mp-focus.bin) into the `flags` directory.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
+    -   Documentation: [Use Provided Examples](/docs/Use-Provided-Examples.md)
+-   Restart the game.
 
 ## Notice
 

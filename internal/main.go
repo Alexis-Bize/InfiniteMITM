@@ -16,19 +16,21 @@ package MITM
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
+	"runtime"
 	"sync"
 
-	configs "infinite-mitm/configs"
+	"infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
 	events "infinite-mitm/internal/application/events"
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
 	networkView "infinite-mitm/internal/application/services/ui/views/network"
-	errors "infinite-mitm/pkg/errors"
-	proxy "infinite-mitm/pkg/proxy"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/proxy"
+	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/gookit/event"
 )
@@ -61,7 +63,7 @@ func Start(f *embed.FS) *errors.MITMError {
 		go func() {
 			defer wg.Done()
 			networkView.Create()
-			utilities.KillProcess()
+			sysutilities.KillProcess()
 		}()
 
 		go func() {
@@ -77,14 +79,19 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		wg.Wait()
 	} else if prompt.InstallRootCertificate.Is(option) {
-		utilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/docs/Install-Root-Certificate.md")
+		if runtime.GOOS == "windows" {
+			sysutilities.InstallRootCertificate(f, fmt.Sprintf("%s.cer", configs.GetConfig().Proxy.Certificate.Name))
+			return Start(f)
+		}
+
+		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
 	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()
 		}
 	}
 
-	utilities.KillProcess()
+	sysutilities.KillProcess()
 	return nil
 }
 

@@ -16,7 +16,7 @@ package MITMApplicationUIServiceNetworkStatusBarComponent
 
 import (
 	"infinite-mitm/configs"
-	theme "infinite-mitm/internal/application/services/ui/theme"
+	"infinite-mitm/pkg/theme"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

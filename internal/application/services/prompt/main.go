@@ -17,13 +17,14 @@ package MITMApplicationPromptService
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	theme "infinite-mitm/internal/application/services/ui/theme"
-	errors "infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/smartcache"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/theme"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type PromptOption int
@@ -49,7 +50,7 @@ var optionToString = map[PromptOption]string{
 	Start:                  "🔒 Start Proxy Server",
 	InstallRootCertificate: "🔐 Install Root Certificate",
 	ForceKillProxy:         "🛑 Force Kill Proxy",
-	ClearSmartCache:        "🧹 Clear SmartCache",
+	ClearSmartCache:        "♻️ Clear SmartCache",
 	Credits:                "🤝 Credits",
 	Exit:                   "👋 Exit",
 	// Credits
@@ -100,7 +101,11 @@ func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
 	if Credits.Is(selected) {
 		return showCredits(rootCertificateInstalled)
 	} else if ClearSmartCache.Is(selected) {
-		spinner.New().Title("Clearing local cached files...").Run()
+		spinner.New().Title("Clearing local cached files...").
+		TitleStyle(lipgloss.NewStyle().
+			Foreground(theme.ColorNormalFg)).
+			Run()
+
 		smartcache.Flush()
 		return WelcomePrompt(rootCertificateInstalled)
 	}
@@ -129,11 +134,11 @@ func showCredits(rootCertificateInstalled bool) (string, *errors.MITMError) {
 
 	switch selected {
 	case Author.String():
-		utilities.OpenBrowser("https://x.com/zeny_ic")
+		sysutilities.OpenBrowser("https://x.com/zeny_ic")
 	case Supporter.String():
-		utilities.OpenBrowser("https://x.com/gruntdotapi")
+		sysutilities.OpenBrowser("https://x.com/gruntdotapi")
 	case GitHub.String():
-		utilities.OpenBrowser(configs.GetConfig().Repository)
+		sysutilities.OpenBrowser(configs.GetConfig().Repository)
 	}
 
 	return WelcomePrompt(rootCertificateInstalled)

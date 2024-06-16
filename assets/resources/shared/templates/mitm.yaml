@@ -27,9 +27,11 @@ options:
   # cache static content in memory or on the disk to minimize network usage and enhance game's performance
   smart_cache:
     enabled: false
-    strategy: memory
+    ttl: 7d
+    ### └── duration (e.g., 9h → 9 hours, 7d → 7 days, 2w → 2 weeks)
+    strategy: persistent
     ### ├── memory:     will write cached responses in memory
-    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
+    ### └── persistent: will write cached responses on the disk (e.g., C:\Users\<username>\InfiniteMITM\cache)
   traffic_display: overrides
   ## ├── all:           will show all requests/responses in the network table
   ## ├── overrides:     will only display overridden requests/responses in the network table

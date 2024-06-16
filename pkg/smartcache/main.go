@@ -18,6 +18,7 @@ import (
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/hex"
+	"fmt"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/resources"
@@ -26,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -35,20 +37,28 @@ type StrategyType string
 
 type SmartCache struct {
 	strategy StrategyType
+	duration time.Duration
 	items    map[string]*SmartCacheItem
+}
+
+type SmartCacheYAMLOptions struct {
+	Enabled  bool
+	Strategy StrategyType
+	TTL      string
 }
 
 type SmartCacheItem struct {
 	Body       []byte
 	Header     http.Header
 	persisted  bool
+	created    time.Time
 	expires    time.Time
 }
 
 const (
 	Memory     StrategyType = "memory"
 	Persistent StrategyType = "persistent"
-	expirationDelta = 48 * time.Hour
+	defaultDuration = 7 * 24 * time.Hour
 )
 
 var readMutex, writeMutex, flushMutex sync.Mutex
@@ -58,12 +68,17 @@ func init() {
 	gob.Register(time.Time{})
 }
 
-func New(strategy StrategyType) *SmartCache {
+func New(strategy StrategyType, ttl string) *SmartCache {
 	if strategy != Memory && strategy != Persistent {
 		strategy = Memory
 	}
 
-	sc := &SmartCache{strategy: strategy, items: make(map[string]*SmartCacheItem)}
+	sc := &SmartCache{
+		strategy: strategy,
+		duration: parseDuration(ttl),
+		items: make(map[string]*SmartCacheItem),
+	}
+
 	return sc
 }
 
@@ -112,13 +127,44 @@ func IsURLSmartCachable(target string, method string) bool {
 	return false
 }
 
+func parseDuration(ttl string) time.Duration {
+	if len(ttl) < 2 {
+		return defaultDuration
+	}
+
+	valuePart := ttl[:len(ttl)-1]
+	unitPart := ttl[len(ttl)-1:]
+
+	value, err := strconv.Atoi(valuePart)
+	if err != nil {
+		return defaultDuration
+	}
+
+	var duration time.Duration
+	switch unitPart {
+	case "h":
+		duration = time.Duration(value) * time.Hour
+	case "d":
+		duration = time.Duration(value) * 24 * time.Hour
+	case "w":
+		duration = time.Duration(value) * 7 * 24 * time.Hour
+	default:
+		return defaultDuration
+	}
+
+	return duration
+}
+
 func (s *SmartCache) Read(key string) *SmartCacheItem {
 	readMutex.Lock()
 	defer readMutex.Unlock()
 
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
-		if item.Header.Get(request.DateHeaderKey) != "" {
-			item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+		if item.created != (time.Time{}) {
+			since := time.Since(item.created)
+			seconds := int(since.Seconds())
+			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		}
 
 		return item
@@ -145,18 +191,17 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	writeMutex.Lock()
 	defer writeMutex.Unlock()
 
-	item.expires = time.Now().Add(expirationDelta)
-	if item.Header.Get(request.ExpiresHeaderKey) != "" {
-		item.Header.Set(request.ExpiresHeaderKey, item.expires.Format(time.RFC1123))
-	}
+	item.created = time.Now()
+	item.expires = time.Now().Add(s.duration)
 
-	if item.Header.Get(request.DateHeaderKey) != "" {
-		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
-	}
+	item.Header.Set(request.ExpiresHeaderKey, item.expires.Format(time.RFC1123))
+	item.Header.Set(request.DateHeaderKey, item.created.Format(time.RFC1123))
+	item.Header.Set(request.AgeHeaderKey, "0")
 
-	if item.Header.Get(request.AgeHeaderKey) != "" {
-		item.Header.Set(request.AgeHeaderKey, "0")
-	}
+	item.Header.Del(request.CacheControlHeaderKey)
+	item.Header.Del("Request-Context")
+	item.Header.Del("X-Activity-Id")
+	item.Header.Del("X-Cache")
 
 	s.items[key] = item
 

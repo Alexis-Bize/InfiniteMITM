@@ -16,8 +16,8 @@ package configs
 
 import (
 	"embed"
-	errors "infinite-mitm/pkg/errors"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/sysutilities"
 	"log"
 	"path/filepath"
 	"strings"
@@ -54,17 +54,14 @@ func GetConfig() *Config {
 
 	yamlFile, err := f.ReadFile("application.yaml"); if err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return nil
 	}
 
 	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return nil
 	}
 
-	home, mitmErr := utilities.GetHomeDirectory(); if mitmErr != nil {
+	home, mitmErr := sysutilities.GetHomeDirectory(); if mitmErr != nil {
 		log.Fatalln(mitmErr)
-		return nil
 	}
 
 	config.Extra.ProjectDir = filepath.Join(home, strings.Replace(config.Name, " ", "", -1))

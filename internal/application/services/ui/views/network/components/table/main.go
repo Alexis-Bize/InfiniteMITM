@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 
-	theme "infinite-mitm/internal/application/services/ui/theme"
+	"infinite-mitm/pkg/theme"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -185,7 +185,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 
 		contentType := "..."
 		if msg.ContentType != "" || msg.Status != 0 {
-			contentType = msg.ContentType
+			contentType = strings.Split(msg.ContentType, ";")[0]
 		}
 
 		m.AssignRowPosition(msg.ID, position)

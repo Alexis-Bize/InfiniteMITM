@@ -1,3 +1,4 @@
+## ... (yaml)
 domains:
   # blobs-infiniteugc.svc.halowaypoint.com
   blobs:
@@ -12,7 +13,6 @@ domains:
         body: https://cataas.com/cat
         headers:
           content-type: image/jpeg
-
   # gamecms-hacs.svc.halowaypoint.com
   gamecms:
     - path: /:title/images/file/news/*.(jpg|png)
@@ -26,3 +26,4 @@ domains:
         body: https://cataas.com/cat
         headers:
           content-type: image/jpeg
+## ... (yaml)

@@ -1,3 +1,4 @@
+## ... (yaml)
 domains:
   # settings.svc.halowaypoint.com
   settings:
@@ -6,3 +7,4 @@ domains:
         - GET
       response:
         body: :mitm-dir/resources/bin/flags/flags-override.bin
+## ... (yaml)

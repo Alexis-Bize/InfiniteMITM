@@ -1,3 +1,4 @@
+## ... (yaml)
 domains:
   # lobby-hi.svc.halowaypoint.com
   lobby:
@@ -8,3 +9,4 @@ domains:
         body: :mitm-dir/resources/json/server-selection.json
         headers:
           content-type: :ct-json
+## ... (yaml)

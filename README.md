@@ -26,6 +26,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   [Install Root Certificate](/docs/Install-Root-Certificate.md)
 -   [Override Requests](/docs/Override-Requests.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
+-   [Use Provided Examples](/docs/Use-Provided-Examples.md)
 
 ## SmartCache
 

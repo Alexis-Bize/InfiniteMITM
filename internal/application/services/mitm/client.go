@@ -22,12 +22,13 @@ import (
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
-	domains "infinite-mitm/pkg/domains"
-	errors "infinite-mitm/pkg/errors"
-	pattern "infinite-mitm/pkg/pattern"
-	request "infinite-mitm/pkg/request"
-	cache "infinite-mitm/pkg/smartcache"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/domains"
+	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/pattern"
+	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/smartcache"
+	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/utilities"
 	"io"
 	"log"
 	"net/http"
@@ -44,13 +45,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type SmartCacheYAMLOptions struct {
-	Enabled  bool
-	Strategy cache.StrategyType
-}
-
 type YAMLOptions struct {
-	SmartCache     SmartCacheYAMLOptions `yaml:"smart_cache"`
+	SmartCache     smartcache.SmartCacheYAMLOptions `yaml:"smart_cache"`
 	TrafficDisplay traffic.TrafficDisplay `yaml:"traffic_display"`
 }
 
@@ -109,7 +105,6 @@ func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	yamlFile, err := os.ReadFile(filePath); if err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return YAML{}, nil
 	}
 
 	var content YAML
@@ -286,7 +281,7 @@ func isURL(str string) bool {
 
 func cleanSystemPath(str string) string {
 	if strings.HasPrefix(str, "~/") {
-		home, err := utilities.GetHomeDirectory();
+		home, err := sysutilities.GetHomeDirectory();
 		if err != nil {
 			return str
 		}

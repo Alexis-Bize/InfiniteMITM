@@ -22,9 +22,9 @@ import (
 	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
 	status "infinite-mitm/internal/application/services/ui/views/network/components/status"
 	table "infinite-mitm/internal/application/services/ui/views/network/components/table"
-	errors "infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/request"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/sysutilities"
 	"log"
 	"net/url"
 	"runtime"
@@ -68,7 +68,7 @@ var networkData = &networkDataType{
 }
 
 func Create() {
-	width, height := utilities.GetTerminalSize()
+	width, height := sysutilities.GetTerminalSize()
 	statusBarModel := status.NewStatusBarModel(width)
 	modelsHeight := height - statusBarModel.Size.Height
 
@@ -275,7 +275,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.networkDetailsModel.SetHeight(m.height - m.statusBarModel.Size.Height)
 
 		if runtime.GOOS != "window" {
-			utilities.ClearTerminal()
+			sysutilities.ClearTerminal()
 		}
 	case tea.KeyMsg:
 		switch msg.String() {

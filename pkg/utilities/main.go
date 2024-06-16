@@ -16,17 +16,8 @@ package utilities
 
 import (
 	"fmt"
-	errors "infinite-mitm/pkg/errors"
-	"log"
-	"os"
-	"os/exec"
 	"reflect"
-	"runtime"
 	"strings"
-	"syscall"
-
-	"github.com/charmbracelet/huh/spinner"
-	"golang.org/x/term"
 )
 
 func Contains(slice []string, item string) bool {
@@ -64,41 +55,6 @@ func InterfaceToMap(i interface{}) map[string]string {
 	return output
 }
 
-func GetHomeDirectory() (string, *errors.MITMError) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return "", nil
-	}
-
-	return home, nil
-}
-
-func GetTerminalSize() (int, int) {
-	const defaultWidth = 80
-	const defaultHeight = 25
-
-	fd := int(os.Stdin.Fd())
-	width, height, err := term.GetSize(fd)
-	if err != nil {
-		return defaultWidth, defaultHeight
-	}
-
-	return width, height
-}
-
-func ClearTerminal() {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "cls")
-	default:
-		cmd = exec.Command("clear")
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-}
-
 func WrapText(text string, width int) string {
 	if width <= 0 {
 		return text
@@ -124,24 +80,4 @@ func WrapText(text string, width int) string {
 
 	sb.WriteString(text)
 	return sb.String()
-}
-
-func OpenBrowser(url string) {
-	spinner.New().Title("Attempting to open your browser...").Run()
-
-	switch runtime.GOOS {
-	case "linux":
-		exec.Command("xdg-open", url).Start()
-	case "windows":
-		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		exec.Command("open", url).Start()
-	}
-}
-
-func KillProcess() {
-	process, err := os.FindProcess(os.Getpid())
-	if err == nil {
-		process.Signal(syscall.SIGINT)
-	}
 }

@@ -296,6 +296,8 @@ func (m TrafficModel) View() string {
 	var sectionTitle string
 	var viewportActions string
 
+	contentStyle = baseContentStyle
+
 	if m.activeView == HeadersViewKey {
 		sectionTitle = "Headers"
 	} else if m.activeView == BodyViewKey {

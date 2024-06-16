@@ -71,7 +71,7 @@ domains:
 
 ### Step 3
 
--   Paste the copied content under `domains` → `discovery` as follows.
+-   Paste the copied content under the same example node as follows (`domains` → `discovery`).
 -   Make sure to respect the indentation (spaces).
 
 ```yaml

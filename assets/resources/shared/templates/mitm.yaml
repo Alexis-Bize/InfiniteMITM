@@ -16,6 +16,13 @@ domains:
   gamecms:
   # lobby-hi.svc.halowaypoint.com
   lobby:
+    - path: /titles/:title/qosservers
+      methods:
+        - GET
+      response:
+        body: :mitm-dir/resources/json/server-selection.json
+        headers:
+          content-type: :ct-json
   # settings.svc.halowaypoint.com
   settings:
   # halostats.svc.halowaypoint.com
@@ -29,7 +36,7 @@ options:
     enabled: false
     strategy: memory
     ### ├── memory:     will write cached responses in memory
-    ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
+    ### └── persistent: will write cached responses on the disk (e.g., C:\Users\<username>\InfiniteMITM\cache)
   traffic_display: overrides
   ## ├── all:           will show all requests/responses in the network table
   ## ├── overrides:     will only display overridden requests/responses in the network table

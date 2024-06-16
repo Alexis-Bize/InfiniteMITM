@@ -15,7 +15,7 @@
 
 ## How to Enable It
 
-Open the `mitm.yaml` file located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`) and enable the `smart_cache` option.
+Open the `mitm.yaml` file in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`) and enable the `smart_cache` option.
 
 ```yaml
 options:

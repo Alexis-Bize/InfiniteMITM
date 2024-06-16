@@ -10,7 +10,7 @@ Override the available servers by keeping only desired ones to force their selec
 
 ## Installation
 
--   Create a `resources/json` directory in `~/InfiniteMITM`.
+-   Create a `resources/json` directory in `<drive>:\Users\<username>\InfiniteMITM`.
 -   Download and move [`server-selection.json`](./resources/json/server-selection.json) into the `json` directory.
 -   Replace all `serverUrl` by the desired ones.
 -   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.

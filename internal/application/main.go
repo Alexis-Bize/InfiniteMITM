@@ -21,8 +21,8 @@ import (
 	mitm "infinite-mitm/internal/application/services/mitm"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/resources"
+	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/updater"
-	"infinite-mitm/pkg/utilities"
 
 	"github.com/charmbracelet/huh"
 )
@@ -41,9 +41,13 @@ func Init(f *embed.FS) *errors.MITMError {
 			Run()
 
 		if !ignoreUpdate {
-			utilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
+			sysutilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
 			return nil
 		}
+	}
+
+	if !sysutilities.IsAdmin() {
+		sysutilities.RunAsAdmin()
 	}
 
 	mitmErr = resources.CreateRootAssets(f); if mitmErr != nil {

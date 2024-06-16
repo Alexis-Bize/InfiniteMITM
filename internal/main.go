@@ -26,9 +26,9 @@ import (
 	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
 	networkView "infinite-mitm/internal/application/services/ui/views/network"
-	errors "infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/errors"
 	proxy "infinite-mitm/pkg/proxy"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/gookit/event"
 )
@@ -61,7 +61,7 @@ func Start(f *embed.FS) *errors.MITMError {
 		go func() {
 			defer wg.Done()
 			networkView.Create()
-			utilities.KillProcess()
+			sysutilities.KillProcess()
 		}()
 
 		go func() {
@@ -77,14 +77,14 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		wg.Wait()
 	} else if prompt.InstallRootCertificate.Is(option) {
-		utilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/docs/Install-Root-Certificate.md")
+		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/docs/Install-Root-Certificate.md")
 	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()
 		}
 	}
 
-	utilities.KillProcess()
+	sysutilities.KillProcess()
 	return nil
 }
 

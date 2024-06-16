@@ -23,10 +23,11 @@ import (
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	domains "infinite-mitm/pkg/domains"
-	errors "infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/errors"
 	pattern "infinite-mitm/pkg/pattern"
 	request "infinite-mitm/pkg/request"
 	cache "infinite-mitm/pkg/smartcache"
+	"infinite-mitm/pkg/sysutilities"
 	utilities "infinite-mitm/pkg/utilities"
 	"io"
 	"log"
@@ -109,7 +110,6 @@ func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	yamlFile, err := os.ReadFile(filePath); if err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return YAML{}, nil
 	}
 
 	var content YAML
@@ -286,7 +286,7 @@ func isURL(str string) bool {
 
 func cleanSystemPath(str string) string {
 	if strings.HasPrefix(str, "~/") {
-		home, err := utilities.GetHomeDirectory();
+		home, err := sysutilities.GetHomeDirectory();
 		if err != nil {
 			return str
 		}

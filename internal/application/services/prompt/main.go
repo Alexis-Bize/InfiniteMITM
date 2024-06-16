@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"infinite-mitm/configs"
 	theme "infinite-mitm/internal/application/services/ui/theme"
-	errors "infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/smartcache"
-	utilities "infinite-mitm/pkg/utilities"
+	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -129,11 +129,11 @@ func showCredits(rootCertificateInstalled bool) (string, *errors.MITMError) {
 
 	switch selected {
 	case Author.String():
-		utilities.OpenBrowser("https://x.com/zeny_ic")
+		sysutilities.OpenBrowser("https://x.com/zeny_ic")
 	case Supporter.String():
-		utilities.OpenBrowser("https://x.com/gruntdotapi")
+		sysutilities.OpenBrowser("https://x.com/gruntdotapi")
 	case GitHub.String():
-		utilities.OpenBrowser(configs.GetConfig().Repository)
+		sysutilities.OpenBrowser(configs.GetConfig().Repository)
 	}
 
 	return WelcomePrompt(rootCertificateInstalled)

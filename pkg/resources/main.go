@@ -66,32 +66,27 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-		return nil
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
 		templateFile, err := f.Open(sourceMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-			return nil
 		}
 		defer templateFile.Close()
 
 		destinationFile, err := os.Create(outputMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-			return nil
 		}
 		defer destinationFile.Close()
 
 		if _, err = io.Copy(destinationFile, templateFile); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-			return nil
 		}
 
 		if err = destinationFile.Sync(); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-			return nil
 		}
 	}
 

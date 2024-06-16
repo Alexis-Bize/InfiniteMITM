@@ -18,6 +18,7 @@ import (
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/hex"
+	"fmt"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/resources"
@@ -50,6 +51,7 @@ type SmartCacheItem struct {
 	Body       []byte
 	Header     http.Header
 	persisted  bool
+	created    time.Time
 	expires    time.Time
 }
 
@@ -158,8 +160,11 @@ func (s *SmartCache) Read(key string) *SmartCacheItem {
 	defer readMutex.Unlock()
 
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
-		if item.Header.Get(request.DateHeaderKey) != "" {
-			item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+		if item.created != (time.Time{}) {
+			since := time.Since(item.created)
+			seconds := int(since.Seconds())
+			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		}
 
 		return item
@@ -186,18 +191,17 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	writeMutex.Lock()
 	defer writeMutex.Unlock()
 
+	item.created = time.Now()
 	item.expires = time.Now().Add(s.duration)
-	if item.Header.Get(request.ExpiresHeaderKey) != "" {
-		item.Header.Set(request.ExpiresHeaderKey, item.expires.Format(time.RFC1123))
-	}
 
-	if item.Header.Get(request.DateHeaderKey) != "" {
-		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
-	}
+	item.Header.Set(request.ExpiresHeaderKey, item.expires.Format(time.RFC1123))
+	item.Header.Set(request.DateHeaderKey, item.created.Format(time.RFC1123))
+	item.Header.Set(request.AgeHeaderKey, "0")
 
-	if item.Header.Get(request.AgeHeaderKey) != "" {
-		item.Header.Set(request.AgeHeaderKey, "0")
-	}
+	item.Header.Del(request.CacheControlHeaderKey)
+	item.Header.Del("Request-Context")
+	item.Header.Del("X-Activity-Id")
+	item.Header.Del("X-Cache")
 
 	s.items[key] = item
 

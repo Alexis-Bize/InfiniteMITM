@@ -51,8 +51,8 @@ options:
 
 ### Step 2
 
--   Open the desired `mitm.yaml` file in on of our [examples](/examples).
-    -   For this guide, we will use the [Watch Film Override](/examples/watch-film-override) one.
+-   Open the desired `mitm.yaml` file in one of provided our [examples](/examples).
+    -   For this guide, we will use the [Watch Film Override](/examples/watch-film-override) example.
 -   Copy the configuration specified between `copy ↓↓↓` and `↑↑↑ copy` under `domains` → `discovery`, where `discovery` will be the overridden service.
 
 ```yaml

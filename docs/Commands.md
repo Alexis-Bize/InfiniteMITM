@@ -33,8 +33,6 @@ domains:
         body: ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/$2"
 ```
 
-### Custom UI Markup
-
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview.jpg" />
 </p>

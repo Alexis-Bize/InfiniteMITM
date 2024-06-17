@@ -4,7 +4,7 @@
 
 For more information about **InfiniteVariantTool**, please visit their official [GitHub repository](https://github.com/soupstream/InfiniteVariantTool).
 
-**Warning:** These commands are **reserved for experienced developers** and may have a direct **impact on your system**. Use them with caution and **DO NOT** accept commands from strangers—you know the motto.
+⚠️ **Warning:** These commands are **reserved for experienced developers** and may have a direct **impact on your system**. Use them with caution and **DO NOT** accept commands from strangers—you know the motto.
 
 ## Before
 

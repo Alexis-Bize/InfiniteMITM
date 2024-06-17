@@ -96,7 +96,7 @@ domains:
 
 Please refer to our [Command](/docs/Command.md) documentation for further details.
 
-**Warning:** These commands are **reserved for experienced developers** and may have a direct **impact on your system**. Use them with caution and **DO NOT** accept commands from strangers—you know the motto.
+⚠️ **Warning:** These commands are **reserved for experienced developers** and may have a direct **impact on your system**. Use them with caution and **DO NOT** accept commands from strangers—you know the motto.
 
 ## Predefined Route Parameters
 

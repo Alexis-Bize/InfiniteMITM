@@ -79,6 +79,9 @@ domains:
               # Will be concatenated into: echo "hello" && echo "world"
               - "echo \"hello\"" # Parameter
               - "&& echo \"world\"" # Parameter
+        body: ":mitm-dir/response/body/file" # URI to the overridden file
+        headers: # Override request headers (case insensitive)
+          custom-response-header: "customValue"
     - path: "/ugcstorage/*" # Match all after /ugcstorage/
         body: ":mitm-dir/request/body/file" # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
         headers: # Override request headers (case insensitive)

@@ -5,7 +5,7 @@ Will replace all images (maps, modes, playlists, etc.) with random cat images.
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Surasia" title="InfiniteMITM - Surasia" src="./preview.jpg?v=1" width="920" />
+    <img alt="InfiniteMITM - Surasia" title="InfiniteMITM - Surasia" src="./preview.jpg?v=1" />
 </p>
 
 ## Installation

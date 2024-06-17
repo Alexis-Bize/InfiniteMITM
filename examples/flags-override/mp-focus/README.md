@@ -5,7 +5,7 @@ Disable all options (campaign, customization, store, etc.) and keep only Multipl
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Flags Override" title="InfiniteMITM - Flags Override" src="./preview.jpg?v=1" width="720" />
+    <img alt="InfiniteMITM - Flags Override" title="InfiniteMITM - Flags Override" src="./preview.jpg?v=1" />
 </p>
 
 ## Disabled Feature Flags

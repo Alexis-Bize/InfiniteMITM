@@ -27,7 +27,6 @@ import (
 	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
-	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/utilities"
 	"io"
 	"log"
@@ -38,6 +37,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/elazarl/goproxy"
@@ -167,8 +167,6 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
-			var beforeCommands []string
-
 			body := node.Request.Body
 			matches := pattern.Match(target, req.URL.String())
 			beforeHandlers := node.Request.Before
@@ -178,18 +176,17 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
-			if len(beforeHandlers.Commands) != 0 {
-				for _, commands := range beforeHandlers.Commands {
-					var runList []string
-					for _, run := range commands.Run {
-						runList = append(runList, pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches)))
-					}
-
-					beforeCommands = append(beforeCommands, strings.Join(runList, " "))
-				}
+			var wg sync.WaitGroup
+			beforeCommands := createCommands(beforeHandlers.Commands, matches)
+			if len(beforeCommands) != 0 {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					runCommands(beforeCommands)
+				}()
 			}
 
-			runCommands(beforeCommands)
+			wg.Wait()
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, req.Header)
@@ -227,8 +224,6 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				return resp
 			}
 
-			var beforeCommands []string
-
 			body := node.Response.Body
 			matches := pattern.Match(target, resp.Request.URL.String())
 			beforeHandlers := node.Response.Before
@@ -238,18 +233,17 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
-			if len(beforeHandlers.Commands) != 0 {
-				for _, commands := range beforeHandlers.Commands {
-					var runList []string
-					for _, run := range commands.Run {
-						runList = append(runList, pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches)))
-					}
-
-					beforeCommands = append(beforeCommands, strings.Join(runList, " "))
-				}
+			var wg sync.WaitGroup
+			beforeCommands := createCommands(beforeHandlers.Commands, matches)
+			if len(beforeCommands) != 0 {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					runCommands(beforeCommands)
+				}()
 			}
 
-			runCommands(beforeCommands)
+			wg.Wait()
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
@@ -283,6 +277,28 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 	}
 }
 
+func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []string) []string {
+	var commandsList []string
+
+	if len(commands) != 0 {
+		for _, commands := range commands {
+			var runList []string
+			for _, run := range commands.Run {
+				replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
+				if !isURL(replace) {
+					replace = filepath.Clean(replace)
+				}
+
+				runList = append(runList, replace)
+			}
+
+			commandsList = append(commandsList, strings.Join(runList, " "))
+		}
+	}
+
+	return commandsList
+}
+
 func runCommands(commands []string) {
 	for i, cmd := range commands {
 		args := strings.Split(cmd, " ")
@@ -299,7 +315,7 @@ func runCommands(commands []string) {
 		}
 
 		if err := c.Run(); err != nil {
-			event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + i, err.Error())})
+			event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
 		}
 	}
 }
@@ -316,7 +332,7 @@ func readBodyFile(body string, matches []string, header http.Header) ([]byte, er
 		return buffer, nil
 	}
 
-	buffer, err := os.ReadFile(cleanSystemPath(str));
+	buffer, err := os.ReadFile(filepath.Clean(str));
 	if err != nil {
 		return nil, err
 	}
@@ -331,17 +347,4 @@ func isURL(str string) bool {
 
 	u, err := url.Parse(str)
 	return err == nil && u.Scheme != "" && u.Host != ""
-}
-
-func cleanSystemPath(str string) string {
-	if strings.HasPrefix(str, "~/") {
-		home, err := sysutilities.GetHomeDirectory();
-		if err != nil {
-			return str
-		}
-
-		str = filepath.Join(home, str[2:])
-	}
-
-	return filepath.Clean(str)
 }

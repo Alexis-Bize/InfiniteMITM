@@ -27,7 +27,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   [Override Requests](/docs/Override-Requests.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
--   <img src="https://img.shields.io/badge/new-FF6F6D" alt="new"> [Commands (Pre-Handlers)](/docs/Commands.md)
+-   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new">](/docs/Commands.md) [Commands (Pre-Handlers)](/docs/Commands.md)
 
 ## SmartCache
 

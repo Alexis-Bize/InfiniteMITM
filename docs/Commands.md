@@ -22,7 +22,7 @@ domains:
         before:
           commands:
             - run:
-              # Run InfiniteVariantToolCLI.exe to pack the file and output it using ":egv-bin" as the output filename
+              # Run InfiniteVariantToolCLI.exe to pack the file and output it using ":cgui-bin" as the output filename
               - ":mitm-dir/tools/InfiniteVariantTool/InfiniteVariantToolCLI.exe bond pack"
               - ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer-FFA-MITM.xml --output"
               - ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/$2"

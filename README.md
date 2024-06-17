@@ -27,6 +27,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   [Override Requests](/docs/Override-Requests.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
+-   [Command (Pre-Handlers)](/docs/Command.md)
 
 ## SmartCache
 

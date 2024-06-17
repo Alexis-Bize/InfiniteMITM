@@ -6,7 +6,7 @@ For more information about **InfiniteVariantTool**, please visit their official 
 
 ## Before
 
-In the following example, the `before.cmd` command will pack an existing XML file (previously unpacked using **InfiniteVariantTool**) into a binary format before returning it to the game.
+In the following example, the `before.cmd` command will pack an existing XML file (previously unpacked using **InfiniteVariantTool**) into a binary format before returning it to the game. Please note that **InfiniteVariantTool** must be downloaded beforehand.
 
 ```yaml
 domains:

@@ -40,10 +40,11 @@ options:
   # cache static content in memory or on the disk to minimize network usage and enhance game's performance
   smart_cache:
     enabled: false
-    strategy: persistent
+    ttl: "7d"
+    strategy: "persistent"
     ### ├── memory:     will write cached responses in memory
     ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)
-  traffic_display: overrides
+  traffic_display: "overrides"
   ## ├── all:           will show all requests/responses in the network table
   ## ├── overrides:     will only display overridden requests/responses in the network table
   ## ├── smart_cached:  will only display smart cached requests/responses in the network table
@@ -115,6 +116,7 @@ options:
   # cache static content in memory or on the disk to minimize network usage and enhance game's performance
   smart_cache:
     enabled: false
+    ttl: "7d"
     strategy: "persistent"
     ### ├── memory:     will write cached responses in memory
     ### └── persistent: will write cached responses on the disk (~/InfiniteMITM/cache)

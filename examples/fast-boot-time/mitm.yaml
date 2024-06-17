@@ -8,9 +8,6 @@ domains:
       request:
         headers:
           host: "127.0.0.1"
-          cache-control: "no-cache"
       response:
         code: 204
-        headers:
-          cache-control: "no-cache"
 ## ... (yaml)

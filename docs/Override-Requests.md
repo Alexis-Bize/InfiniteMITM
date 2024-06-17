@@ -84,8 +84,12 @@ domains:
         headers: # Override request headers (case insensitive)
           custom-header: "customValue"
       response: # Used to alter the response
-        before: # Used to run a command before handler execution
-          cmd: "shell command" # Desired command
+        before: # Used to run various actions before handler execution
+          commands: # Used to run desired commands
+            - run: # Used to define a run command
+              # Will be concatenated into: echo "hello" && echo "world"
+              - "echo \"hello\"" # Parameter
+              - "&& echo \"world\"" # Parameter
         code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
         body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override response headers (case insensitive)

@@ -59,7 +59,7 @@ options:
 domains:
   discovery:
     # copy ↓↓↓
-    - path: :title/films/matches/:guid/spectate
+    - path: /:title/films/matches/:guid/spectate
       methods:
         - GET
       response:
@@ -89,7 +89,7 @@ domains:
   # discovery-infiniteugc.svc.halowaypoint.com
   discovery:
     # pasted ↓↓↓
-    - path: :title/films/matches/:guid/spectate
+    - path: /:title/films/matches/:guid/spectate
       methods:
         - GET
       response:

@@ -17,7 +17,7 @@ domains:
     - path: /ugcstorage/map/:guid/:guid/:map-mvar # Path pattern to match, will catch all .mvar files
       methods: # HTTP methods that this configuration will handle
         - GET
-      response:
+      response: # Response handler
         body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
         headers: # Additional headers to include in the response
           x-infinite-mitm-version: :mitm-version
@@ -38,6 +38,12 @@ domains:
         headers:
           x-infinite-mitm-version: :mitm-version
           content-type: :ct-bond
+    - path: /ugcstorage/enginegamevariant/:guid/:guid/:egv-bin # Match any "EngineGameVariant"
+      methods:
+        - GET
+      response:
+        before: # Run before response handler
+          cmd: "echo \"hello, before command\"" # Desired command
     - path: /ugcstorage/* # Match all after /ugcstorage/
       methods:
         - GET
@@ -45,8 +51,8 @@ domains:
         - PATCH
         - PUT
         - DELETE
-      request: # Headers to override in the request
-        headers:
+      request: # Request handler
+        headers: # Headers to override in the request
           x-343-authorization-spartan: v4=MyCustomSpartanToken
 ```
 
@@ -61,15 +67,23 @@ domains:
         - GET
         - POST
       request: # Used to alter the request
+        before: # Used to run a command before handler execution
+          cmd: "shell command" # Desired command
         body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
         headers: # Override request headers (case insensitive)
           custom-header: customValue
       response: # Used to alter the response
+        before: # Used to run a command before handler execution
+          cmd: "shell command" # Desired command
         code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
         body: :mitm-dir/response/body/file # URI to the overridden file
         headers: # Override response headers (case insensitive)
           custom-response-header: customValue
 ```
+
+### Before Command
+
+Please refer to our [Command](/docs/Command.md) documentation for further details.
 
 ## Predefined Route Parameters
 

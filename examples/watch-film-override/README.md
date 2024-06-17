@@ -1,6 +1,6 @@
 # Watch Film Override
 
-Will replace the film you want to watch with another one by switching the match ID.
+Will replace the film you want to watch with another one by switching the match ID. Ideal for playing bookmarked films.
 
 ## Installation
 

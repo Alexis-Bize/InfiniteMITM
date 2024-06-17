@@ -60,6 +60,10 @@ var (
 	statusInfoStyle = lipgloss.NewStyle().Inherit(statusBarStyle).MarginLeft(2)
 )
 
+var (
+	loadingString = "Loading..."
+)
+
 func NewStatusBarModel(width int) StatusBarModel {
 	m := StatusBarModel{
 		name: ItemProperties{
@@ -67,7 +71,7 @@ func NewStatusBarModel(width int) StatusBarModel {
 			style: statusStyle,
 		},
 		info: ItemProperties{
-			content: "Loading...",
+			content: loadingString,
 			style: statusInfoStyle,
 		},
 	}

@@ -55,13 +55,23 @@ type YAMLDomainNode struct {
 
 type YAMLDomainRequestNode struct {
 	Body    string `yaml:"body"`
-	Headers interface{} `yaml:"headers"`
+	Headers map[string]string `yaml:"headers"`
+	Before  YAMLDomainTrafficCommands `yaml:"before"`
+}
+
+type YAMLDomainTrafficCommands struct {
+	Commands []YAMLDomainTrafficRunCommand `yaml:"commands"`
+}
+
+type YAMLDomainTrafficRunCommand struct {
+	Run []string `yaml:"run"`
 }
 
 type YAMLDomainResponseNode struct {
 	Body       string `yaml:"body"`
-	Headers    interface{} `yaml:"headers"`
+	Headers    map[string]string `yaml:"headers"`
 	StatusCode int `yaml:"code"`
+	Before     YAMLDomainTrafficCommands `yaml:"before"`
 }
 
 type YAMLContentDomainPair struct {

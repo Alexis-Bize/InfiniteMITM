@@ -34,6 +34,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -136,11 +137,11 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 	var clientRequestHandlers []handlers.RequestHandlerStruct
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 	for _, v := range contentList {
-		if v.Request != (domains.YAMLDomainRequestNode{}) {
+		if v.Request.Body != "" || len(v.Request.Headers) != 0 || len(v.Request.Before.Commands) != 0 {
 			clientRequestHandlers = append(clientRequestHandlers, createRequestHandler(domain, v))
 		}
 
-		if v.Response != (domains.YAMLDomainResponseNode{}) {
+		if v.Response.Body != "" || len(v.Response.Headers) != 0 || len(v.Response.Before.Commands) != 0 {
 			clientResponseHandlers = append(clientResponseHandlers, createResponseHandler(domain, v))
 		}
 	}
@@ -166,13 +167,29 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
+			var beforeCommands []string
+
 			body := node.Request.Body
 			matches := pattern.Match(target, req.URL.String())
+			beforeHandlers := node.Request.Before
 
 			kv := utilities.InterfaceToMap(node.Request.Headers)
 			for key, value := range kv {
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
+
+			if len(beforeHandlers.Commands) != 0 {
+				for _, commands := range beforeHandlers.Commands {
+					var runList []string
+					for _, run := range commands.Run {
+						runList = append(runList, pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches)))
+					}
+
+					beforeCommands = append(beforeCommands, strings.Join(runList, " "))
+				}
+			}
+
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, req.Header)
@@ -210,13 +227,29 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				return resp
 			}
 
+			var beforeCommands []string
+
 			body := node.Response.Body
 			matches := pattern.Match(target, resp.Request.URL.String())
+			beforeHandlers := node.Response.Before
 
 			kv := utilities.InterfaceToMap(node.Response.Headers)
 			for key, value := range kv {
 				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
+
+			if len(beforeHandlers.Commands) != 0 {
+				for _, commands := range beforeHandlers.Commands {
+					var runList []string
+					for _, run := range commands.Run {
+						runList = append(runList, pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches)))
+					}
+
+					beforeCommands = append(beforeCommands, strings.Join(runList, " "))
+				}
+			}
+
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
@@ -247,6 +280,27 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 
 			return resp
 		},
+	}
+}
+
+func runCommands(commands []string) {
+	for i, cmd := range commands {
+		args := strings.Split(cmd, " ")
+		length := len(args)
+		if length == 0 {
+			continue
+		}
+
+		var c *exec.Cmd
+		if length == 1 {
+			c = exec.Command(args[0])
+		} else if length >= 2 {
+			c = exec.Command(args[0], args[1:]...)
+		}
+
+		if err := c.Run(); err != nil {
+			event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + i, err.Error())})
+		}
 	}
 }
 

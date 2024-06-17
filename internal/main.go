@@ -97,9 +97,7 @@ func Start(f *embed.FS) *errors.MITMError {
 
 func enableProxy() {
 	kill.Register(func() {
-		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
-			mitmErr.Log()
-		}
+		proxy.ToggleProxy("off")
 	})
 
 	if mitmErr := proxy.ToggleProxy("on"); mitmErr != nil {
@@ -110,7 +108,7 @@ func enableProxy() {
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 	s, mitmErr := mitm.CreateServer(f)
 	if mitmErr != nil {
-		mitmErr.Log()
+		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 		return
 	}
 
@@ -125,7 +123,7 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			errors.Create(errors.ErrProxyServerException, err.Error()).Log()
+			event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
 		}
 	}
 }

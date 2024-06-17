@@ -2,7 +2,7 @@
 domains:
   # blobs-infiniteugc.svc.halowaypoint.com
   blobs:
-    - path: /ugcstorage/*.(jpg|png)
+    - path: "/ugcstorage/*.(jpg|png)"
       methods:
         - GET
       request:
@@ -10,12 +10,12 @@ domains:
           # DO NOT SEND YOUR AUTHORIZATION TOKEN TO AN EXTERNAL DOMAIN
           x-343-authorization-spartan:
       response:
-        body: https://cataas.com/cat
+        body: "https://cataas.com/cat"
         headers:
-          content-type: image/jpeg
+          content-type: "image/jpeg"
   # gamecms-hacs.svc.halowaypoint.com
   gamecms:
-    - path: /:title/images/file/news/*.(jpg|png)
+    - path: "/:title/images/file/news/*.(jpg|png)"
       methods:
         - GET
       request:
@@ -23,7 +23,7 @@ domains:
           # DO NOT SEND YOUR AUTHORIZATION TOKEN TO AN EXTERNAL DOMAIN
           x-343-authorization-spartan:
       response:
-        body: https://cataas.com/cat
+        body: "https://cataas.com/cat"
         headers:
-          content-type: image/jpeg
+          content-type: "image/jpeg"
 ## ... (yaml)

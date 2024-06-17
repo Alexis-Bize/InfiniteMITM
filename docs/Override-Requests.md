@@ -16,37 +16,41 @@
 ```yaml
 domains:
   blobs: # blobs-infiniteugc.svc.halowaypoint.com
-    - path: /ugcstorage/map/:guid/:guid/:map-mvar # Path pattern to match, will catch all .mvar files
+    - path: "/ugcstorage/map/:guid/:guid/:map-mvar" # Path pattern to match, will catch all .mvar files
       methods: # HTTP methods that this configuration will handle
         - GET
       response: # Response handler
-        body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
+        body: ":mitm-dir/resources/ugc/maps/design_21.mvar" # Path to the file that will be used as the response body
         headers: # Additional headers to include in the response
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin" # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
       methods:
         - GET
       response:
-        body: :mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin
+        body: ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin"
         headers:
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/FFA.bin" # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
       methods:
         - GET
       response:
-        body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
+        body: ":blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin" # Path to the external file that will be used as the response body, with a specific assetVersionID
         headers:
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/:egv-bin # Match any "EngineGameVariant"
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/:egv-bin" # Match any "EngineGameVariant"
       methods:
         - GET
       response:
-        before: # Run before response handler
-          cmd: "echo \"hello, before command\"" # Desired command
-    - path: /ugcstorage/* # Match all after /ugcstorage/
+        before: # Response pre-handler
+          commands: # Commands list
+            - run: # Run the first command
+              - "echo \"First GUID: :guid\""
+            - run: # Run the second command
+              - "echo \"Second GUID: :guid\""
+    - path: "/ugcstorage/*" # Match all after /ugcstorage/
       methods:
         - GET
         - POST
@@ -55,7 +59,7 @@ domains:
         - DELETE
       request: # Request handler
         headers: # Headers to override in the request
-          x-343-authorization-spartan: v4=MyCustomSpartanToken
+          x-343-authorization-spartan: "v4=MyCustomSpartanToken"
 ```
 
 ## Definition
@@ -64,23 +68,28 @@ domains:
 domains:
   root: # Must be one of "blobs | authoring | discovery | settings | root" (root = all)
     # Each item in the list represents a specific endpoint configuration.
-    - path: /example/path # Targeted path (case insensitive)
+    - path: "/example/path" # Targeted path (case insensitive)
       methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
         - GET
         - POST
       request: # Used to alter the request
-        before: # Used to run a command before handler execution
-          cmd: "shell command" # Desired command
-        body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
+        before: # Used to run various actions before handler execution
+          commands: # Used to run desired commands
+            - run: # Used to define a run command
+              # Will be concatenated into: echo "hello" && echo "world"
+              - "echo \"hello\"" # Parameter
+              - "&& echo \"world\"" # Parameter
+    - path: "/ugcstorage/*" # Match all after /ugcstorage/
+        body: ":mitm-dir/request/body/file" # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
         headers: # Override request headers (case insensitive)
-          custom-header: customValue
+          custom-header: "customValue"
       response: # Used to alter the response
         before: # Used to run a command before handler execution
           cmd: "shell command" # Desired command
         code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-        body: :mitm-dir/response/body/file # URI to the overridden file
+        body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override response headers (case insensitive)
-          custom-response-header: customValue
+          custom-response-header: "customValue"
 ```
 
 ### Before Command
@@ -161,9 +170,9 @@ In some cases, you might need to reuse a parameter that was matched during the r
 ```yaml
 domains:
   blobs:
-    - path: /ekur/:guid/olympus/:xuid/([a-z]+)$
+    - path: "/ekur/:guid/olympus/:xuid/([a-z]+)$"
       response:
-        body: :mitm-dir/example/xuid_$2/test_$1/$3
+        body: ":mitm-dir/example/xuid_$2/test_$1/$3"
 ```
 
 #### Output

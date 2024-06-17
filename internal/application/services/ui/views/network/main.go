@@ -15,7 +15,6 @@
 package MITMApplicationUIServiceNetworkUI
 
 import (
-	"fmt"
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	details "infinite-mitm/internal/application/services/ui/views/network/components/details"
@@ -85,24 +84,24 @@ func Create() {
 
 	go func () {
 		event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			data := events.ParseRequestEventData(str)
+			details := e.Data()["details"].(string)
+			data := events.ParseRequestEventData(details)
 			pushNetworkData(data)
 
 			return nil
 		}), event.Normal)
 
 		event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			data := events.ParseResponseEventData(str)
+			details := e.Data()["details"].(string)
+			data := events.ParseResponseEventData(details)
 			updateNetworkData(data)
 
 			return nil
 		}), event.Normal)
 
 		event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			updateStatusBar(str)
+			details := e.Data()["details"].(string)
+			updateStatusBar(details)
 
 			return nil
 		}), event.Normal)

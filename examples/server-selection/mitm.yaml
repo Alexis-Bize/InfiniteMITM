@@ -2,11 +2,11 @@
 domains:
   # lobby-hi.svc.halowaypoint.com
   lobby:
-    - path: /titles/:title/qosservers
+    - path: "/titles/:title/qosservers"
       methods:
         - GET
       response:
-        body: :mitm-dir/resources/json/server-selection.json
+        body: ":mitm-dir/resources/json/server-selection.json"
         headers:
-          content-type: :ct-json
+          content-type: ":ct-json"
 ## ... (yaml)

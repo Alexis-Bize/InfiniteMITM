@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -40,7 +39,6 @@ type activeKeyType string
 type model struct {
 	width int
 	height int
-	resizeTimer *time.Timer
 
 	networkTableModel   table.TableModel
 	networkDetailsModel details.DetailsModel
@@ -73,7 +71,6 @@ func Create() {
 	m := &model{
 		width,
 		height,
-		nil,
 		table.NewNetworkModel(width, modelsHeight),
 		details.NewDetailsModel("", "", "", width, modelsHeight),
 		statusBarModel,
@@ -252,10 +249,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		if m.resizeTimer != nil {
-			m.resizeTimer.Stop()
-		}
-
 		m.width = msg.Width
 		m.height = msg.Height
 

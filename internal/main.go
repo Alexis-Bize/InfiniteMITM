@@ -35,8 +35,8 @@ import (
 	"github.com/gookit/event"
 )
 
-var mu sync.Mutex
 var server *http.Server
+var restartMutex sync.Mutex
 
 func Start(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
@@ -135,8 +135,8 @@ func shutdownServer() {
 }
 
 func restartServer(f *embed.FS, wg *sync.WaitGroup) {
-	mu.Lock()
-	defer mu.Unlock()
+	restartMutex.Lock()
+	defer restartMutex.Unlock()
 
 	shutdownServer()
 	wg.Add(1)

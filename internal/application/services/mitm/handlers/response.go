@@ -17,24 +17,24 @@ package MITMApplicationMITMServiceHandlers
 import (
 	"bytes"
 	events "infinite-mitm/internal/application/events"
+	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
+	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
 	"io"
 	"net/http"
-	"regexp"
 
 	"github.com/elazarl/goproxy"
 	"github.com/gookit/event"
 )
 
 func HandleRootResponses(options traffic.TrafficOptions) ResponseHandlerStruct {
-	target := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root))
-
+	target := pattern.Create(domains.HaloWaypointSVCDomains.Root, "/*")
 	return ResponseHandlerStruct{
-		Match: goproxy.UrlMatches(target),
+		Match: helpers.MatchURL(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			if resp.Request.Method == http.MethodOptions {
 				return resp

@@ -61,7 +61,7 @@ const (
 	defaultDuration = 7 * 24 * time.Hour
 )
 
-var readMutex, writeMutex, flushMutex sync.Mutex
+var writeMutex, flushMutex sync.Mutex
 
 func init() {
 	gob.Register(http.Header{})
@@ -156,9 +156,6 @@ func parseDuration(ttl string) time.Duration {
 }
 
 func (s *SmartCache) Read(key string) *SmartCacheItem {
-	readMutex.Lock()
-	defer readMutex.Unlock()
-
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
 		if item.created != (time.Time{}) {

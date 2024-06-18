@@ -79,10 +79,6 @@ var MatchPatterns = Patterns{
 	STOP: `$`,
 }
 
-func Create(value string) *regexp.Regexp {
-	return regexp.MustCompile(ReplaceParameters(value))
-}
-
 func Match(re *regexp.Regexp, value string) []string {
 	var matches []string
 
@@ -96,6 +92,19 @@ func Match(re *regexp.Regexp, value string) []string {
 	}
 
 	return matches
+}
+
+func Create(domain domains.DomainType, path string) *regexp.Regexp {
+	if path == "" || !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	path = strings.Replace(path, "*", ":*", -1)
+	path = strings.Replace(path, "$", ":$", -1)
+	path = ReplaceParameters(regexp.QuoteMeta(path))
+
+	re := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domain) + path)
+	return re
 }
 
 func ReplaceParameters(value string) string {

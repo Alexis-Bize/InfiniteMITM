@@ -8,6 +8,8 @@ For more information about **InfiniteVariantTool**, please visit their official 
 
 ## Before
 
+### Pack XML into bond
+
 In the following example, the `before.commands.run` command will pack a custom CustomGamesUIMarkup XML file (previously unpacked using **InfiniteVariantTool**) into a binary format before returning it to the game. Please note that **InfiniteVariantTool** must be downloaded beforehand.
 
 ```yaml

@@ -29,7 +29,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -60,7 +59,6 @@ const (
 )
 
 var program *tea.Program
-var programPushRowMutex, programUpdateRowMutex, programUpdateStatusMutex sync.Mutex
 var networkData = &networkDataType{
 	Requests:  make(map[string]*events.ProxyRequestEventData),
 	Responses: make(map[string]*events.ProxyResponseEventData),
@@ -114,9 +112,6 @@ func Create() {
 }
 
 func pushNetworkData(data events.ProxyRequestEventData) {
-	programPushRowMutex.Lock()
-	defer programPushRowMutex.Unlock()
-
 	networkData.Requests[data.ID] = &data
 
 	prefix := ""
@@ -147,9 +142,6 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 }
 
 func updateNetworkData(data events.ProxyResponseEventData) {
-	programUpdateRowMutex.Lock()
-	defer programUpdateRowMutex.Unlock()
-
 	networkData.Responses[data.ID] = &data
 
 	prefix := ""
@@ -203,9 +195,6 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 }
 
 func updateStatusBar(message string) {
-	programUpdateStatusMutex.Lock()
-	defer programUpdateStatusMutex.Unlock()
-
 	program.Send(status.StatusBarInfoUpdate(status.StatusBarInfoUpdate{
 		Message: message,
 	}))

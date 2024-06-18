@@ -82,16 +82,16 @@ type YAMLContentDomainPair struct {
 type YAMLContentDomainPairs []YAMLContentDomainPair
 
 const (
-	Root      DomainType  = "svc.halowaypoint.com:443"
-	Blobs     DomainType  = "blobs-infiniteugc.svc.halowaypoint.com:443"
-	Authoring DomainType  = "authoring-infiniteugc.svc.halowaypoint.com:443"
-	Discovery DomainType  = "discovery-infiniteugc.svc.halowaypoint.com:443"
-	HaloStats DomainType  = "halostats.svc.halowaypoint.com:443"
-	Settings  DomainType  = "settings.svc.halowaypoint.com:443"
-	GameCMS   DomainType  = "gamecms-hacs.svc.halowaypoint.com:443"
-	Economy   DomainType  = "economy.svc.halowaypoint.com:443"
-	Lobby     DomainType  = "lobby-hi.svc.halowaypoint.com:443"
-	Skill     DomainType  = "skill.svc.halowaypoint.com:443"
+	Root      DomainType  = "svc.halowaypoint.com"
+	Blobs     DomainType  = "blobs-infiniteugc.svc.halowaypoint.com"
+	Authoring DomainType  = "authoring-infiniteugc.svc.halowaypoint.com"
+	Discovery DomainType  = "discovery-infiniteugc.svc.halowaypoint.com"
+	HaloStats DomainType  = "halostats.svc.halowaypoint.com"
+	Settings  DomainType  = "settings.svc.halowaypoint.com"
+	GameCMS   DomainType  = "gamecms-hacs.svc.halowaypoint.com"
+	Economy   DomainType  = "economy.svc.halowaypoint.com"
+	Lobby     DomainType  = "lobby-hi.svc.halowaypoint.com"
+	Skill     DomainType  = "skill.svc.halowaypoint.com"
 )
 
 var HaloWaypointSVCDomains = Domains{

@@ -59,7 +59,7 @@ const (
 )
 
 var program *tea.Program
-var networkDataMutex = &sync.RWMutex{}
+var networkDataMutex = &sync.Mutex{}
 var networkData = &networkDataType{
 	Requests:  make(map[string]*events.ProxyRequestEventData),
 	Responses: make(map[string]*events.ProxyResponseEventData),

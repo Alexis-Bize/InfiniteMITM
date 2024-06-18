@@ -50,7 +50,6 @@ type SmartCacheYAMLOptions struct {
 type SmartCacheItem struct {
 	Body       []byte
 	Header     http.Header
-	persisted  bool
 	created    time.Time
 	expires    time.Time
 }
@@ -62,6 +61,7 @@ const (
 )
 
 var RWMutex = &sync.RWMutex{}
+var storeMutex = &sync.Mutex{}
 var flushMutex = &sync.Mutex{}
 
 func init() {
@@ -178,8 +178,7 @@ func (s *SmartCache) Read(key string) *SmartCacheItem {
 
 			var item SmartCacheItem
 			if err = gob.NewDecoder(file).Decode(&item); err == nil {
-				item.persisted = true
-				s.Write(key, &item)
+				s.store(key, &item)
 				return &item
 			}
 		}
@@ -189,9 +188,25 @@ func (s *SmartCache) Read(key string) *SmartCacheItem {
 }
 
 func (s *SmartCache) Write(key string, item *SmartCacheItem) {
-	RWMutex.Lock()
-	defer RWMutex.Unlock()
+	s.store(key, item)
 
+	go func () {
+		if s.strategy == Persistent {
+			storeMutex.Lock()
+			defer storeMutex.Unlock()
+
+			file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key));
+			if err != nil {
+				return
+			}
+
+			defer file.Close()
+			gob.NewEncoder(file).Encode(item)
+		}
+	}()
+}
+
+func (s *SmartCache) store(key string, item *SmartCacheItem) {
 	item.created = time.Now()
 	item.expires = time.Now().Add(s.duration)
 
@@ -204,18 +219,9 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	item.Header.Del("X-Activity-Id")
 	item.Header.Del("X-Cache")
 
+	RWMutex.Lock()
 	s.items[key] = item
-
-	if !item.persisted && s.strategy == Persistent {
-		file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key));
-		if err != nil {
-			return
-		}
-
-		defer file.Close()
-		item.persisted = true
-		gob.NewEncoder(file).Encode(item)
-	}
+	RWMutex.Unlock()
 }
 
 func (s *SmartCache) isExpired(item *SmartCacheItem) bool {

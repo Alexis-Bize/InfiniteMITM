@@ -17,6 +17,7 @@ package MITMApplicationUIServiceNetworkComponentTable
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"infinite-mitm/pkg/theme"
 
@@ -48,6 +49,8 @@ type tableRowEvent  struct {
 
 type TableRowPush tableRowEvent
 type TableRowUpdate tableRowEvent
+
+var rowAssignMutex = &sync.RWMutex{}
 
 func NewNetworkModel(width int, height int) TableModel {
 	t := table.New()
@@ -113,10 +116,14 @@ func (m *TableModel) SetHeight(height int, delta int) {
 }
 
 func (m *TableModel) AssignRowPosition(id string, position int) {
+	rowAssignMutex.Lock()
 	(*m.rowPositionIDMap)[id] = position
+	rowAssignMutex.Unlock()
 }
 
 func (m *TableModel) GetRowPosition(id string) int {
+	rowAssignMutex.RLock()
+	defer rowAssignMutex.RUnlock()
 	return (*m.rowPositionIDMap)[id]
 }
 

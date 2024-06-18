@@ -28,7 +28,7 @@ import (
 	"github.com/gookit/event"
 )
 
-func OnResponse(options traffic.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
+func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
 	if resp.Request.Method == http.MethodOptions {
 		return resp
 	}

@@ -137,22 +137,22 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		for _, handler := range clientRequestHandlers {
 			if handler.Match(req, ctx) {
 				req, resp = handler.Fn(req, ctx)
-				return handlers.OnRequest(trafficOptions, req, resp, ctx)
+				return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 			}
 		}
 
-		return handlers.OnRequest(trafficOptions, req, resp, ctx)
+		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 	})
 
 	proxy.OnResponse(rootMatch).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
 		for _, handler := range clientResponseHandlers {
 			if handler.Match(resp, ctx) {
 				resp = handler.Fn(resp, ctx)
-				return handlers.OnResponse(trafficOptions, resp, ctx)
+				return handlers.HandleResponse(trafficOptions, resp, ctx)
 			}
 		}
 
-		return handlers.OnResponse(trafficOptions, resp, ctx)
+		return handlers.HandleResponse(trafficOptions, resp, ctx)
 	})
 
 	server := &http.Server{

@@ -159,7 +159,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 			}
 
 			body := node.Request.Body
-			matches := pattern.Match(target, req.URL.String())
+			matches := pattern.Match(target, request.StripPort(req.URL.String()))
 			beforeHandlers := node.Request.Before
 
 			kv := utilities.InterfaceToMap(node.Request.Headers)
@@ -207,7 +207,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			}
 
 			body := node.Response.Body
-			matches := pattern.Match(target, resp.Request.URL.String())
+			matches := pattern.Match(target, request.StripPort(resp.Request.URL.String()))
 			beforeHandlers := node.Response.Before
 
 			kv := utilities.InterfaceToMap(node.Response.Headers)

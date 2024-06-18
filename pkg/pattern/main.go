@@ -26,7 +26,7 @@ type Patterns struct {
 	SANDBOX, XUID, GUID, MVAR, CGUI, EGV, TITLE string
 	BLOBS_SVC, STATS_SVC, GAMECMS_SVC, ECONOMY_SVC, SETTINGS_SVC, AUTHORING_SVC, DISCOVERY_SVC string
 	XML, BOND, JSON string
-	ALL, STOP string
+	ALL, END, OR string
 }
 
 var MatchParameters = Patterns{
@@ -50,8 +50,9 @@ var MatchParameters = Patterns{
 	BOND: ":ct-bond",
 	JSON: ":ct-json",
 
-	ALL:  ":\\*",
-	STOP: ":\\$",
+	ALL: ":all",
+	END: ":end",
+	OR:  ":or",
 }
 
 var MatchPatterns = Patterns{
@@ -75,8 +76,8 @@ var MatchPatterns = Patterns{
 	BOND: "application/x-bond-compact-binary",
 	JSON: "application/json",
 
-	ALL:  `(.*)`,
-	STOP: `$`,
+	ALL: `(.*)`,
+	END: `$`,
 }
 
 func Match(re *regexp.Regexp, value string) []string {
@@ -99,9 +100,9 @@ func Create(domain domains.DomainType, path string) *regexp.Regexp {
 		path = "/" + path
 	}
 
-	path = strings.Replace(path, "*", ":*", -1)
-	path = strings.Replace(path, "$", ":$", -1)
-	path = ReplaceParameters(regexp.QuoteMeta(path))
+	path = strings.Replace(path, "*", ":all", -1)
+	path = strings.Replace(path, "$", ":end", -1)
+	path = ReplaceParameters(escapeExceptParentheses(path))
 
 	re := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domain) + path)
 	return re
@@ -130,10 +131,7 @@ func ReplaceParameters(value string) string {
 		MatchParameters.JSON, MatchPatterns.JSON,
 
 		MatchParameters.ALL, MatchPatterns.ALL,
-		MatchParameters.STOP, MatchPatterns.STOP,
-
-		"*", MatchPatterns.ALL,
-		"$", MatchPatterns.STOP,
+		MatchParameters.END, MatchPatterns.END,
 
 		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
 		":mitm-version", configs.GetConfig().Version,
@@ -152,4 +150,20 @@ func ReplaceMatches(target string, matches []string) string {
 
 		return matches[index-1]
 	})
+}
+
+func escapeExceptParentheses(str string) string {
+	var result strings.Builder
+
+	re := regexp.MustCompile(`\([^)]*\)`)
+	lastEnd := 0
+
+	for _, loc := range re.FindAllStringIndex(str, -1) {
+		result.WriteString(regexp.QuoteMeta(str[lastEnd:loc[0]]))
+		result.WriteString(str[loc[0]:loc[1]])
+		lastEnd = loc[1]
+	}
+
+	result.WriteString(regexp.QuoteMeta(str[lastEnd:]))
+	return result.String()
 }

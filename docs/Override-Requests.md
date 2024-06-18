@@ -1,6 +1,6 @@
 # Override Requests
 
-**InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and **regex** support.
+**InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and basic **regex** support.
 
 ### Notes:
 

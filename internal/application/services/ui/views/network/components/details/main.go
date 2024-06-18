@@ -155,13 +155,13 @@ func (m *DetailsModel) SetResponseTrafficData(data *traffic.TrafficData) {
 	m.responseTrafficModel.SetTrafficData(data)
 }
 
-func (m *DetailsModel) SetID(activeID string) {
-	m.trafficID = activeID
+func (m *DetailsModel) SetID(trafficID string) {
+	m.trafficID = trafficID
 }
 
-func (m *DetailsModel) SetRequestInfo(activeURL string, activeMethod string) {
-	m.requestUrl = activeURL
-	m.requestMethod = activeMethod
+func (m *DetailsModel) SetRequestInfo(requestUrl string, requestMethod string) {
+	m.requestUrl = requestUrl
+	m.requestMethod = requestMethod
 }
 
 func (m *DetailsModel) SetResponseStatusCode(statusCode int) {

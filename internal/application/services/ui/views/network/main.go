@@ -26,9 +26,9 @@ import (
 	"infinite-mitm/pkg/sysutilities"
 	"log"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -40,6 +40,7 @@ type activeKeyType string
 type model struct {
 	width int
 	height int
+	resizeTimer *time.Timer
 
 	networkTableModel   table.TableModel
 	networkDetailsModel details.DetailsModel
@@ -72,6 +73,7 @@ func Create() {
 	m := &model{
 		width,
 		height,
+		nil,
 		table.NewNetworkModel(width, modelsHeight),
 		details.NewDetailsModel("", "", "", width, modelsHeight),
 		statusBarModel,
@@ -116,9 +118,9 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 
 	prefix := ""
 	if data.SmartCached {
-		prefix = "⧖"
+		prefix = "□"
 	} else if data.Proxified {
-		prefix = "✓"
+		prefix = "★"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -158,13 +160,13 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 
 		if smartCacheHeaderValue != request.MITMCacheHeaderHitValue {
 			if data.Status == 200 {
-				prefix = "⧗"
+				prefix = "■"
 			} else if data.Status != 302 && (data.Status < 200 || data.Status >= 300) {
-				prefix = "✘"
+				prefix = "x"
 			}
 		}
 	} else if data.Proxified {
-		prefix = "✓"
+		prefix = "★"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -250,6 +252,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		if m.resizeTimer != nil {
+			m.resizeTimer.Stop()
+		}
+
 		m.width = msg.Width
 		m.height = msg.Height
 
@@ -262,9 +268,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.networkDetailsModel.SetWidth(m.width)
 		m.networkDetailsModel.SetHeight(m.height - m.statusBarModel.Size.Height)
 
-		if runtime.GOOS != "window" {
-			sysutilities.ClearTerminal()
-		}
+		sysutilities.ClearTerminal()
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":

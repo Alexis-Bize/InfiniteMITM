@@ -22,13 +22,14 @@ import (
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
-	"regexp"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -106,7 +107,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		})
 	}
 
-	var rootCondition = goproxy.UrlMatches(regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)))
 	smartCacheEnabled := content.Options.SmartCache.Enabled
 
 	if !smartCacheEnabled {
@@ -118,7 +118,14 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		)
 	}
 
-	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+	rootMatch := helpers.MatchRequestUrl(pattern.Create(domains.HaloWaypointSVCDomains.Root, "/*"))
+	trafficOptions := traffic.TrafficOptions{
+		TrafficDisplay: content.Options.TrafficDisplay,
+	}
+
+	proxy.OnRequest(rootMatch).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		var resp *http.Response
+
 		customCtx := context.ContextHandler(ctx)
 		customCtx.SetUserData("uuid", uuid.New().String())
 		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
@@ -127,24 +134,26 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			customCtx.SetUserData("cache", smartCache)
 		}
 
-		return req, nil
+		for _, handler := range clientRequestHandlers {
+			if handler.Match(req, ctx) {
+				req, resp = handler.Fn(req, ctx)
+				return handlers.OnRequest(trafficOptions, req, resp, ctx)
+			}
+		}
+
+		return handlers.OnRequest(trafficOptions, req, resp, ctx)
 	})
 
-	for _, handler := range clientRequestHandlers {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
+	proxy.OnResponse(rootMatch).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+		for _, handler := range clientResponseHandlers {
+			if handler.Match(resp, ctx) {
+				resp = handler.Fn(resp, ctx)
+				return handlers.OnResponse(trafficOptions, resp, ctx)
+			}
+		}
 
-	for _, handler := range internalRequestHandlers(content.Options) {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
-
-	for _, handler := range clientResponseHandlers {
-		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
-	}
-
-	for _, handler := range internalResponseHandlers(content.Options) {
-		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
-	}
+		return handlers.OnResponse(trafficOptions, resp, ctx)
+	})
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
@@ -157,24 +166,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	}
 
 	return server, nil
-}
-
-func internalRequestHandlers(options YAMLOptions) []handlers.RequestHandlerStruct {
-	handlersList := []handlers.RequestHandlerStruct{}
-	handlersList = append(handlersList, handlers.HandleRootRequests(traffic.TrafficOptions{
-		TrafficDisplay: options.TrafficDisplay,
-	}))
-
-	return handlersList
-}
-
-func internalResponseHandlers(options YAMLOptions) []handlers.ResponseHandlerStruct {
-	handlersList := []handlers.ResponseHandlerStruct{}
-	handlersList = append(handlersList, handlers.HandleRootResponses(traffic.TrafficOptions{
-		TrafficDisplay: options.TrafficDisplay,
-	}))
-
-	return handlersList
 }
 
 func (l emptyLogger) Printf(format string, v ...interface{}) {

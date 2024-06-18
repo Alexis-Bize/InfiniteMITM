@@ -152,7 +152,7 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.RequestHandlerStruct {
 	target := pattern.Create(domain, node.Path)
 	return handlers.RequestHandlerStruct{
-		Match: helpers.MatchURL(target),
+		Match: helpers.MatchRequestUrl(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			if !utilities.Contains(node.Methods, req.Method) {
 				return req, nil
@@ -168,17 +168,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 			}
 
 			beforeCommands := createCommands(beforeHandlers.Commands, matches)
-			if len(beforeCommands) != 0 {
-				var wg sync.WaitGroup
-				wg.Add(1)
-
-				go func() {
-					defer wg.Done()
-					runCommands(beforeCommands)
-				}()
-
-				wg.Wait()
-			}
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, req.Header)
@@ -210,7 +200,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.ResponseHandlerStruct {
 	target := pattern.Create(domain, node.Path)
 	return handlers.ResponseHandlerStruct{
-		Match: helpers.MatchURL(target),
+		Match: helpers.MatchResponseUrl(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			if !utilities.Contains(node.Methods, resp.Request.Method) {
 				return resp
@@ -226,17 +216,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			}
 
 			beforeCommands := createCommands(beforeHandlers.Commands, matches)
-			if len(beforeCommands) != 0 {
-				var wg sync.WaitGroup
-				wg.Add(1)
-
-				go func() {
-					defer wg.Done()
-					runCommands(beforeCommands)
-				}()
-
-				wg.Wait()
-			}
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
@@ -270,7 +250,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 	}
 }
 
-func isURL(str string) bool {
+func isUrl(str string) bool {
 	_, err := url.ParseRequestURI(str); if err != nil {
 		return false
 	}
@@ -287,7 +267,7 @@ func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []st
 			var runList []string
 			for _, run := range commands.Run {
 				replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
-				if !isURL(replace) {
+				if !isUrl(replace) {
 					replace = filepath.Clean(replace)
 				}
 
@@ -302,30 +282,43 @@ func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []st
 }
 
 func runCommands(commands []string) {
-	for i, cmd := range commands {
-		args := strings.Split(cmd, " ")
-		length := len(args)
-		if length == 0 {
-			continue
-		}
-
-		var c *exec.Cmd
-		if length == 1 {
-			c = exec.Command(args[0])
-		} else if length >= 2 {
-			c = exec.Command(args[0], args[1:]...)
-		}
-
-		if err := c.Run(); err != nil {
-			event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
-		}
+	if len(commands) == 0 {
+		return
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for i, cmd := range commands {
+			args := strings.Split(cmd, " ")
+			length := len(args)
+			if length == 0 {
+				continue
+			}
+
+			var c *exec.Cmd
+			if length == 1 {
+				c = exec.Command(args[0])
+			} else if length >= 2 {
+				c = exec.Command(args[0], args[1:]...)
+			}
+
+			if err := c.Run(); err != nil {
+				event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
+			}
+		}
+	}()
+
+	wg.Wait()
 }
 
 func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
 	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
-	if isURL(str) {
+	if isUrl(str) {
 		buffer, mitmErr := request.Send("GET", str, nil, header);
 		if mitmErr != nil {
 			return nil, fmt.Errorf(mitmErr.Message)

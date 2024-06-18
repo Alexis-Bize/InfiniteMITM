@@ -21,14 +21,24 @@ import (
 	"github.com/elazarl/goproxy"
 )
 
-func MatchURL(re *regexp.Regexp) goproxy.ReqConditionFunc {
+func MatchRequestUrl(re *regexp.Regexp) goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-		url := req.URL.Hostname() + req.URL.Path
-		query := req.URL.RawQuery
-		if query != "" {
-			url += "?" + query
-		}
-
-		return re.MatchString(url)
+		return MatchUrl(req, re)
 	}
+}
+
+func MatchResponseUrl(re *regexp.Regexp) goproxy.RespConditionFunc {
+	return func(resp *http.Response, ctx *goproxy.ProxyCtx) bool {
+		return MatchUrl(resp.Request, re)
+	}
+}
+
+func MatchUrl(req *http.Request, re *regexp.Regexp) bool {
+	url := req.URL.Hostname() + req.URL.Path
+	query := req.URL.RawQuery
+	if query != "" {
+		url += "?" + query
+	}
+
+	return re.MatchString(url)
 }

@@ -50,7 +50,7 @@ var optionToString = map[PromptOption]string{
 	Start:                  "🔒 Start Proxy Server",
 	InstallRootCertificate: "🔐 Install Root Certificate",
 	ForceKillProxy:         "🛑 Force Kill Proxy",
-	ClearSmartCache:        "♻️ Clear SmartCache",
+	ClearSmartCache:        "🧹 Clear SmartCache",
 	Credits:                "🤝 Credits",
 	Exit:                   "👋 Exit",
 	// Credits

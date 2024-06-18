@@ -26,7 +26,7 @@ type RequestHandlerStruct struct {
 }
 
 type ResponseHandlerStruct struct {
-	Match goproxy.ReqConditionFunc
+	Match goproxy.RespConditionFunc
 	Fn    func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
 }
 

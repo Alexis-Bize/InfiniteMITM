@@ -61,7 +61,8 @@ const (
 	defaultDuration = 7 * 24 * time.Hour
 )
 
-var writeMutex, flushMutex sync.Mutex
+var RWMutex = &sync.RWMutex{}
+var flushMutex = &sync.Mutex{}
 
 func init() {
 	gob.Register(http.Header{})
@@ -156,6 +157,9 @@ func parseDuration(ttl string) time.Duration {
 }
 
 func (s *SmartCache) Read(key string) *SmartCacheItem {
+	RWMutex.RLock()
+	defer RWMutex.RUnlock()
+
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
 		if item.created != (time.Time{}) {
@@ -185,8 +189,8 @@ func (s *SmartCache) Read(key string) *SmartCacheItem {
 }
 
 func (s *SmartCache) Write(key string, item *SmartCacheItem) {
-	writeMutex.Lock()
-	defer writeMutex.Unlock()
+	RWMutex.Lock()
+	defer RWMutex.Unlock()
 
 	item.created = time.Now()
 	item.expires = time.Now().Add(s.duration)

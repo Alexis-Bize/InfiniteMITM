@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -58,6 +59,7 @@ const (
 )
 
 var program *tea.Program
+var networkDataMutex = &sync.RWMutex{}
 var networkData = &networkDataType{
 	Requests:  make(map[string]*events.ProxyRequestEventData),
 	Responses: make(map[string]*events.ProxyResponseEventData),
@@ -111,7 +113,9 @@ func Create() {
 }
 
 func pushNetworkData(data events.ProxyRequestEventData) {
+	networkDataMutex.Lock()
 	networkData.Requests[data.ID] = &data
+	networkDataMutex.Unlock()
 
 	prefix := ""
 	if data.SmartCached {
@@ -141,7 +145,9 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 }
 
 func updateNetworkData(data events.ProxyResponseEventData) {
+	networkDataMutex.Lock()
 	networkData.Responses[data.ID] = &data
+	networkDataMutex.Unlock()
 
 	prefix := ""
 	if data.SmartCached {

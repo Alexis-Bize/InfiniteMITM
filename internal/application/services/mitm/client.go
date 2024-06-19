@@ -20,6 +20,7 @@ import (
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
+	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
@@ -27,16 +28,16 @@ import (
 	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
-	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/utilities"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/elazarl/goproxy"
@@ -136,11 +137,11 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 	var clientRequestHandlers []handlers.RequestHandlerStruct
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 	for _, v := range contentList {
-		if v.Request != (domains.YAMLDomainRequestNode{}) {
+		if v.Request.Body != "" || len(v.Request.Headers) != 0 || len(v.Request.Before.Commands) != 0 {
 			clientRequestHandlers = append(clientRequestHandlers, createRequestHandler(domain, v))
 		}
 
-		if v.Response != (domains.YAMLDomainResponseNode{}) {
+		if v.Response.Body != "" || len(v.Response.Headers) != 0 || len(v.Response.Before.Commands) != 0 {
 			clientResponseHandlers = append(clientResponseHandlers, createResponseHandler(domain, v))
 		}
 	}
@@ -148,31 +149,26 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 	return clientRequestHandlers, clientResponseHandlers
 }
 
-func createPattern(domain domains.DomainType, path string) *regexp.Regexp {
-	if path == "" || !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	re := pattern.Create(`(?i)` + regexp.QuoteMeta(domain) + path)
-	return re
-}
-
 func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.RequestHandlerStruct {
-	target := createPattern(domain, node.Path)
+	target := pattern.Create(domain, node.Path)
 	return handlers.RequestHandlerStruct{
-		Match: goproxy.UrlMatches(target),
+		Match: helpers.MatchRequestUrl(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			if !utilities.Contains(node.Methods, req.Method) {
 				return req, nil
 			}
 
 			body := node.Request.Body
-			matches := pattern.Match(target, req.URL.String())
+			matches := pattern.Match(target, request.StripPort(req.URL.String()))
+			beforeHandlers := node.Request.Before
 
 			kv := utilities.InterfaceToMap(node.Request.Headers)
 			for key, value := range kv {
 				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
+
+			beforeCommands := createCommands(beforeHandlers.Commands, matches)
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, req.Header)
@@ -202,21 +198,25 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 }
 
 func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.ResponseHandlerStruct {
-	target := createPattern(domain, node.Path)
+	target := pattern.Create(domain, node.Path)
 	return handlers.ResponseHandlerStruct{
-		Match: goproxy.UrlMatches(target),
+		Match: helpers.MatchResponseUrl(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			if !utilities.Contains(node.Methods, resp.Request.Method) {
 				return resp
 			}
 
 			body := node.Response.Body
-			matches := pattern.Match(target, resp.Request.URL.String())
+			matches := pattern.Match(target, request.StripPort(resp.Request.URL.String()))
+			beforeHandlers := node.Response.Before
 
 			kv := utilities.InterfaceToMap(node.Response.Headers)
 			for key, value := range kv {
 				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
+
+			beforeCommands := createCommands(beforeHandlers.Commands, matches)
+			runCommands(beforeCommands)
 
 			if body != "" {
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
@@ -250,27 +250,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 	}
 }
 
-func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
-	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
-
-	if isURL(str) {
-		buffer, mitmErr := request.Send("GET", str, nil, header);
-		if mitmErr != nil {
-			return nil, fmt.Errorf(mitmErr.Message)
-		}
-
-		return buffer, nil
-	}
-
-	buffer, err := os.ReadFile(cleanSystemPath(str));
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer, nil
-}
-
-func isURL(str string) bool {
+func isUrl(str string) bool {
 	_, err := url.ParseRequestURI(str); if err != nil {
 		return false
 	}
@@ -279,15 +259,78 @@ func isURL(str string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
-func cleanSystemPath(str string) string {
-	if strings.HasPrefix(str, "~/") {
-		home, err := sysutilities.GetHomeDirectory();
-		if err != nil {
-			return str
-		}
+func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []string) []string {
+	var commandsList []string
 
-		str = filepath.Join(home, str[2:])
+	if len(commands) != 0 {
+		for _, commands := range commands {
+			var runList []string
+			for _, run := range commands.Run {
+				replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
+				if !isUrl(replace) {
+					replace = filepath.Clean(replace)
+				}
+
+				runList = append(runList, replace)
+			}
+
+			commandsList = append(commandsList, strings.Join(runList, " "))
+		}
 	}
 
-	return filepath.Clean(str)
+	return commandsList
+}
+
+func runCommands(commands []string) {
+	if len(commands) == 0 {
+		return
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for i, cmd := range commands {
+			args := strings.Split(cmd, " ")
+			length := len(args)
+			if length == 0 {
+				continue
+			}
+
+			var c *exec.Cmd
+			if length == 1 {
+				c = exec.Command(args[0])
+			} else if length >= 2 {
+				c = exec.Command(args[0], args[1:]...)
+			}
+
+			if err := c.Run(); err != nil {
+				event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
+			}
+		}
+	}()
+
+	wg.Wait()
+}
+
+func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
+	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
+
+	if isUrl(str) {
+		buffer, mitmErr := request.Send("GET", str, nil, header);
+		if mitmErr != nil {
+			return nil, fmt.Errorf(mitmErr.Message)
+		}
+
+		return buffer, nil
+	}
+
+	buffer, err := os.ReadFile(filepath.Clean(str));
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer, nil
 }

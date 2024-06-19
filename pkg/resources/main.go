@@ -24,24 +24,32 @@ import (
 	"path/filepath"
 )
 
-var certName = configs.GetConfig().Proxy.Certificate.Name
+var projectDir string
+var resourcesPath string
+var dirPaths map[string]string
 
-var projectDir = configs.GetConfig().Extra.ProjectDir
-var resourcesPath = filepath.Join(projectDir, "resources")
-var dirPaths = map[string]string{
-	// ~/InfiniteMITM
-	"smartcache":       filepath.Join(projectDir, "cache"),
-	"downloads":        filepath.Join(projectDir, "downloads"),
-	// ~/InfiniteMITM/resources
-	"ugc":              filepath.Join(resourcesPath, "ugc"),
-	"ugc-maps":         filepath.Join(resourcesPath, "ugc", "maps"),
-	"ugc-egv":          filepath.Join(resourcesPath, "ugc", "enginegamevariants"),
-	"ugc-egv-cgui":     filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"),
-	"bin":              filepath.Join(resourcesPath, "bin"),
-	"bin-flags":        filepath.Join(resourcesPath, "bin", "flags"),
-	"tools":            filepath.Join(resourcesPath, "tools"),
-	"tools-ivt":        filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
-	"json":             filepath.Join(resourcesPath, "json"),
+func init() {
+	projectDir = configs.GetConfig().Extra.ProjectDir
+	resourcesPath = filepath.Join(projectDir, "resources")
+	dirPaths = map[string]string{
+		// ~/InfiniteMITM
+		"smartcache":       filepath.Join(projectDir, "cache"),
+		"downloads":        filepath.Join(projectDir, "downloads"),
+		// ~/InfiniteMITM/resources
+		"ugc":              filepath.Join(resourcesPath, "ugc"),
+		"ugc-maps":         filepath.Join(resourcesPath, "ugc", "maps"),
+		"ugc-egv":          filepath.Join(resourcesPath, "ugc", "enginegamevariants"),
+		"ugc-egv-cgui":     filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"),
+		"bin":              filepath.Join(resourcesPath, "bin"),
+		"bin-flags":        filepath.Join(resourcesPath, "bin", "flags"),
+		"tools":            filepath.Join(resourcesPath, "tools"),
+		"tools-ivt":        filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
+		"json":             filepath.Join(resourcesPath, "json"),
+	}
+}
+
+func GetDirPaths() map[string]string {
+	return dirPaths
 }
 
 func GetSmartCacheDirPath() string {

@@ -29,6 +29,7 @@ import (
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -65,8 +66,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	proxy.Verbose = false
 	proxy.Logger = emptyLogger{}
 
-	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
-
 	content, mitmErr := ReadClientMITMConfig(); if mitmErr != nil {
 		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 	}
@@ -92,10 +91,23 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			responseText += "s"
 		}
 
+		smartCacheText := "off"
+		if content.Options.SmartCache.Enabled {
+			if content.Options.SmartCache.Strategy == smartcache.Memory {
+				smartCacheText = "memory"
+			} else if content.Options.SmartCache.Strategy == smartcache.Persistent {
+				smartCacheText = "persistent"
+			} else {
+				smartCacheText = "on"
+			}
+		}
+
 		event.MustFire(events.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
-				"[%s] found %d %s; %d %s and %d %s",
+				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
 				YAMLFilename,
+				content.Options.TrafficDisplay,
+				smartCacheText,
 				totalClientHandlersCount,
 				domainText,
 				clientActiveRequestHandlersCount,
@@ -106,7 +118,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		})
 	}
 
-	var rootCondition = goproxy.UrlMatches(regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)))
 	smartCacheEnabled := content.Options.SmartCache.Enabled
 
 	if !smartCacheEnabled {
@@ -118,33 +129,50 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		)
 	}
 
-	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		customCtx := context.ContextHandler(ctx)
-		customCtx.SetUserData("uuid", uuid.New().String())
-		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+	trafficOptions := traffic.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
+	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
+	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
-		if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
-			customCtx.SetUserData("cache", smartCache)
-		}
+	go func() {
+		proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
+		proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			var resp *http.Response
 
-		return req, nil
-	})
+			customCtx := context.ContextHandler(ctx)
+			customCtx.SetUserData("uuid", uuid.New().String())
+			customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
 
-	for _, handler := range clientRequestHandlers {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
+			if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
+				customCtx.SetUserData("cache", smartCache)
+			}
 
-	for _, handler := range internalRequestHandlers(content.Options) {
-		proxy.OnRequest(handler.Match).DoFunc(handler.Fn)
-	}
+			// :stats-svc/:title/players/:xuid/decks
+			if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
+				// fix: clearance (flight ID) may break /decks request
+				req.Header.Del("343-Clearance")
+			}
 
-	for _, handler := range clientResponseHandlers {
-		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
-	}
+			for _, handler := range clientRequestHandlers {
+				if handler.Match(req, ctx) {
+					req, resp = handler.Fn(req, ctx)
+					return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+				}
+			}
 
-	for _, handler := range internalResponseHandlers(content.Options) {
-		proxy.OnResponse(handler.Match).DoFunc(handler.Fn)
-	}
+			return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+		})
+
+		proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+			for _, handler := range clientResponseHandlers {
+				if handler.Match(resp, ctx) {
+					resp = handler.Fn(resp, ctx)
+					return handlers.HandleResponse(trafficOptions, resp, ctx)
+				}
+			}
+
+			return handlers.HandleResponse(trafficOptions, resp, ctx)
+		})
+	}()
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
@@ -157,24 +185,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	}
 
 	return server, nil
-}
-
-func internalRequestHandlers(options YAMLOptions) []handlers.RequestHandlerStruct {
-	handlersList := []handlers.RequestHandlerStruct{}
-	handlersList = append(handlersList, handlers.HandleRootRequests(traffic.TrafficOptions{
-		TrafficDisplay: options.TrafficDisplay,
-	}))
-
-	return handlersList
-}
-
-func internalResponseHandlers(options YAMLOptions) []handlers.ResponseHandlerStruct {
-	handlersList := []handlers.ResponseHandlerStruct{}
-	handlersList = append(handlersList, handlers.HandleRootResponses(traffic.TrafficOptions{
-		TrafficDisplay: options.TrafficDisplay,
-	}))
-
-	return handlersList
 }
 
 func (l emptyLogger) Printf(format string, v ...interface{}) {

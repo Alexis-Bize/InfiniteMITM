@@ -15,7 +15,6 @@
 package MITMApplicationUIServiceNetworkUI
 
 import (
-	"fmt"
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	details "infinite-mitm/internal/application/services/ui/views/network/components/details"
@@ -27,7 +26,6 @@ import (
 	"infinite-mitm/pkg/sysutilities"
 	"log"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,7 +59,7 @@ const (
 )
 
 var program *tea.Program
-var programPushRowMutex, programUpdateRowMutex, programUpdateStatusMutex sync.Mutex
+var networkDataMutex = &sync.Mutex{}
 var networkData = &networkDataType{
 	Requests:  make(map[string]*events.ProxyRequestEventData),
 	Responses: make(map[string]*events.ProxyResponseEventData),
@@ -83,30 +81,28 @@ func Create() {
 
 	m.networkTableModel.Focus()
 
-	go func () {
-		event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			data := events.ParseRequestEventData(str)
-			pushNetworkData(data)
+	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		data := events.ParseRequestEventData(details)
+		pushNetworkData(data)
 
-			return nil
-		}), event.Normal)
+		return nil
+	}), event.Normal)
 
-		event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			data := events.ParseResponseEventData(str)
-			updateNetworkData(data)
+	event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		data := events.ParseResponseEventData(details)
+		updateNetworkData(data)
 
-			return nil
-		}), event.Normal)
+		return nil
+	}), event.Normal)
 
-		event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
-			str := fmt.Sprintf("%s", e.Data()["details"])
-			updateStatusBar(str)
+	event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		updateStatusBar(details)
 
-			return nil
-		}), event.Normal)
-	}()
+		return nil
+	}), event.Normal)
 
 	program = tea.NewProgram(m)
 	if _, err := program.Run(); err != nil {
@@ -115,16 +111,15 @@ func Create() {
 }
 
 func pushNetworkData(data events.ProxyRequestEventData) {
-	programPushRowMutex.Lock()
-	defer programPushRowMutex.Unlock()
-
+	networkDataMutex.Lock()
 	networkData.Requests[data.ID] = &data
+	networkDataMutex.Unlock()
 
 	prefix := ""
 	if data.SmartCached {
-		prefix = "⧖"
+		prefix = "□"
 	} else if data.Proxified {
-		prefix = "✓"
+		prefix = "★"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -148,10 +143,9 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 }
 
 func updateNetworkData(data events.ProxyResponseEventData) {
-	programUpdateRowMutex.Lock()
-	defer programUpdateRowMutex.Unlock()
-
+	networkDataMutex.Lock()
 	networkData.Responses[data.ID] = &data
+	networkDataMutex.Unlock()
 
 	prefix := ""
 	if data.SmartCached {
@@ -167,13 +161,13 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 
 		if smartCacheHeaderValue != request.MITMCacheHeaderHitValue {
 			if data.Status == 200 {
-				prefix = "⧗"
+				prefix = "■"
 			} else if data.Status != 302 && (data.Status < 200 || data.Status >= 300) {
-				prefix = "✘"
+				prefix = "x"
 			}
 		}
 	} else if data.Proxified {
-		prefix = "✓"
+		prefix = "★"
 	}
 
 	hostname, path := explodeURL(data.URL)
@@ -204,9 +198,6 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 }
 
 func updateStatusBar(message string) {
-	programUpdateStatusMutex.Lock()
-	defer programUpdateStatusMutex.Unlock()
-
 	program.Send(status.StatusBarInfoUpdate(status.StatusBarInfoUpdate{
 		Message: message,
 	}))
@@ -274,9 +265,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.networkDetailsModel.SetWidth(m.width)
 		m.networkDetailsModel.SetHeight(m.height - m.statusBarModel.Size.Height)
 
-		if runtime.GOOS != "window" {
-			sysutilities.ClearTerminal()
-		}
+		sysutilities.ClearTerminal()
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":

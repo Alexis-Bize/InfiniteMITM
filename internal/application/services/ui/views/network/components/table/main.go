@@ -50,8 +50,11 @@ type tableRowEvent  struct {
 type TableRowPush tableRowEvent
 type TableRowUpdate tableRowEvent
 
-var rowPositionAssignMutex sync.Mutex
-var rowPositionGetMutex sync.Mutex
+const (
+	PruneRowsCommand = "ctrl+r"
+)
+
+var rowAssignMutex = &sync.RWMutex{}
 
 func NewNetworkModel(width int, height int) TableModel {
 	t := table.New()
@@ -102,9 +105,9 @@ func (m *TableModel) Blur() {
 }
 
 func (m *TableModel) GetNextRowPosition() int {
-	rows := m.tableModel.Rows()
-	position := len(rows) + 1
-	return position
+	rowAssignMutex.Lock()
+	defer rowAssignMutex.Unlock()
+	return len(*m.rowPositionIDMap) + 1
 }
 
 func (m *TableModel) GetSelectedRowData() table.Row {
@@ -117,17 +120,28 @@ func (m *TableModel) SetHeight(height int, delta int) {
 }
 
 func (m *TableModel) AssignRowPosition(id string, position int) {
-	rowPositionAssignMutex.Lock()
-	defer rowPositionAssignMutex.Unlock()
-
+	rowAssignMutex.Lock()
+	defer rowAssignMutex.Unlock()
 	(*m.rowPositionIDMap)[id] = position
 }
 
-func (m *TableModel) GetRowPosition(id string) int {
-	rowPositionGetMutex.Lock()
-	defer rowPositionGetMutex.Unlock()
+func (m *TableModel) PruneRows() {
+	rowAssignMutex.Lock()
+	defer rowAssignMutex.Unlock()
 
-	return (*m.rowPositionIDMap)[id]
+	m.rowPositionIDMap = &map[string]int{}
+	m.tableModel.SetRows([]table.Row{})
+}
+
+func (m *TableModel) GetRowPosition(id string) int {
+	rowAssignMutex.RLock()
+	defer rowAssignMutex.RUnlock()
+	position, exists := (*m.rowPositionIDMap)[id]
+	if !exists {
+		return -1
+	}
+
+	return position
 }
 
 func (m *TableModel) GetRowPositionMap() *map[string]int {
@@ -167,14 +181,13 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		if !m.ready {
 			m.Init(msg.Width)
-			break
+			return m, cmd
 		}
 
-		columns := CreateColums(msg.Width)
-		m.tableModel.SetColumns(columns)
+		m.tableModel.SetColumns(CreateColums(msg.Width))
 	case TableRowPush:
 		if !m.ready {
-			break
+			return m, cmd
 		}
 
 		position := m.GetNextRowPosition()
@@ -200,7 +213,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 		})))
 	case TableRowUpdate:
 		if !m.ready {
-			break
+			return m, cmd
 		}
 
 		rows := m.tableModel.Rows()
@@ -212,6 +225,13 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			rows[index][0] = msg.Prefix
 			rows[index][3] = fmt.Sprintf("%d", msg.Status)
 			rows[index][6] = strings.Split(msg.ContentType, ";")[0]
+		}
+	case tea.KeyMsg:
+		if m.ready && m.focused {
+			switch msg.String() {
+			case PruneRowsCommand:
+				m.PruneRows()
+			}
 		}
 	}
 

@@ -17,7 +17,9 @@ package pattern
 import (
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/domains"
+	"infinite-mitm/pkg/resources"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -26,8 +28,16 @@ type Patterns struct {
 	SANDBOX, XUID, GUID, MVAR, CGUI, EGV, TITLE string
 	BLOBS_SVC, STATS_SVC, GAMECMS_SVC, ECONOMY_SVC, SETTINGS_SVC, AUTHORING_SVC, DISCOVERY_SVC string
 	XML, BOND, JSON string
-	ALL, STOP string
+	ALL, END, OR string
 }
+
+const MITMDirPrefix = ":mitm-dir"
+
+var (
+	mitmDirs     map[string]string
+	mitmDirsKeys []string
+	replacer     *strings.Replacer
+)
 
 var MatchParameters = Patterns{
 	EGV:     ":egv-bin",
@@ -50,8 +60,9 @@ var MatchParameters = Patterns{
 	BOND: ":ct-bond",
 	JSON: ":ct-json",
 
-	ALL:  ":\\*",
-	STOP: ":\\$",
+	ALL: ":all",
+	END: ":end",
+	OR:  ":or",
 }
 
 var MatchPatterns = Patterns{
@@ -75,31 +86,12 @@ var MatchPatterns = Patterns{
 	BOND: "application/x-bond-compact-binary",
 	JSON: "application/json",
 
-	ALL:  `(.*)`,
-	STOP: `$`,
+	ALL: `(.*)`,
+	END: `$`,
 }
 
-func Create(value string) *regexp.Regexp {
-	return regexp.MustCompile(ReplaceParameters(value))
-}
-
-func Match(re *regexp.Regexp, value string) []string {
-	var matches []string
-
-	submatches := re.FindAllStringSubmatch(value, -1)
-	if len(submatches) > 0 {
-		for _, match := range submatches[0][1:] {
-			if len(match) > 0 {
-				matches = append(matches, match)
-			}
-		}
-	}
-
-	return matches
-}
-
-func ReplaceParameters(value string) string {
-	replacer := strings.NewReplacer(
+func init() {
+	replacer = strings.NewReplacer(
 		MatchParameters.SANDBOX, MatchPatterns.SANDBOX,
 		MatchParameters.XUID, MatchPatterns.XUID,
 		MatchParameters.GUID, MatchPatterns.GUID,
@@ -121,14 +113,64 @@ func ReplaceParameters(value string) string {
 		MatchParameters.JSON, MatchPatterns.JSON,
 
 		MatchParameters.ALL, MatchPatterns.ALL,
-		MatchParameters.STOP, MatchPatterns.STOP,
+		MatchParameters.END, MatchPatterns.END,
 
-		"*", MatchPatterns.ALL,
-		"$", MatchPatterns.STOP,
-
-		":mitm-dir", configs.GetConfig().Extra.ProjectDir,
 		":mitm-version", configs.GetConfig().Version,
 	)
+
+	mitmDirs = make(map[string]string)
+	mitmDirs[MITMDirPrefix] = configs.GetConfig().Extra.ProjectDir
+	for k, v := range resources.GetDirPaths() {
+		if k != "smartcache" && k != "downloads" {
+			key := strings.Join([]string{MITMDirPrefix, k}, "-")
+			mitmDirs[key] = v
+		}
+	}
+
+	keys := make([]string, 0, len(mitmDirs))
+	for k := range mitmDirs {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return len(keys[i]) > len(keys[j])
+	})
+
+	mitmDirsKeys = keys
+}
+
+func Match(re *regexp.Regexp, value string) []string {
+	var matches []string
+
+	submatches := re.FindAllStringSubmatch(value, -1)
+	if len(submatches) > 0 {
+		for _, match := range submatches[0][1:] {
+			if len(match) > 0 {
+				matches = append(matches, match)
+			}
+		}
+	}
+
+	return matches
+}
+
+func Create(domain domains.DomainType, path string) *regexp.Regexp {
+	if path == "" || !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	path = strings.Replace(path, "*", ":all", -1)
+	path = strings.Replace(path, "$", ":end", -1)
+	path = ReplaceParameters(escapeExceptParentheses(path))
+
+	re := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domain) + path)
+	return re
+}
+
+func ReplaceParameters(value string) string {
+	for _, k := range mitmDirsKeys {
+		value = strings.ReplaceAll(value, k, mitmDirs[k])
+	}
 
 	return replacer.Replace(value)
 }
@@ -141,6 +183,22 @@ func ReplaceMatches(target string, matches []string) string {
 			return ""
 		}
 
-		return matches[index-1]
+		return matches[index - 1]
 	})
+}
+
+func escapeExceptParentheses(str string) string {
+	var result strings.Builder
+
+	re := regexp.MustCompile(`\([^)]*\)`)
+	lastEnd := 0
+
+	for _, loc := range re.FindAllStringIndex(str, -1) {
+		result.WriteString(regexp.QuoteMeta(str[lastEnd:loc[0]]))
+		result.WriteString(str[loc[0]:loc[1]])
+		lastEnd = loc[1]
+	}
+
+	result.WriteString(regexp.QuoteMeta(str[lastEnd:]))
+	return result.String()
 }

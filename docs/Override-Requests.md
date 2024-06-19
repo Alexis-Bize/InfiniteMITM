@@ -1,11 +1,13 @@
 # Override Requests
 
-**InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and **regex** support.
+**InfiniteMITM** allows you to intercept and modify the game's requests and responses on the fly. To customize them, you can edit the `mitm.yaml` file in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). The `mitm.yaml` file uses a specific configuration that lets you match various paths based on a service (`blobs`, `authoring`, `discovery`, `stats`, `settings`, `gamecms`, `economy`, `lobby`, `skill`, `root`), where `root` is a catch-all, desired REST methods (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`), and basic **regex** support.
 
-### Notes:
+### Notes
 
 -   All changes are applied upon saving, so there is no need to restart **InfiniteMITM**.
 -   When changing the request `body`, the `Content-Length` header will be automatically recalculated.
+-   By default, only the overridden traffic will be displayed. This behavior can be changed in the `mitm.yaml` file.
+    -   Displaying `all` requests and responses may impact table performance.
 -   Make sure not to send sensitive information (e.g., `X-343-Authorization-Spartan`) when altering the request `body`.
     - Example: https://github.com/Alexis-Bize/InfiniteMITM/blob/main/examples/surasia/mitm.yaml#L9
 
@@ -14,40 +16,52 @@
 ```yaml
 domains:
   blobs: # blobs-infiniteugc.svc.halowaypoint.com
-    - path: /ugcstorage/map/:guid/:guid/:map-mvar # Path pattern to match, will catch all .mvar files
+    - path: "/ugcstorage/map/:guid/:guid/:map-mvar" # Path pattern to match, will catch all .mvar files
       methods: # HTTP methods that this configuration will handle
         - GET
-      response:
-        body: :mitm-dir/resources/ugc/maps/design_21.mvar # Path to the file that will be used as the response body
+      response: # Response handler
+        body: ":mitm-dir/resources/ugc/maps/design_21.mvar" # Path to the file that will be used as the response body
         headers: # Additional headers to include in the response
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/customgamesuimarkup/Slayer_CustomGamesUIMarkup_en.bin" # Path pattern for specific "CustomGamesUIMarkup", for any assetID and assetVersionID
       methods:
         - GET
       response:
-        body: :mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin
+        body: ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer_8Teams.bin"
         headers:
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/enginegamevariant/:guid/:guid/FFA.bin # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/FFA.bin" # Path pattern for specific "EngineGameVariant", for any assetID and assetVersionID
       methods:
         - GET
       response:
-        body: :blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin # Path to the external file that will be used as the response body, with a specific assetVersionID
+        body: ":blobs-svc/enginegamevariant/$1/9b0d3fd4-2027-4dca-96f5-899b449408e2/FFA.bin" # Path to the external file that will be used as the response body, with a specific assetVersionID
         headers:
-          x-infinite-mitm-version: :mitm-version
-          content-type: :ct-bond
-    - path: /ugcstorage/* # Match all after /ugcstorage/
+          x-infinite-mitm-version: ":mitm-version"
+          content-type: ":ct-bond"
+    - path: "/ugcstorage/enginegamevariant/:guid/:guid/:egv-bin" # Match any "EngineGameVariant"
+      methods:
+        - GET
+      response:
+        before: # Response pre-handler
+          commands: # Commands list
+            - run: # Run the first command
+              - "echo"
+              - "\"First GUID: $1\""
+            - run: # Run the second command
+              - "echo"
+              - "\"Second GUID: $2\""
+    - path: "/ugcstorage/*" # Match all after /ugcstorage/
       methods:
         - GET
         - POST
         - PATCH
         - PUT
         - DELETE
-      request: # Headers to override in the request
-        headers:
-          x-343-authorization-spartan: v4=MyCustomSpartanToken
+      request: # Request handler
+        headers: # Headers to override in the request
+          x-343-authorization-spartan: "v4=MyCustomSpartanToken"
 ```
 
 ## Definition
@@ -55,21 +69,44 @@ domains:
 ```yaml
 domains:
   root: # Must be one of "blobs | authoring | discovery | settings | root" (root = all)
-    # Each item in the list represents a specific endpoint configuration.
-    - path: /example/path # Targeted path (case insensitive)
+    # Each item in the list represents a specific endpoint configuration
+    - path: "/example/path" # Targeted path (case insensitive)
       methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
         - GET
         - POST
       request: # Used to alter the request
-        body: :mitm-dir/request/body/file # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
+        before: # Used to run various actions before handler execution
+          commands: # Used to run desired commands
+            # Each item in the list represents a specific run command
+            - run: # Used to define a run command
+              # Each item in the list represents a run parameter
+              # Output: echo "hello world"
+              - "echo" # Parameter
+              - "\"hello world\"" # Parameter
+        body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override request headers (case insensitive)
-          custom-header: customValue
+          custom-response-header: "customValue"
+    - path: "/ugcstorage/*" # Match all after /ugcstorage/
+        body: ":mitm-dir/request/body/file" # URI to the file submitted for PUT, POST, and PATCH requests instead of the initial payload
+        headers: # Override request headers (case insensitive)
+          custom-header: "customValue"
       response: # Used to alter the response
+        before:
+          commands:
+            - run:
+              - "echo"
+              - "\"hello world\""
         code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-        body: :mitm-dir/response/body/file # URI to the overridden file
+        body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override response headers (case insensitive)
-          custom-response-header: customValue
+          custom-response-header: "customValue"
 ```
+
+### Before Commands
+
+Please refer to our [Commands](/docs/Commands.md) documentation for further details.
+
+⚠️ **Warning:** These commands are **reserved for experienced developers** and may have a direct **impact on your system**. Use them with caution and **DO NOT** accept commands from strangers—you know the motto.
 
 ## Predefined Route Parameters
 
@@ -91,6 +128,7 @@ domains:
 -   `:title`
     -   Matches all known titles.
     -   Titles: `hi` | `hipnk` | `higrn` | `hired` | `hipur` | `hiorg` | `hiblu` | `hi343`
+
 -   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
@@ -100,6 +138,7 @@ domains:
 -   `:ct-xml`
     -   Represents a XML content type.
     -   Output: `application/xml
+
 -   `:blobs-svc`
     -   Returns blobs service URL.
     -   Output: `https://blobs-infiniteugc.svc.halowaypoint.com`
@@ -121,9 +160,38 @@ domains:
 -   `:economy-svc`
     -   Returns economy service URL.
     -   Output: `https://economy.svc.halowaypoint.com`
+
 -   `:mitm-dir`
-    -   Represents the root folder of local files (only suitable for `response.body`).
+    -   Represents the root folder of "InfiniteMITM".
     -   Output: `<drive>:\Users\<username>\InfiniteMITM`
+-   `:mitm-dir-ugc`
+    -   Represents the root folder of local "UGC" files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc`
+-   `:mitm-dir-ugc-maps`
+    -   Represents the root folder of local "Maps".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\maps`
+-   `:mitm-dir-ugc-egv`
+    -   Represents the root folder of local "EngineGameVariants".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\enginegamevariants`
+-   `:mitm-dir-ugc-egv-cgui`
+    -   Represents the root folder of local "CustomGamesUIMarkups".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\enginegamevariants\cgui-markups`
+-   `:mitm-dir-bin`
+    -   Represents the root folder of local bin files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\bin`
+-   `:mitm-dir-bin-flags`
+    -   Represents the root folder of local custom "Flags".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\bin\flags`
+-   `:mitm-dir-tools`
+    -   Represents the root folder of local tools.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\tools`
+-   `:mitm-dir-tools-ivt`
+    -   Represents the root folder of "InfiniteVariantTool".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\tools\InfiniteVariantTool`
+-   `:mitm-dir-json`
+    -   Represents the root folder of local json files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\json`
+
 -   `:mitm-version`
     -   Represents the InfiniteMITM version (only suitable for `response.headers`).
     -   Example: `0.1.0`
@@ -145,13 +213,13 @@ In some cases, you might need to reuse a parameter that was matched during the r
 ```yaml
 domains:
   blobs:
-    - path: /ekur/:guid/olympus/:xuid/([a-z]+)$
+    - path: "/ekur/:guid/olympus/:xuid/([a-z]+)$"
       response:
-        body: :mitm-dir/example/xuid_$2/test_$1/$3
+        body: ":mitm-dir/example/xuid_$2/test_$1/$3"
 ```
 
 #### Output
 
 ```
-~/InfiniteMITM/example/xuid_1234/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/details
+<drive>:\Users\<username>\InfiniteMITM\example\xuid_1234\test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2\details
 ```

@@ -17,9 +17,9 @@ package MITMApplicationUIServiceNetworkTrafficDetailsComponent
 import (
 	"encoding/hex"
 	"fmt"
-	"infinite-mitm/configs"
 	helpers "infinite-mitm/internal/application/services/ui/helpers"
 	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/utilities"
@@ -61,8 +61,9 @@ const (
 )
 
 const (
-	CopyCommand = "ctrl+p"
-	SaveCommand = "ctrl+o"
+	CopyHeadersCommand = "ctrl+p"
+	SaveContentCommand = "ctrl+o"
+	EnterCommand       = "enter"
 )
 
 var (
@@ -76,9 +77,9 @@ var (
 	switchHintString   = "Enter ↵: Switch between headers and body"
 	scrollHintString   = "↑/↓: Scroll"
 
-	copyHeadersString  = fmt.Sprintf("%s: Copy headers to clipboard", CopyCommand)
-	copyHexString      = fmt.Sprintf("%s: Copy hex to clipboard", CopyCommand)
-	saveBodyString     = fmt.Sprintf("%s: Save", SaveCommand)
+	copyHeadersString  = fmt.Sprintf("%s: Copy headers to clipboard", CopyHeadersCommand)
+	copyHexString      = fmt.Sprintf("%s: Copy hex to clipboard", CopyHeadersCommand)
+	saveBodyString     = fmt.Sprintf("%s: Save", SaveContentCommand)
 )
 
 var (
@@ -90,7 +91,7 @@ var (
 		Foreground(theme.ColorGrey).
 		Italic(true)
 
-	viewportActionsStyle = lipgloss.NewStyle().
+	actionsStyle = lipgloss.NewStyle().
 		Padding(0, 1).MarginRight(1).
 		Foreground(theme.ColorLight).
 		Background(theme.ColorGrey)
@@ -118,12 +119,12 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 
 func (m *TrafficModel) Focus() {
 	m.focused = true
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 }
 
 func (m *TrafficModel) Blur() {
 	m.focused = false
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	if m.activeView == HeadersViewKey {
 		m.headersModel.SetYOffset(0)
@@ -131,11 +132,7 @@ func (m *TrafficModel) Blur() {
 		m.bodyModel.SetYOffset(0)
 	}
 
-	m.SetContent(map[string]string{}, nil)
-}
-
-func (m *TrafficModel) SetCopyPress(pressed bool) {
-	m.copyPressed = pressed
+	m.setContent(map[string]string{}, nil)
 }
 
 func (m *TrafficModel) SetWidth(width int) {
@@ -144,24 +141,14 @@ func (m *TrafficModel) SetWidth(width int) {
 	m.bodyModel.Width = width - 20
 }
 
-func (m *TrafficModel) SwitchActiveView() {
-	if m.activeView == HeadersViewKey {
-		m.SetActiveView(BodyViewKey)
-	} else if m.activeView == BodyViewKey {
-		m.SetActiveView(HeadersViewKey)
-	}
-}
-
 func (m *TrafficModel) SetActiveView(key activeViewType) {
 	m.activeView = key
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	if key == HeadersViewKey {
-		m.SetContent(m.data.Headers, m.data.Body)
-		m.Focus()
+		m.setContent(m.data.Headers, m.data.Body)
 	} else if key == BodyViewKey {
-		m.SetContent(m.data.Headers, m.data.Body)
-		m.Focus()
+		m.setContent(m.data.Headers, m.data.Body)
 	}
 }
 
@@ -173,11 +160,11 @@ func (m *TrafficModel) SetTrafficData(data *TrafficData) {
 	m.data = data
 
 	if m.focused {
-		m.SetContent(m.data.Headers, m.data.Body)
+		m.setContent(m.data.Headers, m.data.Body)
 	}
 }
 
-func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
+func (m *TrafficModel) setContent(headers map[string]string, body []byte) {
 	var headersString []string
 	for key, value := range headers {
 		if strings.TrimSpace(value) != "" {
@@ -208,12 +195,26 @@ func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
 	}
 }
 
-func (m *TrafficModel) CopyToClipboard() {
+func (m *TrafficModel) switchActiveView() {
+	if m.activeView == HeadersViewKey {
+		m.SetActiveView(BodyViewKey)
+	} else if m.activeView == BodyViewKey {
+		m.SetActiveView(HeadersViewKey)
+	}
+
+	m.Focus()
+}
+
+func (m *TrafficModel) setCopyPress(pressed bool) {
+	m.copyPressed = pressed
+}
+
+func (m *TrafficModel) copyToClipboard() {
 	if len(m.data.Headers) == 0 {
 		return
 	}
 
-	m.SetCopyPress(true)
+	m.setCopyPress(true)
 
 	if m.activeView == HeadersViewKey {
 		var headersString []string
@@ -230,7 +231,7 @@ func (m *TrafficModel) CopyToClipboard() {
 	}
 }
 
-func (m TrafficModel) SaveToDisk() {
+func (m TrafficModel) saveToDisk() {
 	if len(m.data.Body) != 0 && m.activeView == BodyViewKey {
 		ct := m.data.Headers[request.ContentTypeHeaderKey]
 		// dirty hack for old blobs PNG assets
@@ -246,7 +247,7 @@ func (m TrafficModel) SaveToDisk() {
 			filename = strings.Split(path.Base(parse.Path), ".")[0]
 		}
 
-		sysutilities.SaveToDisk(m.data.Body, configs.GetConfig().Extra.ProjectDir, filename, ct)
+		sysutilities.SaveToDisk(m.data.Body, resources.GetDownloadsDirPath(), filename, ct)
 	}
 }
 
@@ -257,7 +258,7 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.focused {
-			m.SetContent(m.data.Headers, m.data.Body)
+			m.setContent(m.data.Headers, m.data.Body)
 		}
 	case TrafficData:
 		m.SetTrafficData(&msg)
@@ -267,14 +268,14 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 		}
 
 		switch msg.String() {
-		case CopyCommand:
-			m.CopyToClipboard()
+		case CopyHeadersCommand:
+			m.copyToClipboard()
 			return m, tea.Batch(cmds...)
-		case SaveCommand:
-			m.SaveToDisk()
+		case SaveContentCommand:
+			m.saveToDisk()
 			return m, tea.Batch(cmds...)
-		case "enter":
-			m.SwitchActiveView()
+		case EnterCommand:
+			m.switchActiveView()
 			return m, tea.Batch(cmds...)
 		}
 	}
@@ -354,7 +355,7 @@ func (m TrafficModel) View() string {
 	}
 
 	for _, k := range viewportActionsList {
-		viewportActions += viewportActionsStyle.Render(k)
+		viewportActions += actionsStyle.Render(k)
 	}
 
 	return lipgloss.NewStyle().

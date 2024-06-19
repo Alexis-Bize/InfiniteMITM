@@ -5,7 +5,7 @@ Override the available servers by keeping only desired ones to force their selec
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Server Selection" title="InfiniteMITM - Server Selection" src="./preview.png?v=1" width="920" />
+    <img alt="InfiniteMITM - Server Selection" title="InfiniteMITM - Server Selection" src="./preview.png?v=1" />
 </p>
 
 ## Installation

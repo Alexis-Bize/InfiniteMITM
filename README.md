@@ -27,6 +27,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 -   [Override Requests](/docs/Override-Requests.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
+-   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new">](/docs/Commands.md) [Commands (Pre-Handlers)](/docs/Commands.md)
 
 ## SmartCache
 
@@ -64,6 +65,7 @@ $ ./scripts/build.sh
 -   As the application will create a local server to intercept traffic on a local port (1337), it **must be run as an administrator**.
 -   The default Windows terminal (`cmd.exe`) won't render this application nicely.
     -   We recommend using the new [Windows Terminal](https://www.microsoft.com/p/windows-terminal-preview/9n0dx20hk701) instead.
+-   Setting `traffic_display` to `all` in `mitm.yaml` may impact table performance.
 
 ## Licence
 

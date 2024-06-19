@@ -2,9 +2,9 @@
 domains:
   # settings.svc.halowaypoint.com
   settings:
-    - path: /featureflags/:title
+    - path: "/featureflags/:title"
       methods:
         - GET
       response:
-        body: :mitm-dir/resources/bin/flags/flags-override.bin
+        body: ":mitm-dir/resources/bin/flags/flags-override.bin"
 ## ... (yaml)

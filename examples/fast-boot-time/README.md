@@ -5,7 +5,7 @@ Will "deactivate" all related customization requests (such as emblems, armors, e
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Fast Boot Time" title="InfiniteMITM - Fast Boot Time" src="./preview.gif?v=1" width="720" />
+    <img alt="InfiniteMITM - Fast Boot Time" title="InfiniteMITM - Fast Boot Time" src="./preview.gif?v=1" />
 </p>
 
 ## Installation

@@ -24,13 +24,10 @@ import (
 var (
 	cleanupFns      []func()
 	cleanupRegMutex sync.Mutex
-	initOnce        sync.Once
 )
 
-func Init() {
-	initOnce.Do(func() {
-		handleSignals()
-	})
+func init() {
+	handleSignals()
 }
 
 func Register(cleanupFn func()) {

@@ -12,21 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationMITMServiceHandlers
+package MITMApplicationMITMServiceHelpers
 
 import (
 	"net/http"
+	"regexp"
 
 	"github.com/elazarl/goproxy"
 )
 
-type RequestHandlerStruct struct {
-	Match goproxy.ReqConditionFunc
-	Fn    func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response)
+func MatchRequestUrl(re *regexp.Regexp) goproxy.ReqConditionFunc {
+	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
+		return MatchUrl(req, re)
+	}
 }
 
-type ResponseHandlerStruct struct {
-	Match goproxy.RespConditionFunc
-	Fn    func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
+func MatchResponseUrl(re *regexp.Regexp) goproxy.RespConditionFunc {
+	return func(resp *http.Response, ctx *goproxy.ProxyCtx) bool {
+		return MatchUrl(resp.Request, re)
+	}
 }
 
+func MatchUrl(req *http.Request, re *regexp.Regexp) bool {
+	url := req.URL.Hostname() + req.URL.Path
+	query := req.URL.RawQuery
+	if query != "" {
+		url += "?" + query
+	}
+
+	return re.MatchString(url)
+}

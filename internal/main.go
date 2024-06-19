@@ -35,14 +35,13 @@ import (
 	"github.com/gookit/event"
 )
 
-var mu sync.Mutex
 var server *http.Server
+var restartMutex sync.Mutex
 
 func Start(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
-	kill.Init()
-
 	certInstalled := true
+
 	if mitmErr := application.Init(f); mitmErr != nil {
 		if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
 			return mitmErr
@@ -97,9 +96,7 @@ func Start(f *embed.FS) *errors.MITMError {
 
 func enableProxy() {
 	kill.Register(func() {
-		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
-			mitmErr.Log()
-		}
+		proxy.ToggleProxy("off")
 	})
 
 	if mitmErr := proxy.ToggleProxy("on"); mitmErr != nil {
@@ -110,7 +107,7 @@ func enableProxy() {
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 	s, mitmErr := mitm.CreateServer(f)
 	if mitmErr != nil {
-		mitmErr.Log()
+		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 		return
 	}
 
@@ -125,7 +122,7 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			errors.Create(errors.ErrProxyServerException, err.Error()).Log()
+			event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
 		}
 	}
 }
@@ -137,8 +134,8 @@ func shutdownServer() {
 }
 
 func restartServer(f *embed.FS, wg *sync.WaitGroup) {
-	mu.Lock()
-	defer mu.Unlock()
+	restartMutex.Lock()
+	defer restartMutex.Unlock()
 
 	shutdownServer()
 	wg.Add(1)

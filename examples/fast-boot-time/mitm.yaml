@@ -1,14 +1,13 @@
+## ... (yaml)
 domains:
   # gamecms-hacs.svc.halowaypoint.com
   gamecms:
-    - path: /:title/progression/file/(inventory|configuration)/*
+    - path: "/:title/progression/file/(inventory|configuration)/*"
       methods:
         - GET
       request:
         headers:
-          host: 127.0.0.1
-          cache-control: no-cache
+          host: "127.0.0.1"
       response:
         code: 204
-        headers:
-          cache-control: no-cache
+## ... (yaml)

@@ -39,15 +39,13 @@ domains:
 
 **Note:** Halo Infinite may cache previously requested modes, maps, and markups in the `disk_cache` and `server_disk_cache` folders within the game's directory.
 
-#### Overridden Slayer Markup
-
-Example of a possible output.
+#### Result:
 
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-1.jpg" />
 </p>
 
-#### Overridden Articles
+#### Anything Else?:
 
 Another example of what's possible by combining various `before.commands.run` and `response.body`.
 

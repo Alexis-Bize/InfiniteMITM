@@ -49,7 +49,7 @@ Example of a possible output.
 
 #### Overridden Articles
 
-Another example of what's possible by combining various `before.commands.run` and `response`.
+Another example of what's possible by combining various `before.commands.run` and `response.body`.
 
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-2.jpg" />

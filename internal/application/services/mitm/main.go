@@ -132,38 +132,40 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
-	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
-	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		var resp *http.Response
+	go func() {
+		proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
+		proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			var resp *http.Response
 
-		customCtx := context.ContextHandler(ctx)
-		customCtx.SetUserData("uuid", uuid.New().String())
-		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+			customCtx := context.ContextHandler(ctx)
+			customCtx.SetUserData("uuid", uuid.New().String())
+			customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
 
-		if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
-			customCtx.SetUserData("cache", smartCache)
-		}
-
-		for _, handler := range clientRequestHandlers {
-			if handler.Match(req, ctx) {
-				req, resp = handler.Fn(req, ctx)
-				return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+			if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
+				customCtx.SetUserData("cache", smartCache)
 			}
-		}
 
-		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
-	})
-
-	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
-		for _, handler := range clientResponseHandlers {
-			if handler.Match(resp, ctx) {
-				resp = handler.Fn(resp, ctx)
-				return handlers.HandleResponse(trafficOptions, resp, ctx)
+			for _, handler := range clientRequestHandlers {
+				if handler.Match(req, ctx) {
+					req, resp = handler.Fn(req, ctx)
+					return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+				}
 			}
-		}
 
-		return handlers.HandleResponse(trafficOptions, resp, ctx)
-	})
+			return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+		})
+
+		proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+			for _, handler := range clientResponseHandlers {
+				if handler.Match(resp, ctx) {
+					resp = handler.Fn(resp, ctx)
+					return handlers.HandleResponse(trafficOptions, resp, ctx)
+				}
+			}
+
+			return handlers.HandleResponse(trafficOptions, resp, ctx)
+		})
+	}()
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),

@@ -148,17 +148,15 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 		return
 	}
 
-	go func() {
-		fileOSMutex.Lock()
-		defer fileOSMutex.Unlock()
+	fileOSMutex.Lock()
+	defer fileOSMutex.Unlock()
 
-		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
-		file, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-		if err == nil {
-			defer file.Close()
-			gob.NewEncoder(file).Encode(item)
-		}
-	}()
+	target := filepath.Join(resources.GetSmartCacheDirPath(), key)
+	file, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err == nil {
+		defer file.Close()
+		gob.NewEncoder(file).Encode(item)
+	}
 }
 
 func (s *SmartCache) isExpired(item *SmartCacheItem) bool {

@@ -81,30 +81,28 @@ func Create() {
 
 	m.networkTableModel.Focus()
 
-	go func () {
-		event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-			details := e.Data()["details"].(string)
-			data := events.ParseRequestEventData(details)
-			go pushNetworkData(data)
+	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		data := events.ParseRequestEventData(details)
+		pushNetworkData(data)
 
-			return nil
-		}), event.Normal)
+		return nil
+	}), event.Normal)
 
-		event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
-			details := e.Data()["details"].(string)
-			data := events.ParseResponseEventData(details)
-			go updateNetworkData(data)
+	event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		data := events.ParseResponseEventData(details)
+		updateNetworkData(data)
 
-			return nil
-		}), event.Normal)
+		return nil
+	}), event.Normal)
 
-		event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
-			details := e.Data()["details"].(string)
-			go updateStatusBar(details)
+	event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
+		details := e.Data()["details"].(string)
+		updateStatusBar(details)
 
-			return nil
-		}), event.Normal)
-	}()
+		return nil
+	}), event.Normal)
 
 	program = tea.NewProgram(m)
 	if _, err := program.Run(); err != nil {

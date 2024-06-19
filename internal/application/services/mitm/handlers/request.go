@@ -90,7 +90,7 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
 		})
 
-		go event.MustFire(events.ProxyRequestSent, event.M{"details": details})
+		event.MustFire(events.ProxyRequestSent, event.M{"details": details})
 	}
 
 	if smartCachedItem != nil {

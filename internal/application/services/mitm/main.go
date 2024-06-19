@@ -66,7 +66,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	proxy.Logger = emptyLogger{}
 
 	content, mitmErr := ReadClientMITMConfig(); if mitmErr != nil {
-		go event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 	}
 
 	if mitmErr == nil {
@@ -101,7 +101,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			}
 		}
 
-		go event.MustFire(events.ProxyStatusMessage, event.M{
+		event.MustFire(events.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
 				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
 				YAMLFilename,

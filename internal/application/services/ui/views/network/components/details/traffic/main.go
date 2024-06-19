@@ -61,8 +61,8 @@ const (
 )
 
 const (
-	CopyCommand = "ctrl+p"
-	SaveCommand = "ctrl+o"
+	CopyHeadersCommand = "ctrl+p"
+	SaveContentCommand = "ctrl+o"
 )
 
 var (
@@ -76,9 +76,9 @@ var (
 	switchHintString   = "Enter ↵: Switch between headers and body"
 	scrollHintString   = "↑/↓: Scroll"
 
-	copyHeadersString  = fmt.Sprintf("%s: Copy headers to clipboard", CopyCommand)
-	copyHexString      = fmt.Sprintf("%s: Copy hex to clipboard", CopyCommand)
-	saveBodyString     = fmt.Sprintf("%s: Save", SaveCommand)
+	copyHeadersString  = fmt.Sprintf("%s: Copy headers to clipboard", CopyHeadersCommand)
+	copyHexString      = fmt.Sprintf("%s: Copy hex to clipboard", CopyHeadersCommand)
+	saveBodyString     = fmt.Sprintf("%s: Save", SaveContentCommand)
 )
 
 var (
@@ -90,7 +90,7 @@ var (
 		Foreground(theme.ColorGrey).
 		Italic(true)
 
-	viewportActionsStyle = lipgloss.NewStyle().
+	actionsStyle = lipgloss.NewStyle().
 		Padding(0, 1).MarginRight(1).
 		Foreground(theme.ColorLight).
 		Background(theme.ColorGrey)
@@ -267,10 +267,10 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 		}
 
 		switch msg.String() {
-		case CopyCommand:
+		case CopyHeadersCommand:
 			m.CopyToClipboard()
 			return m, tea.Batch(cmds...)
-		case SaveCommand:
+		case SaveContentCommand:
 			m.SaveToDisk()
 			return m, tea.Batch(cmds...)
 		case "enter":
@@ -354,7 +354,7 @@ func (m TrafficModel) View() string {
 	}
 
 	for _, k := range viewportActionsList {
-		viewportActions += viewportActionsStyle.Render(k)
+		viewportActions += actionsStyle.Render(k)
 	}
 
 	return lipgloss.NewStyle().

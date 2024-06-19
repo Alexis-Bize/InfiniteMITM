@@ -15,8 +15,10 @@
 package MITMApplicationUIServiceNetworkDetailsComponent
 
 import (
+	"fmt"
 	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
 	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/utilities"
 	"net/http"
@@ -41,8 +43,9 @@ type DetailsModel struct {
 
 	responseStatusCode  int
 
-	activeTab activeTabType
-	focused   bool
+	activeTab   activeTabType
+	copyPressed bool
+	focused     bool
 }
 
 type RequestTraffic struct {
@@ -67,6 +70,11 @@ const (
 	ResponseTabKey activeTabType = "response"
 )
 
+const (
+	CopyUrlCommand    = "ctrl+u"
+	SwitchViewCommand = "tab"
+)
+
 var (
 	tabStyle = lipgloss.NewStyle().Padding(0, 1)
 	tabsGroupStyle = lipgloss.NewStyle()
@@ -75,15 +83,22 @@ var (
 		Padding(0, 1).
 		Foreground(theme.ColorLightYellow).
 		Background(theme.ColorNeonBlue).Bold(true)
+
+	actionsStyle = lipgloss.NewStyle().
+		Padding(0, 1).MarginRight(1).
+		Foreground(theme.ColorLight).
+		Background(theme.ColorGrey)
 )
 
 var (
 	requestString      = "Request"
 	responseString     = "Response"
 	ongoingString      = "Ongoing"
-	windowHeightString = "Please increase the window height."
-)
+	windowHeightString = "[ Please increase the window height ]"
+	copiedString       = "✓ Copied"
 
+	copyUrlString      = fmt.Sprintf("%s: Copy URL to clipboard", CopyUrlCommand)
+)
 
 func NewDetailsModel(id string, method string, url string, width int, height int) DetailsModel {
 	m := DetailsModel{
@@ -106,6 +121,7 @@ func (m *DetailsModel) Focus() {
 	m.activeTab = RequestTabKey
 	m.requestTrafficModel.Focus()
 	m.responseTrafficModel.Blur()
+	m.SetCopyPress(false)
 
 	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
 	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
@@ -116,9 +132,14 @@ func (m *DetailsModel) Blur() {
 	m.activeTab = RequestTabKey
 	m.requestTrafficModel.Blur()
 	m.responseTrafficModel.Blur()
+	m.SetCopyPress(false)
 
 	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
 	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
+}
+
+func (m *DetailsModel) SetCopyPress(pressed bool) {
+	m.copyPressed = pressed
 }
 
 func (m *DetailsModel) SetHeight(height int) {
@@ -174,6 +195,11 @@ func (m *DetailsModel) SetWidth(width int) {
 	m.responseTrafficModel.SetWidth(width)
 }
 
+func (m *DetailsModel) CopyToClipboard() {
+	m.SetCopyPress(true)
+	sysutilities.CopyToClipboard(request.StripPort(m.requestUrl))
+}
+
 func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 	var cmd tea.Cmd
 	cmds := []tea.Cmd{}
@@ -203,8 +229,10 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 		}
 
 		switch msg.String() {
-		case "tab":
+		case SwitchViewCommand:
 			m.SwitchActiveTab()
+		case CopyUrlCommand:
+			m.CopyToClipboard()
 		}
 	}
 
@@ -234,6 +262,10 @@ func (m DetailsModel) View() string {
 		urlContent := theme.StatusCodeToColorStyle(statusCode).Render(url)
 		statusTextContent := theme.StatusCodeToColorStyle(statusCode).Render(statusText)
 		details := method + " " + "[" + statusTextContent + "]" + " " + utilities.WrapText(urlContent, m.width - 2)
+		copyElement := copyUrlString
+		if m.copyPressed {
+			copyElement = copiedString
+		}
 
 		if m.activeTab == RequestTabKey {
 			tabs = append(tabs, activeTabStyle.Render(requestString), tabStyle.Render(responseString))
@@ -249,6 +281,9 @@ func (m DetailsModel) View() string {
 				lipgloss.NewStyle().
 					MarginBottom(1).
 					Render(details),
+				lipgloss.NewStyle().
+					MarginBottom(1).
+					Render(actionsStyle.Render(copyElement)),
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
 					tabsGroupStyle.Render(strings.Join(tabs, " ")),

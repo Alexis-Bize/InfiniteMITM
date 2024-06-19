@@ -227,9 +227,11 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			rows[index][6] = strings.Split(msg.ContentType, ";")[0]
 		}
 	case tea.KeyMsg:
-		switch msg.String() {
-		case PruneRowsCommand:
-			m.PruneRows()
+		if m.ready && m.focused {
+			switch msg.String() {
+			case PruneRowsCommand:
+				m.PruneRows()
+			}
 		}
 	}
 

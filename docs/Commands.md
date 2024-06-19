@@ -45,8 +45,6 @@ domains:
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-1.jpg" />
 </p>
 
-#### Anything Else?:
-
 Another example of what's possible by combining various `before.commands.run` and `response.body`.
 
 <p align="center">

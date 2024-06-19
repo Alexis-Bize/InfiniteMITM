@@ -45,6 +45,8 @@ domains:
 
 #### Overriden Articles
 
+Another preview of what's possible by combining various `before.commands.run` and `response`.
+
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-2.jpg" />
 </p>

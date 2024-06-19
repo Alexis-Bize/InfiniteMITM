@@ -4,7 +4,7 @@
 
 ## Step-by-Step Guide
 
-### Step 1:
+### Step 1
 
 -   Using a file editor, open your `mitm.yaml` file.
     -   This file is located in the **InfiniteMITM** directory within your home directory (e.g., `C:\Users\<username>\InfiniteMITM`).
@@ -51,7 +51,7 @@ options:
   ## └── silent:        will silent (hide) all requests/responses
 ```
 
-### Step 2:
+### Step 2
 
 -   Open the desired `mitm.yaml` file in one of our provided [examples](/examples).
 -   Copy the configuration (specified here between `copy ↓↓↓` and `↑↑↑ copy`).
@@ -71,7 +71,7 @@ domains:
     # ↑↑↑ copy
 ```
 
-### Step 3:
+### Step 3
 
 -   Paste the copied content under the same example node as follows (`domains` → `discovery`).
     -   Make sure to respect the indentation (spaces).

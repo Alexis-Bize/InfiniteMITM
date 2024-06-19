@@ -8,7 +8,7 @@ For more information about **InfiniteVariantTool**, please visit their official 
 
 ## Before
 
-### Pack XML into bond:
+### Pack XML into bond
 
 In the following example, the `before.commands.run` command will pack a custom CustomGamesUIMarkup XML file (previously unpacked using **InfiniteVariantTool**) into a binary format before returning it to the game.
 
@@ -39,11 +39,13 @@ domains:
 
 **Note:** Halo Infinite may cache previously requested modes, maps, and markups in the `disk_cache` and `server_disk_cache` folders within the game's directory.
 
-#### Result:
+#### Result
 
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-1.jpg" />
 </p>
+
+#### Anything Else?
 
 Another example of what's possible by combining various `before.commands.run` and `response.body`.
 

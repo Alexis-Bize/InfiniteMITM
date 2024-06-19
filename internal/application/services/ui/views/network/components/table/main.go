@@ -101,9 +101,9 @@ func (m *TableModel) Blur() {
 }
 
 func (m *TableModel) GetNextRowPosition() int {
-	rows := m.tableModel.Rows()
-	position := len(rows) + 1
-	return position
+	rowAssignMutex.Lock()
+	defer rowAssignMutex.Unlock()
+	return len(*m.rowPositionIDMap) + 1
 }
 
 func (m *TableModel) GetSelectedRowData() table.Row {
@@ -117,14 +117,19 @@ func (m *TableModel) SetHeight(height int, delta int) {
 
 func (m *TableModel) AssignRowPosition(id string, position int) {
 	rowAssignMutex.Lock()
+	defer rowAssignMutex.Unlock()
 	(*m.rowPositionIDMap)[id] = position
-	rowAssignMutex.Unlock()
 }
 
 func (m *TableModel) GetRowPosition(id string) int {
 	rowAssignMutex.RLock()
 	defer rowAssignMutex.RUnlock()
-	return (*m.rowPositionIDMap)[id]
+	position, exists := (*m.rowPositionIDMap)[id]
+	if !exists {
+		return -1
+	}
+
+	return position
 }
 
 func (m *TableModel) GetRowPositionMap() *map[string]int {
@@ -167,8 +172,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			break
 		}
 
-		columns := CreateColums(msg.Width)
-		m.tableModel.SetColumns(columns)
+		m.tableModel.SetColumns(CreateColums(msg.Width))
 	case TableRowPush:
 		if !m.ready {
 			break

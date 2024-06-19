@@ -68,7 +68,11 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 	var smartCachedItem *smartcache.SmartCacheItem
 
 	if smartCache != nil && !isProxified {
-		smartCachedItem = smartCache.Read(smartCache.CreateKey(req.URL.String()))
+		smartCachedItem = smartCache.Get(smartCache.CreateKey(
+			request.StripPort(req.URL.String()),
+			req.Header.Get("Accept"),
+			req.Header.Get("Accept-Language"),
+		))
 	}
 
 	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (

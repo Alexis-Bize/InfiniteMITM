@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,8 +49,8 @@ type SmartCacheYAMLOptions struct {
 type SmartCacheItem struct {
 	Body       []byte
 	Header     http.Header
-	created    time.Time
-	expires    time.Time
+	Created    time.Time
+	Expires    time.Time
 }
 
 const (
@@ -61,8 +60,8 @@ const (
 )
 
 var RWMutex = &sync.RWMutex{}
-var storeMutex = &sync.Mutex{}
-var flushMutex = &sync.Mutex{}
+var fileOSMutex = &sync.Mutex{}
+var flushSmartCacheMutex = &sync.Mutex{}
 
 func init() {
 	gob.Register(http.Header{})
@@ -77,28 +76,131 @@ func New(strategy StrategyType, ttl string) *SmartCache {
 	sc := &SmartCache{
 		strategy: strategy,
 		duration: parseDuration(ttl),
-		items: make(map[string]*SmartCacheItem),
+		items:    make(map[string]*SmartCacheItem),
 	}
 
 	return sc
 }
 
 func Flush() {
-	flushMutex.Lock()
-	defer flushMutex.Unlock()
+	flushSmartCacheMutex.Lock()
+	defer flushSmartCacheMutex.Unlock()
 
 	os.RemoveAll(resources.GetSmartCacheDirPath())
-	os.MkdirAll(resources.GetSmartCacheDirPath(), 0755)
+}
+
+func (s *SmartCache) Get(key string) *SmartCacheItem {
+	if s.strategy == Persistent {
+		fileOSMutex.Lock()
+		defer fileOSMutex.Unlock()
+
+		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
+		file, err := os.Open(target)
+		if err != nil {
+			return nil
+		}
+		defer file.Close()
+
+		var item *SmartCacheItem
+		err = gob.NewDecoder(file).Decode(&item);
+		if err != nil {
+			return nil
+		}
+
+		if s.isExpired(item) {
+			os.Remove(target)
+			return nil
+		}
+
+		return item
+	}
+
+	RWMutex.RLock()
+	defer RWMutex.RUnlock()
+
+	if item, exists := s.items[key]; exists && !s.isExpired(item) {
+		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+		if item.Created != (time.Time{}) {
+			since := time.Since(item.Created)
+			seconds := int(since.Seconds())
+			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
+		}
+
+		return item
+	}
+
+	return nil
+}
+
+func (s *SmartCache) Write(key string, item *SmartCacheItem) {
+	item.Created = time.Now()
+	item.Expires = time.Now().Add(s.duration)
+
+	item.Header.Set(request.ExpiresHeaderKey, item.Expires.Format(time.RFC1123))
+	item.Header.Set(request.DateHeaderKey, item.Created.Format(time.RFC1123))
+	item.Header.Set(request.AgeHeaderKey, "0")
+	item.Header.Del(request.CacheControlHeaderKey)
+
+	if s.strategy == Memory {
+		RWMutex.Lock()
+		s.items[key] = item
+		RWMutex.Unlock()
+		return
+	}
+
+	go func() {
+		fileOSMutex.Lock()
+		defer fileOSMutex.Unlock()
+
+		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
+		file, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if err == nil {
+			defer file.Close()
+			gob.NewEncoder(file).Encode(item)
+		}
+	}()
+}
+
+func (s *SmartCache) isExpired(item *SmartCacheItem) bool {
+	if item.Expires == (time.Time{}) {
+		return true
+	}
+
+	return time.Now().After(item.Expires)
+}
+
+func (s *SmartCache) CreateKey(input string, extra...string) string {
+	parse, err := url.Parse(input)
+	if err == nil {
+		hostname := parse.Hostname()
+
+		if hostname == domains.DomainToHostname(domains.GameCMS) {
+			queryParams := parse.Query()
+			queryParams.Del("flight")
+			parse.RawQuery = queryParams.Encode()
+		}
+
+		normalizedPath := strings.ReplaceAll(parse.Path, "//", "/")
+		parse.Path = normalizedPath
+		input = request.StripPort(input)
+	}
+
+	return CreateHash(strings.Join(append([]string{input}, extra...), ":"))
+}
+
+func parseDuration(ttl string) time.Duration {
+	duration, err := time.ParseDuration(ttl)
+	if err != nil {
+		return defaultDuration
+	}
+
+	return duration
 }
 
 func CreateHash(input string) string {
-	input = strings.ToLower(input)
-
 	hash := sha1.New()
 	hash.Write([]byte(input))
-	hashBytes := hash.Sum(nil)
-
-	return hex.EncodeToString(hashBytes)
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 func IsURLSmartCachable(target string, method string) bool {
@@ -126,127 +228,4 @@ func IsURLSmartCachable(target string, method string) bool {
 	}
 
 	return false
-}
-
-func parseDuration(ttl string) time.Duration {
-	if len(ttl) < 2 {
-		return defaultDuration
-	}
-
-	valuePart := ttl[:len(ttl)-1]
-	unitPart := ttl[len(ttl)-1:]
-
-	value, err := strconv.Atoi(valuePart)
-	if err != nil {
-		return defaultDuration
-	}
-
-	var duration time.Duration
-	switch unitPart {
-	case "h":
-		duration = time.Duration(value) * time.Hour
-	case "d":
-		duration = time.Duration(value) * 24 * time.Hour
-	case "w":
-		duration = time.Duration(value) * 7 * 24 * time.Hour
-	default:
-		return defaultDuration
-	}
-
-	return duration
-}
-
-func (s *SmartCache) Read(key string) *SmartCacheItem {
-	RWMutex.RLock()
-	defer RWMutex.RUnlock()
-
-	if item, exists := s.items[key]; exists && !s.isExpired(item) {
-		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
-		if item.created != (time.Time{}) {
-			since := time.Since(item.created)
-			seconds := int(since.Seconds())
-			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
-		}
-
-		return item
-	}
-
-	if s.strategy == Persistent {
-		file, err := os.Open(filepath.Join(resources.GetSmartCacheDirPath(), key))
-		if err == nil {
-			defer file.Close()
-
-			var item SmartCacheItem
-			if err = gob.NewDecoder(file).Decode(&item); err == nil {
-				s.store(key, &item)
-				return &item
-			}
-		}
-	}
-
-	return nil
-}
-
-func (s *SmartCache) Write(key string, item *SmartCacheItem) {
-	s.store(key, item)
-
-	go func () {
-		if s.strategy == Persistent {
-			storeMutex.Lock()
-			defer storeMutex.Unlock()
-
-			file, err := os.Create(filepath.Join(resources.GetSmartCacheDirPath(), key));
-			if err != nil {
-				return
-			}
-
-			defer file.Close()
-			gob.NewEncoder(file).Encode(item)
-		}
-	}()
-}
-
-func (s *SmartCache) store(key string, item *SmartCacheItem) {
-	item.created = time.Now()
-	item.expires = time.Now().Add(s.duration)
-
-	item.Header.Set(request.ExpiresHeaderKey, item.expires.Format(time.RFC1123))
-	item.Header.Set(request.DateHeaderKey, item.created.Format(time.RFC1123))
-	item.Header.Set(request.AgeHeaderKey, "0")
-
-	item.Header.Del(request.CacheControlHeaderKey)
-	item.Header.Del("Request-Context")
-	item.Header.Del("X-Activity-Id")
-	item.Header.Del("X-Cache")
-
-	RWMutex.Lock()
-	s.items[key] = item
-	RWMutex.Unlock()
-}
-
-func (s *SmartCache) isExpired(item *SmartCacheItem) bool {
-	if item.expires == (time.Time{}) {
-		return true
-	}
-
-	return time.Now().After(item.expires)
-}
-
-func (s *SmartCache) CreateKey(input string) string {
-	parse, err := url.Parse(input)
-	if err == nil {
-		hostname := parse.Hostname()
-
-		if hostname == domains.DomainToHostname(domains.GameCMS) {
-			queryParams := parse.Query()
-			queryParams.Del("flight")
-			parse.RawQuery = queryParams.Encode()
-		}
-
-		normalizedPath := strings.ReplaceAll(parse.Path, "//", "/")
-		parse.Path = normalizedPath
-		input = request.StripPort(input)
-	}
-
-	return CreateHash(input)
 }

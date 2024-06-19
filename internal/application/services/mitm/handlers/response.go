@@ -65,7 +65,11 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 	var smartCachedItem *smartcache.SmartCacheItem
 
 	if smartCache != nil && !isProxified {
-		smartCachedItem = smartCache.Read(smartCache.CreateKey(resp.Request.URL.String()))
+		smartCachedItem = smartCache.Get(smartCache.CreateKey(
+			request.StripPort(resp.Request.URL.String()),
+			resp.Request.Header.Get("Accept"),
+			resp.Request.Header.Get("Accept-Language"),
+		))
 	}
 
 	if smartCachedItem != nil {
@@ -81,7 +85,11 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		if smartCachedItem == nil {
 			if isSmartCachable {
 				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(smartCache.CreateKey(resp.Request.URL.String()), &smartcache.SmartCacheItem{
+				smartCache.Write(smartCache.CreateKey(
+					request.StripPort(resp.Request.URL.String()),
+					resp.Request.Header.Get("Accept"),
+					resp.Request.Header.Get("Accept-Language"),
+				), &smartcache.SmartCacheItem{
 					Body: bodyBytes,
 					Header: resp.Header,
 				})

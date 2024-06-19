@@ -47,9 +47,11 @@ domains:
         before: # Response pre-handler
           commands: # Commands list
             - run: # Run the first command
-              - "echo \"First GUID: :guid\""
+              - "echo"
+              - "\"First GUID: $1\""
             - run: # Run the second command
-              - "echo \"Second GUID: :guid\""
+              - "echo"
+              - "\"Second GUID: $2\""
     - path: "/ugcstorage/*" # Match all after /ugcstorage/
       methods:
         - GET
@@ -67,7 +69,7 @@ domains:
 ```yaml
 domains:
   root: # Must be one of "blobs | authoring | discovery | settings | root" (root = all)
-    # Each item in the list represents a specific endpoint configuration.
+    # Each item in the list represents a specific endpoint configuration
     - path: "/example/path" # Targeted path (case insensitive)
       methods: # List of HTTP methods to catch (GET, POST, PATCH, PUT, DELETE)
         - GET
@@ -75,10 +77,12 @@ domains:
       request: # Used to alter the request
         before: # Used to run various actions before handler execution
           commands: # Used to run desired commands
+            # Each item in the list represents a specific run command
             - run: # Used to define a run command
-              # Will be concatenated into: echo "hello" && echo "world"
-              - "echo \"hello\"" # Parameter
-              - "&& echo \"world\"" # Parameter
+              # Each item in the list represents a run parameter
+              # Output: echo "hello world"
+              - "echo" # Parameter
+              - "\"hello world\"" # Parameter
         body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override request headers (case insensitive)
           custom-response-header: "customValue"
@@ -87,12 +91,11 @@ domains:
         headers: # Override request headers (case insensitive)
           custom-header: "customValue"
       response: # Used to alter the response
-        before: # Used to run various actions before handler execution
-          commands: # Used to run desired commands
-            - run: # Used to define a run command
-              # Will be concatenated into: echo "hello" && echo "world"
-              - "echo \"hello\"" # Parameter
-              - "&& echo \"world\"" # Parameter
+        before:
+          commands:
+            - run:
+              - "echo"
+              - "\"hello world\""
         code: 200 # Status code (optional), see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
         body: ":mitm-dir/response/body/file" # URI to the overridden file
         headers: # Override response headers (case insensitive)
@@ -187,5 +190,5 @@ domains:
 #### Output
 
 ```
-~/InfiniteMITM/example/xuid_1234/test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2/details
+<drive>:\Users\<username>\InfiniteMITM\example\xuid_1234\test_97fd2ab9-ece0-41c1-91a8-f0382f24e6d2\details
 ```

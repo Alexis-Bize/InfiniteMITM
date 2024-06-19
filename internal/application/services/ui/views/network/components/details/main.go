@@ -119,51 +119,29 @@ func NewDetailsModel(id string, method string, url string, width int, height int
 func (m *DetailsModel) Focus() {
 	m.focused = true
 	m.activeTab = RequestTabKey
-	m.requestTrafficModel.Focus()
-	m.responseTrafficModel.Blur()
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
+	m.requestTrafficModel.Focus()
+
 	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
+	m.responseTrafficModel.Blur()
 }
 
 func (m *DetailsModel) Blur() {
 	m.focused = false
 	m.activeTab = RequestTabKey
-	m.requestTrafficModel.Blur()
-	m.responseTrafficModel.Blur()
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
-	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
-}
+	m.requestTrafficModel.Blur()
 
-func (m *DetailsModel) SetCopyPress(pressed bool) {
-	m.copyPressed = pressed
+	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
+	m.responseTrafficModel.Blur()
 }
 
 func (m *DetailsModel) SetHeight(height int) {
 	m.height = height
-}
-
-func (m *DetailsModel) SetActiveTab(key activeTabType) {
-	m.activeTab = key
-	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
-	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
-
-	if key == RequestTabKey {
-		m.responseTrafficModel.Blur()
-	} else if key == ResponseTabKey {
-		m.requestTrafficModel.Blur()
-	}
-}
-
-func (m *DetailsModel) SwitchActiveTab() {
-	if m.activeTab == RequestTabKey {
-		m.SetActiveTab(ResponseTabKey)
-	} else if m.activeTab == ResponseTabKey {
-		m.SetActiveTab(RequestTabKey)
-	}
 }
 
 func (m *DetailsModel) SetRequestTrafficData(data *traffic.TrafficData) {
@@ -195,8 +173,34 @@ func (m *DetailsModel) SetWidth(width int) {
 	m.responseTrafficModel.SetWidth(width)
 }
 
-func (m *DetailsModel) CopyToClipboard() {
-	m.SetCopyPress(true)
+func (m *DetailsModel) setCopyPress(pressed bool) {
+	m.copyPressed = pressed
+}
+
+func (m *DetailsModel) setActiveTab(key activeTabType) {
+	m.activeTab = key
+	m.requestTrafficModel.SetActiveView(traffic.HeadersViewKey)
+	m.responseTrafficModel.SetActiveView(traffic.HeadersViewKey)
+
+	if key == RequestTabKey {
+		m.requestTrafficModel.Focus()
+		m.responseTrafficModel.Blur()
+	} else if key == ResponseTabKey {
+		m.responseTrafficModel.Focus()
+		m.requestTrafficModel.Blur()
+	}
+}
+
+func (m *DetailsModel) switchActiveTab() {
+	if m.activeTab == RequestTabKey {
+		m.setActiveTab(ResponseTabKey)
+	} else if m.activeTab == ResponseTabKey {
+		m.setActiveTab(RequestTabKey)
+	}
+}
+
+func (m *DetailsModel) copyToClipboard() {
+	m.setCopyPress(true)
 	sysutilities.CopyToClipboard(request.StripPort(m.requestUrl))
 }
 
@@ -230,9 +234,9 @@ func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
 
 		switch msg.String() {
 		case SwitchViewCommand:
-			m.SwitchActiveTab()
+			m.switchActiveTab()
 		case CopyUrlCommand:
-			m.CopyToClipboard()
+			m.copyToClipboard()
 		}
 	}
 

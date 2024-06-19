@@ -29,6 +29,7 @@ import (
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -143,6 +144,12 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 
 			if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
 				customCtx.SetUserData("cache", smartCache)
+			}
+
+			// :stats-svc/:title/players/:xuid/decks
+			if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
+				// fix: clearance (flight ID) may break /decks request
+				req.Header.Del("343-Clearance")
 			}
 
 			for _, handler := range clientRequestHandlers {

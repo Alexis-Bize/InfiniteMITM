@@ -119,12 +119,12 @@ func NewTrafficDetailsModel(width int, height int) TrafficModel {
 
 func (m *TrafficModel) Focus() {
 	m.focused = true
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 }
 
 func (m *TrafficModel) Blur() {
 	m.focused = false
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	if m.activeView == HeadersViewKey {
 		m.headersModel.SetYOffset(0)
@@ -132,11 +132,7 @@ func (m *TrafficModel) Blur() {
 		m.bodyModel.SetYOffset(0)
 	}
 
-	m.SetContent(map[string]string{}, nil)
-}
-
-func (m *TrafficModel) SetCopyPress(pressed bool) {
-	m.copyPressed = pressed
+	m.setContent(map[string]string{}, nil)
 }
 
 func (m *TrafficModel) SetWidth(width int) {
@@ -145,24 +141,14 @@ func (m *TrafficModel) SetWidth(width int) {
 	m.bodyModel.Width = width - 20
 }
 
-func (m *TrafficModel) SwitchActiveView() {
-	if m.activeView == HeadersViewKey {
-		m.SetActiveView(BodyViewKey)
-	} else if m.activeView == BodyViewKey {
-		m.SetActiveView(HeadersViewKey)
-	}
-}
-
 func (m *TrafficModel) SetActiveView(key activeViewType) {
 	m.activeView = key
-	m.SetCopyPress(false)
+	m.setCopyPress(false)
 
 	if key == HeadersViewKey {
-		m.SetContent(m.data.Headers, m.data.Body)
-		m.Focus()
+		m.setContent(m.data.Headers, m.data.Body)
 	} else if key == BodyViewKey {
-		m.SetContent(m.data.Headers, m.data.Body)
-		m.Focus()
+		m.setContent(m.data.Headers, m.data.Body)
 	}
 }
 
@@ -174,11 +160,11 @@ func (m *TrafficModel) SetTrafficData(data *TrafficData) {
 	m.data = data
 
 	if m.focused {
-		m.SetContent(m.data.Headers, m.data.Body)
+		m.setContent(m.data.Headers, m.data.Body)
 	}
 }
 
-func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
+func (m *TrafficModel) setContent(headers map[string]string, body []byte) {
 	var headersString []string
 	for key, value := range headers {
 		if strings.TrimSpace(value) != "" {
@@ -209,12 +195,26 @@ func (m *TrafficModel) SetContent(headers map[string]string, body []byte) {
 	}
 }
 
-func (m *TrafficModel) CopyToClipboard() {
+func (m *TrafficModel) switchActiveView() {
+	if m.activeView == HeadersViewKey {
+		m.SetActiveView(BodyViewKey)
+	} else if m.activeView == BodyViewKey {
+		m.SetActiveView(HeadersViewKey)
+	}
+
+	m.Focus()
+}
+
+func (m *TrafficModel) setCopyPress(pressed bool) {
+	m.copyPressed = pressed
+}
+
+func (m *TrafficModel) copyToClipboard() {
 	if len(m.data.Headers) == 0 {
 		return
 	}
 
-	m.SetCopyPress(true)
+	m.setCopyPress(true)
 
 	if m.activeView == HeadersViewKey {
 		var headersString []string
@@ -231,7 +231,7 @@ func (m *TrafficModel) CopyToClipboard() {
 	}
 }
 
-func (m TrafficModel) SaveToDisk() {
+func (m TrafficModel) saveToDisk() {
 	if len(m.data.Body) != 0 && m.activeView == BodyViewKey {
 		ct := m.data.Headers[request.ContentTypeHeaderKey]
 		// dirty hack for old blobs PNG assets
@@ -258,7 +258,7 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if m.focused {
-			m.SetContent(m.data.Headers, m.data.Body)
+			m.setContent(m.data.Headers, m.data.Body)
 		}
 	case TrafficData:
 		m.SetTrafficData(&msg)
@@ -269,13 +269,13 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 
 		switch msg.String() {
 		case CopyHeadersCommand:
-			m.CopyToClipboard()
+			m.copyToClipboard()
 			return m, tea.Batch(cmds...)
 		case SaveContentCommand:
-			m.SaveToDisk()
+			m.saveToDisk()
 			return m, tea.Batch(cmds...)
 		case EnterCommand:
-			m.SwitchActiveView()
+			m.switchActiveView()
 			return m, tea.Batch(cmds...)
 		}
 	}

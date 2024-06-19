@@ -39,8 +39,14 @@ domains:
 
 ### Previews
 
+#### Overriden Slayer Markup
+
 <p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-1.jpg" />
-    <br><br>
+</p>
+
+#### Overriden Articles
+
+<p align="center">
     <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-2.jpg" />
 </p>

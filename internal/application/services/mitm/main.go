@@ -93,10 +93,23 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			responseText += "s"
 		}
 
+		smartCacheText := "off"
+		if content.Options.SmartCache.Enabled {
+			if content.Options.SmartCache.Strategy == smartcache.Memory {
+				smartCacheText = "memory"
+			} else if content.Options.SmartCache.Strategy == smartcache.Persistent {
+				smartCacheText = "persistent"
+			} else {
+				smartCacheText = "on"
+			}
+		}
+
 		event.MustFire(events.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
-				"[%s] found %d %s; %d %s and %d %s",
+				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
 				YAMLFilename,
+				content.Options.TrafficDisplay,
+				smartCacheText,
 				totalClientHandlersCount,
 				domainText,
 				clientActiveRequestHandlersCount,

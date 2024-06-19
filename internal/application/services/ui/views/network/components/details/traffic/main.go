@@ -63,6 +63,7 @@ const (
 const (
 	CopyHeadersCommand = "ctrl+p"
 	SaveContentCommand = "ctrl+o"
+	EnterCommand       = "enter"
 )
 
 var (
@@ -273,7 +274,7 @@ func (m TrafficModel) Update(msg tea.Msg) (TrafficModel, tea.Cmd) {
 		case SaveContentCommand:
 			m.SaveToDisk()
 			return m, tea.Batch(cmds...)
-		case "enter":
+		case EnterCommand:
 			m.SwitchActiveView()
 			return m, tea.Batch(cmds...)
 		}

@@ -128,6 +128,7 @@ Please refer to our [Commands](/docs/Commands.md) documentation for further deta
 -   `:title`
     -   Matches all known titles.
     -   Titles: `hi` | `hipnk` | `higrn` | `hired` | `hipur` | `hiorg` | `hiblu` | `hi343`
+
 -   `:ct-bond`
     -   Represents the content type of binary files consumed by the game.
     -   Output: `application/x-bond-compact-binary`
@@ -137,6 +138,7 @@ Please refer to our [Commands](/docs/Commands.md) documentation for further deta
 -   `:ct-xml`
     -   Represents a XML content type.
     -   Output: `application/xml
+
 -   `:blobs-svc`
     -   Returns blobs service URL.
     -   Output: `https://blobs-infiniteugc.svc.halowaypoint.com`
@@ -158,9 +160,38 @@ Please refer to our [Commands](/docs/Commands.md) documentation for further deta
 -   `:economy-svc`
     -   Returns economy service URL.
     -   Output: `https://economy.svc.halowaypoint.com`
+
 -   `:mitm-dir`
-    -   Represents the root folder of local files (only suitable for `response.body`).
+    -   Represents the root folder of "InfiniteMITM".
     -   Output: `<drive>:\Users\<username>\InfiniteMITM`
+-   `:mitm-dir-ugc`
+    -   Represents the root folder of local "UGC" files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc`
+-   `:mitm-dir-ugc-maps`
+    -   Represents the root folder of local "Maps".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\maps`
+-   `:mitm-dir-ugc-egv`
+    -   Represents the root folder of local "EngineGameVariants".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\enginegamevariants`
+-   `:mitm-dir-ugc-egv-cgui`
+    -   Represents the root folder of local "CustomGamesUIMarkups".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\ugc\enginegamevariants\cgui-markups`
+-   `:mitm-dir-bin`
+    -   Represents the root folder of local bin files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\bin`
+-   `:mitm-dir-bin-flags`
+    -   Represents the root folder of local custom "Flags".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\bin\flags`
+-   `:mitm-dir-tools`
+    -   Represents the root folder of local tools.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\tools`
+-   `:mitm-dir-tools-ivt`
+    -   Represents the root folder of "InfiniteVariantTool".
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\tools\InfiniteVariantTool`
+-   `:mitm-dir-json`
+    -   Represents the root folder of local json files.
+    -   Output: `<drive>:\Users\<username>\InfiniteMITM\json`
+
 -   `:mitm-version`
     -   Represents the InfiniteMITM version (only suitable for `response.headers`).
     -   Example: `0.1.0`

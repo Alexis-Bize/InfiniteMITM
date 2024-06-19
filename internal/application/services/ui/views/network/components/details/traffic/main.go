@@ -17,9 +17,9 @@ package MITMApplicationUIServiceNetworkTrafficDetailsComponent
 import (
 	"encoding/hex"
 	"fmt"
-	"infinite-mitm/configs"
 	helpers "infinite-mitm/internal/application/services/ui/helpers"
 	"infinite-mitm/pkg/request"
+	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/utilities"
@@ -247,7 +247,7 @@ func (m TrafficModel) saveToDisk() {
 			filename = strings.Split(path.Base(parse.Path), ".")[0]
 		}
 
-		sysutilities.SaveToDisk(m.data.Body, configs.GetConfig().Extra.ProjectDir, filename, ct)
+		sysutilities.SaveToDisk(m.data.Body, resources.GetDownloadsDirPath(), filename, ct)
 	}
 }
 

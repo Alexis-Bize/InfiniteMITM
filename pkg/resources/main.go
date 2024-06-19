@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 )
 
-var certName = configs.GetConfig().Proxy.Certificate.Name
-
 var projectDir = configs.GetConfig().Extra.ProjectDir
 var resourcesPath = filepath.Join(projectDir, "resources")
 var dirPaths = map[string]string{
@@ -42,6 +40,10 @@ var dirPaths = map[string]string{
 	"tools":            filepath.Join(resourcesPath, "tools"),
 	"tools-ivt":        filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
 	"json":             filepath.Join(resourcesPath, "json"),
+}
+
+func GetDirPaths() map[string]string {
+	return dirPaths
 }
 
 func GetSmartCacheDirPath() string {

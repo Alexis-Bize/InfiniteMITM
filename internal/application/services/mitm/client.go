@@ -63,7 +63,7 @@ const YAMLVersion = 1
 func WatchClientMITMConfig() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		go event.MustFire(events.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 		})
 
@@ -74,7 +74,7 @@ func WatchClientMITMConfig() {
 	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
 	err = watcher.Add(filePath)
 	if err != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		go event.MustFire(events.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 		})
 
@@ -85,16 +85,16 @@ func WatchClientMITMConfig() {
 		select {
 		case watchEvent, ok := <-watcher.Events:
 			if ok && watchEvent.Op&fsnotify.Write == fsnotify.Write {
-				event.MustFire(events.ProxyStatusMessage, event.M{
+				go event.MustFire(events.ProxyStatusMessage, event.M{
 					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", YAMLFilename),
 				})
 
 				time.Sleep(time.Second * 1)
-				event.MustFire(events.RestartServer, event.M{})
+				go event.MustFire(events.RestartServer, event.M{})
 			}
 		case err, ok := <-watcher.Errors:
 			if ok && err != nil {
-				event.MustFire(events.ProxyStatusMessage, event.M{
+				go event.MustFire(events.ProxyStatusMessage, event.M{
 					"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 				})
 			}
@@ -174,7 +174,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				buffer, err := readBodyFile(body, matches, req.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
-					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+					go event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
 					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
@@ -222,7 +222,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
-					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+					go event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
 					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
@@ -307,7 +307,7 @@ func runCommands(commands []string) {
 			}
 
 			if err := c.Run(); err != nil {
-				event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
+				go event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
 			}
 		}
 	}()

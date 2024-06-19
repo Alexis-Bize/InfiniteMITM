@@ -108,7 +108,7 @@ func enableProxy() {
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 	s, mitmErr := mitm.CreateServer(f)
 	if mitmErr != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+		go event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 		return
 	}
 
@@ -123,7 +123,7 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
+			go event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
 		}
 	}
 }

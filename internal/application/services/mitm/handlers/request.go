@@ -75,25 +75,23 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 		))
 	}
 
-	details := events.StringifyRequestEventData(events.ProxyRequestEventData{
-		ID: uuid,
-		URL: req.URL.String(),
-		Method: req.Method,
-		Headers: request.HeadersToMap(req.Header),
-		Body: bodyBytes,
-		Proxified: isProxified,
-		SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
-	})
+	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
+		options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
+		options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
 
-	go func() {
-		shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
-			options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
-			options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
+	if shouldDispatch {
+		details := events.StringifyRequestEventData(events.ProxyRequestEventData{
+			ID: uuid,
+			URL: req.URL.String(),
+			Method: req.Method,
+			Headers: request.HeadersToMap(req.Header),
+			Body: bodyBytes,
+			Proxified: isProxified,
+			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
+		})
 
-		if shouldDispatch {
-			event.MustFire(events.ProxyRequestSent, event.M{"details": details})
-		}
-	}()
+		go event.MustFire(events.ProxyRequestSent, event.M{"details": details})
+	}
 
 	if smartCachedItem != nil {
 		resp := goproxy.NewResponse(

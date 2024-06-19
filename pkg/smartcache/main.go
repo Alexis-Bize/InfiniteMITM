@@ -56,6 +56,10 @@ type SmartCacheItem struct {
 const (
 	Memory     StrategyType = "memory"
 	Persistent StrategyType = "persistent"
+)
+
+const (
+	version = 1
 	defaultDuration = 7 * 24 * time.Hour
 )
 
@@ -183,7 +187,7 @@ func (s *SmartCache) CreateKey(input string, extra...string) string {
 		input = request.StripPort(input)
 	}
 
-	return CreateHash(strings.Join(append([]string{input}, extra...), ":"))
+	return CreateHash(strings.Join(append([]string{input, fmt.Sprintf("v%d", version)}, extra...), ":"))
 }
 
 func parseDuration(ttl string) time.Duration {

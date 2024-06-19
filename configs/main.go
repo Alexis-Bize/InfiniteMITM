@@ -47,11 +47,7 @@ type Config struct {
 	}
 }
 
-func GetConfig() *Config {
-	if config != nil {
-		return config
-	}
-
+func init() {
 	yamlFile, err := f.ReadFile("application.yaml"); if err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 	}
@@ -65,5 +61,8 @@ func GetConfig() *Config {
 	}
 
 	config.Extra.ProjectDir = filepath.Join(home, strings.Replace(config.Name, " ", "", -1))
+}
+
+func GetConfig() *Config {
 	return config
 }

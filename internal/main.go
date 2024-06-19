@@ -40,9 +40,8 @@ var restartMutex sync.Mutex
 
 func Start(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
-	kill.Init()
-
 	certInstalled := true
+
 	if mitmErr := application.Init(f); mitmErr != nil {
 		if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
 			return mitmErr

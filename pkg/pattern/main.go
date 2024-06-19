@@ -190,12 +190,19 @@ func ReplaceMatches(target string, matches []string) string {
 func escapeExceptParentheses(str string) string {
 	var result strings.Builder
 
-	re := regexp.MustCompile(`\([^)]*\)`)
+	re := regexp.MustCompile(`xuid\(([^)]*)\)|\(([^)]*)\)`)
 	lastEnd := 0
 
 	for _, loc := range re.FindAllStringIndex(str, -1) {
 		result.WriteString(regexp.QuoteMeta(str[lastEnd:loc[0]]))
-		result.WriteString(str[loc[0]:loc[1]])
+
+		if strings.HasPrefix(str[loc[0]:loc[1]], "xuid(") {
+			midContent := str[loc[0]+5 : loc[1]-1]
+			result.WriteString("xuid\\(" + regexp.QuoteMeta(midContent) + "\\)")
+		} else {
+			result.WriteString(str[loc[0]:loc[1]])
+		}
+
 		lastEnd = loc[1]
 	}
 

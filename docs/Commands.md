@@ -37,7 +37,7 @@ domains:
 
 **Note:** Halo Infinite may cache previously requested modes, maps, and markups in the `disk_cache` and `server_disk_cache` folders within the game's directory.
 
-### Previews
+### Previews:
 
 #### Overriden Slayer Markup
 

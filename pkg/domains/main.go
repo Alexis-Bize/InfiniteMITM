@@ -82,7 +82,7 @@ type YAMLContentDomainPair struct {
 type YAMLContentDomainPairs []YAMLContentDomainPair
 
 const (
-	Root      DomainType  = "svc.halowaypoint.com"
+	Root      DomainType  = ".svc.halowaypoint.com"
 	Blobs     DomainType  = "blobs-infiniteugc.svc.halowaypoint.com"
 	Authoring DomainType  = "authoring-infiniteugc.svc.halowaypoint.com"
 	Discovery DomainType  = "discovery-infiniteugc.svc.halowaypoint.com"

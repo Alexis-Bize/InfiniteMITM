@@ -22,14 +22,13 @@ import (
 	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
-	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
-	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
+	"regexp"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -65,8 +64,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
 	proxy.Logger = emptyLogger{}
-
-	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
 	content, mitmErr := ReadClientMITMConfig(); if mitmErr != nil {
 		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
@@ -131,12 +128,12 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		)
 	}
 
-	rootMatch := helpers.MatchRequestUrl(pattern.Create(domains.HaloWaypointSVCDomains.Root, "/*"))
-	trafficOptions := traffic.TrafficOptions{
-		TrafficDisplay: content.Options.TrafficDisplay,
-	}
+	trafficOptions := traffic.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
+	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
+	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
-	proxy.OnRequest(rootMatch).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
+	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		var resp *http.Response
 
 		customCtx := context.ContextHandler(ctx)
@@ -157,7 +154,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 	})
 
-	proxy.OnResponse(rootMatch).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
 		for _, handler := range clientResponseHandlers {
 			if handler.Match(resp, ctx) {
 				resp = handler.Fn(resp, ctx)

@@ -85,7 +85,7 @@ func Create() {
 		event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
 			details := e.Data()["details"].(string)
 			data := events.ParseRequestEventData(details)
-			pushNetworkData(data)
+			go pushNetworkData(data)
 
 			return nil
 		}), event.Normal)
@@ -93,14 +93,14 @@ func Create() {
 		event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
 			details := e.Data()["details"].(string)
 			data := events.ParseResponseEventData(details)
-			updateNetworkData(data)
+			go updateNetworkData(data)
 
 			return nil
 		}), event.Normal)
 
 		event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
 			details := e.Data()["details"].(string)
-			updateStatusBar(details)
+			go updateStatusBar(details)
 
 			return nil
 		}), event.Normal)

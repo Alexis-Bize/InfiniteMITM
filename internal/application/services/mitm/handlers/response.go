@@ -85,7 +85,7 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		if smartCachedItem == nil {
 			if isSmartCachable {
 				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(smartCache.CreateKey(
+				go smartCache.Write(smartCache.CreateKey(
 					request.StripPort(resp.Request.URL.String()),
 					resp.Request.Header.Get("Accept"),
 					resp.Request.Header.Get("Accept-Language"),
@@ -99,24 +99,26 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		}
 	}
 
-	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
-		options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
+	details := events.StringifyResponseEventData(events.ProxyResponseEventData{
+		ID: uuid,
+		URL: resp.Request.URL.String(),
+		Method: resp.Request.Method,
+		Status: resp.StatusCode,
+		Headers: request.HeadersToMap(resp.Header),
+		Body: bodyBytes,
+		Proxified: isProxified,
+		SmartCached: !isProxified && smartCache != nil,
+	})
 
-	if shouldDispatch {
-		details := events.StringifyResponseEventData(events.ProxyResponseEventData{
-			ID: uuid,
-			URL: resp.Request.URL.String(),
-			Method: resp.Request.Method,
-			Status: resp.StatusCode,
-			Headers: request.HeadersToMap(resp.Header),
-			Body: bodyBytes,
-			Proxified: isProxified,
-			SmartCached: !isProxified && smartCache != nil,
-		})
+	go func() {
+		shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
+			options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
+			options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
 
-		event.MustFire(events.ProxyResponseReceived, event.M{"details": details})
-	}
+		if shouldDispatch {
+			event.MustFire(events.ProxyResponseReceived, event.M{"details": details})
+		}
+	}()
 
 	return resp
 }

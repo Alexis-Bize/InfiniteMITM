@@ -25,7 +25,6 @@ import (
 //go:embed cert/*
 var f embed.FS
 
-
 func main() {
 	if mitmErr := MITM.Start(&f); mitmErr != nil {
 		if mitmErr.Unwrap() != errors.ErrPromptException {

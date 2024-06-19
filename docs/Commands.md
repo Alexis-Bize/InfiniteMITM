@@ -37,6 +37,10 @@ domains:
 
 **Note:** Halo Infinite may cache previously requested modes, maps, and markups in the `disk_cache` and `server_disk_cache` folders within the game's directory.
 
+### Previews
+
 <p align="center">
-    <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview.jpg" />
+    <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-1.jpg" />
+    <br><br>
+    <img alt="InfiniteMITM - Commands" title="InfiniteMITM - Commands" src="/assets/docs/commands-preview-2.jpg" />
 </p>

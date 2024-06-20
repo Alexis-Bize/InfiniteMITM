@@ -47,6 +47,10 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 -   [Watch Film Override](/examples/watch-film-override)
 -   [Flags Override](/examples/flags-override)
 
+## Tools
+
+-   [SSCG (Server Selection Config Generator)](/tools/sscg)
+
 ## But Why Not Fiddler?
 
 While **Fiddler** remains a leading MITM (Man-In-The-Middle) proxy tool, it can quickly become overwhelming due to the numerous traffic from various processes, making it quite complex to analyze requests and responses. **InfiniteMITM**, however, focuses solely on the traffic related to **Halo services**, providing an easy way to view and **rewrite everything on the fly** through a simple configuration file (`mitm.yaml`).

@@ -1,4 +1,4 @@
-# Server Selection Config Generator (SSCG)
+# SSCG (Server Selection Config Generator)
 
 ## Preview
 

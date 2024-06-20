@@ -12,23 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package MITMApplicationEmbed
 
-import (
-	"embed"
-	MITM "infinite-mitm/internal"
-	"infinite-mitm/pkg/errors"
-)
+import "embed"
 
-//go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
-//go:embed assets/resources/shared/*
-//go:embed cert/*
-var f embed.FS
-
-func main() {
-	if mitmErr := MITM.Start(&f); mitmErr != nil {
-		if mitmErr.Unwrap() != errors.ErrPromptException {
-			mitmErr.Log()
-		}
-	}
-}
+var FileSystem *embed.FS

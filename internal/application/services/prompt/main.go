@@ -17,7 +17,9 @@ package MITMApplicationPromptService
 import (
 	"fmt"
 	"infinite-mitm/configs"
+	MITMApplicationSSCGTool "infinite-mitm/internal/application/services/tools/sscg"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/smartcache"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
@@ -33,10 +35,13 @@ const (
 	// Welcome
 	Start PromptOption = iota
 	InstallRootCertificate
-	ForceKillProxy
-	ClearSmartCache
+	Tools
 	Credits
 	Exit
+	// Tools
+	PingServers
+	ForceKillProxy
+	ClearSmartCache
 	// Credits
 	Author
 	Supporter
@@ -49,10 +54,13 @@ var optionToString = map[PromptOption]string{
 	// Welcome
 	Start:                  "🔒 Start Proxy Server",
 	InstallRootCertificate: "🔐 Install Root Certificate",
+	Tools:                  "🛠️ Tools [new]",
+	Credits:                "🤝 Show Credits",
+	Exit:                   "👋 Exit",
+	// Tools
+	PingServers:            "🌎 Ping Servers",
 	ForceKillProxy:         "🛑 Force Kill Proxy",
 	ClearSmartCache:        "🧹 Clear SmartCache",
-	Credits:                "🤝 Credits",
-	Exit:                   "👋 Exit",
 	// Credits
 	Author:                 "Made by: Zeny IC",
 	Supporter:              "Supporter: Grunt.API",
@@ -60,6 +68,8 @@ var optionToString = map[PromptOption]string{
 	// Generic
 	GoBack:                 "← Go back",
 }
+
+var hasRootCertificateInstalled *bool
 
 func (d PromptOption) String() string {
 	return optionToString[d]
@@ -70,6 +80,8 @@ func (d PromptOption) Is(option string) bool {
 }
 
 func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
+	hasRootCertificateInstalled = &rootCertificateInstalled
+
 	var selected string
 	var options []huh.Option[string]
 
@@ -81,8 +93,7 @@ func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
 
 	options = append(
 		options,
-		huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
-		huh.NewOption(ClearSmartCache.String(), ClearSmartCache.String()),
+		huh.NewOption(Tools.String(), Tools.String()),
 		huh.NewOption(Credits.String(), Credits.String()),
 		huh.NewOption(Exit.String(), Exit.String()),
 	)
@@ -98,22 +109,63 @@ func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
 		return "", errors.Create(errors.ErrPromptException, err.Error())
 	}
 
-	if Credits.Is(selected) {
-		return showCredits(rootCertificateInstalled)
-	} else if ClearSmartCache.Is(selected) {
+	if Tools.Is(selected) {
+		return showTools()
+	} else if Credits.Is(selected) {
+		return showCredits()
+	}
+
+	return selected, nil
+}
+
+func showTools() (string, *errors.MITMError) {
+	var selected string
+	var options []huh.Option[string]
+
+	options = append(
+		options,
+		huh.NewOption(PingServers.String(), PingServers.String()),
+		huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
+		huh.NewOption(ClearSmartCache.String(), ClearSmartCache.String()),
+		huh.NewOption(GoBack.String(), GoBack.String()),
+	)
+
+	huh.NewSelect[string]().
+		Title("Tools:").
+		Options(options...).
+		Value(&selected).
+		WithTheme(theme.ThemeMITM()).
+		Run()
+
+	if ClearSmartCache.Is(selected) {
 		spinner.New().Title("Clearing local cached files...").
 		TitleStyle(lipgloss.NewStyle().
 			Foreground(theme.ColorNormalFg)).
 			Run()
 
 		smartcache.Flush()
-		return WelcomePrompt(rootCertificateInstalled)
+		return showTools()
 	}
 
-	return selected, nil
+	if ForceKillProxy.Is(selected) {
+		spinner.New().Title("Killing active proxy...").
+			TitleStyle(lipgloss.NewStyle().
+				Foreground(theme.ColorNormalFg)).
+				Run()
+
+		proxy.ToggleProxy("off")
+		return showTools()
+	}
+
+	if PingServers.Is(selected) {
+		MITMApplicationSSCGTool.Run()
+		return showTools()
+	}
+
+	return WelcomePrompt(*hasRootCertificateInstalled)
 }
 
-func showCredits(rootCertificateInstalled bool) (string, *errors.MITMError) {
+func showCredits() (string, *errors.MITMError) {
 	var selected string
 	var options []huh.Option[string]
 
@@ -141,5 +193,5 @@ func showCredits(rootCertificateInstalled bool) (string, *errors.MITMError) {
 		sysutilities.OpenBrowser(configs.GetConfig().Repository)
 	}
 
-	return WelcomePrompt(rootCertificateInstalled)
+	return WelcomePrompt(*hasRootCertificateInstalled)
 }

@@ -23,6 +23,7 @@ import (
 
 	"infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
+	embedFS "infinite-mitm/internal/application/embed"
 	events "infinite-mitm/internal/application/events"
 	mitm "infinite-mitm/internal/application/services/mitm"
 	prompt "infinite-mitm/internal/application/services/prompt"
@@ -39,10 +40,12 @@ var server *http.Server
 var restartMutex sync.Mutex
 
 func Start(f *embed.FS) *errors.MITMError {
+	embedFS.FileSystem = f
+
 	var mitmErr *errors.MITMError
 	certInstalled := true
 
-	if mitmErr := application.Init(f); mitmErr != nil {
+	if mitmErr := application.Init(); mitmErr != nil {
 		if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
 			return mitmErr
 		}

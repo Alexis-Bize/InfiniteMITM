@@ -15,8 +15,8 @@
 package resources
 
 import (
-	"embed"
 	"infinite-mitm/configs"
+	embed "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/errors"
 	"io"
 	"log"
@@ -60,8 +60,8 @@ func GetDownloadsDirPath() string {
 	return dirPaths["downloads"]
 }
 
-func CreateRootAssets(f *embed.FS) *errors.MITMError {
-	sourceMITMTemplate := "assets/resources/shared/templates/mitm.yaml"
+func CreateRootAssets() *errors.MITMError {
+	sourceMITMTemplate := "assets/resources/shared/mitm.yaml"
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -69,7 +69,7 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
-		templateFile, err := f.Open(sourceMITMTemplate)
+		templateFile, err := embed.FileSystem.Open(sourceMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}

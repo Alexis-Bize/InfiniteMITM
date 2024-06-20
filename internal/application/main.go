@@ -15,7 +15,6 @@
 package MITMApplication
 
 import (
-	"embed"
 	"fmt"
 	"infinite-mitm/configs"
 	mitm "infinite-mitm/internal/application/services/mitm"
@@ -32,7 +31,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func Init(f *embed.FS) *errors.MITMError {
+func Init() *errors.MITMError {
 	var mitmErr *errors.MITMError
 
 	spinner.New().Title("Looking for updates...").
@@ -72,7 +71,7 @@ func Init(f *embed.FS) *errors.MITMError {
 		Foreground(theme.ColorNormalFg)).
 		Run()
 
-	mitmErr = resources.CreateRootAssets(f); if mitmErr != nil {
+	mitmErr = resources.CreateRootAssets(); if mitmErr != nil {
 		return mitmErr
 	}
 

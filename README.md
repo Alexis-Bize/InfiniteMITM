@@ -33,7 +33,8 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 -   [Override Requests](/docs/Override-Requests.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
--   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new">](/docs/Commands.md) [Commands (Pre-Handlers)](/docs/Commands.md)
+-   [Commands (Pre-Handlers)](/docs/Commands.md)
+-   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new">](/Generate-SSC-JSON.md) [Generate SSC JSON (Server Selection Configuration)](/docs/Generate-SSC-JSON.md)
 
 ## SmartCache
 
@@ -46,10 +47,6 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 -   [Server Selection](/examples/server-selection)
 -   [Watch Film Override](/examples/watch-film-override)
 -   [Flags Override](/examples/flags-override)
-
-## Tools
-
--   [SSCG (Server Selection Config Generator)](/tools/sscg)
 
 ## But Why Not Fiddler?
 

@@ -19,7 +19,7 @@ Override the available servers by keeping only desired ones to force their selec
 
 #### ❓ Feeling confused?
 
-A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=LcAuWuJK5bk) on how to choose specific servers in Halo Infinite.
+-   A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=LcAuWuJK5bk) on how to choose specific servers in Halo Infinite.
 
 ### Schema (Example)
 

@@ -23,7 +23,7 @@ Download and unzip one of the files from the [latest release](https://github.com
 
 #### ❓ Feeling confused?
 
-A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=tU8cdZ0SkYY) on how to install **InfiniteMITM**.
+-   A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=tU8cdZ0SkYY) on how to install **InfiniteMITM**.
 
 ## Documentation
 

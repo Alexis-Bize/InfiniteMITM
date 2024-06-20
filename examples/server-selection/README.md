@@ -17,7 +17,7 @@ Override the available servers by keeping only desired ones to force their selec
     -   Documentation: [Use Provided Examples](/docs/Use-Provided-Examples.md)
 -   Restart the game.
 
-### Video
+### Installation (Video)
 
 Thanks to **xGHarp** for their amazing video on how to select specific servers in Halo Infinite.
 

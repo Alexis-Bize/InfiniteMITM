@@ -19,7 +19,13 @@ This application is designed to enhance your experience and should not impact ot
 
 ## Installation
 
-Download and unzip one of the files from the [latest release](https://github.com/Alexis-Bize/InfiniteMITM/releases/latest) for your current OS.
+-   Download and unzip one of the files from the [latest release](https://github.com/Alexis-Bize/InfiniteMITM/releases/latest) for your current OS.
+-   Launch the application and refer to the available [documentations](/docs).
+    -   Don't forget to check out the [known issues](#known-issues).
+
+#### ❓ Feeling confused?
+
+A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=tU8cdZ0SkYY) on how to install **InfiniteMITM**.
 
 ## Documentation
 

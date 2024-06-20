@@ -17,6 +17,10 @@ Override the available servers by keeping only desired ones to force their selec
     -   Documentation: [Use Provided Examples](/docs/Use-Provided-Examples.md)
 -   Restart the game.
 
+#### ❓ Feeling confused?
+
+A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=LcAuWuJK5bk) on how to choose specific servers in Halo Infinite.
+
 ### Schema (Example)
 
 In the following example (partial, must not be used as is), instances of `serverUrl` are replaced with the **West Europe** one. This means that the game will search for matches in `SouthAfricaNorth` and `EastUs2` even for EU players.

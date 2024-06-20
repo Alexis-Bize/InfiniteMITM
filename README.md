@@ -34,7 +34,7 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
 -   [Commands (Pre-Handlers)](/docs/Commands.md)
--   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new">](/Generate-SSC-JSON.md) [Generate SSC JSON (Server Selection Configuration)](/docs/Generate-SSC-JSON.md)
+-   [<img src="https://img.shields.io/badge/new-FF6F6D" alt="new" Generate Server Selection JSON](/docs/Generate-Server-Selection-JSON.md)
 
 ## SmartCache
 

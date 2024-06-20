@@ -1,6 +1,6 @@
-# Generate SSC JSON (Server Selection Configuration)
+# Generate Server Selection JSON
 
-Generate a `server-selection` JSON configuration to be used with our [Server Selection](/examples/server-selection) example.
+Generate and automatically save a `server-selection.json` file to be used with our [Server Selection](/examples/server-selection) example.
 
 ## Preview
 

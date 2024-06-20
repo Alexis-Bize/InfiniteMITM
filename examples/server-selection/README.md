@@ -20,7 +20,7 @@ Override the available servers by keeping only desired ones to force their selec
 #### ❓ Feeling confused?
 
 -   A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=LcAuWuJK5bk) on how to choose specific servers in Halo Infinite.
--   Additionally, you could also use our [Server Selection Config Generator (SSCG)](/tools/sscg) tool to get each server's ping and choose the ones you want to prioritize.
+-   Additionally, you could also use our [SSCG (Server Selection Config Generator)](/tools/sscg) tool to get each server's ping and choose the ones you want to prioritize.
 
 ### Schema (Example)
 

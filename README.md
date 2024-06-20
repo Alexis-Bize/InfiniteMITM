@@ -20,6 +20,8 @@ This application is designed to enhance your experience and should not impact ot
 ## Installation
 
 -   Download and unzip one of the files from the [latest release](https://github.com/Alexis-Bize/InfiniteMITM/releases/latest) for your current OS.
+-   Launch the application and refer to the available [documentations](/docs).
+    -   Don't forget to check out the **[known issues](#known-issues)**.
 
 #### ❓ Feeling confused?
 

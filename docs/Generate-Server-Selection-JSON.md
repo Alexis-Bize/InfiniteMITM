@@ -1,6 +1,6 @@
 # Generate Server Selection JSON
 
-Generate and automatically save a `server-selection.json` file in the **InfiniteMITM\resources\json** directory located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). This file is intended for use with our [Server Selection](/examples/server-selection) example.
+Generate and automatically save a `server-selection.json` file in the **InfiniteMITM** directory located in your home directory (e.g., `C:\Users\<username>\InfiniteMITM`). This file is intended for use with our [Server Selection](/examples/server-selection) example.
 
 ## Preview
 

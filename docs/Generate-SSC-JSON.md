@@ -10,4 +10,4 @@ Generate a `server-selection` JSON configuration to be used with our [Server Sel
 
 ## Run This Tool
 
-This tool is available under **Tools** / **🌎 Ping Servers** in the application.
+This tool is available under **Tools** → **🌎 Ping Servers** in the application.

@@ -22,7 +22,9 @@ Override the available servers by keeping only desired ones to force their selec
 Thanks to **xGHarp** for their amazing video on how to select specific servers in Halo Infinite.
 
 <p align="center">
-  [![How to Select SPECIFIC Servers in Halo Infinite](https://img.youtube.com/vi/LcAuWuJK5bk/0.jpg)](https://www.youtube.com/watch?v=LcAuWuJK5bk)
+  <a href="https://www.youtube.com/watch?v=LcAuWuJK5bk" title="How to Select SPECIFIC Servers in Halo Infinite">
+    <img alt="How to Select SPECIFIC Servers in Halo Infinite" title="How to Select SPECIFIC Servers in Halo Infinite" src="https://img.youtube.com/vi/LcAuWuJK5bk/0.jpg" />
+  </a>
 </p>
 
 ### Schema (Example)

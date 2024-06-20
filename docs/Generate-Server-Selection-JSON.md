@@ -10,4 +10,4 @@ Generate and automatically save a `server-selection.json` file to be used with o
 
 ## Run This Tool
 
-This tool is available under **Tools** → **🌎 Ping Servers** in the application.
+This tool is available under **Tools** → **📄 Generate Server Selection JSON** in the application.

@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkUI
+package MITMApplicationNetworkUI
 
 import (
+	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
-	details "infinite-mitm/internal/application/services/ui/views/network/components/details"
-	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
-	status "infinite-mitm/internal/application/services/ui/views/network/components/status"
-	table "infinite-mitm/internal/application/services/ui/views/network/components/table"
+	events "infinite-mitm/internal/application/services/events"
+	details "infinite-mitm/internal/application/ui/network/components/details"
+	traffic "infinite-mitm/internal/application/ui/network/components/details/traffic"
+	status "infinite-mitm/internal/application/ui/network/components/status"
+	table "infinite-mitm/internal/application/ui/network/components/table"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/sysutilities"
@@ -34,7 +35,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gookit/event"
 )
-
 
 type activeKeyType string
 type model struct {
@@ -68,12 +68,12 @@ var networkData = &networkDataType{
 func Create() {
 	width, height := sysutilities.GetTerminalSize()
 	statusBarModel := status.NewStatusBarModel(width)
-	modelsHeight := height - statusBarModel.Size.Height
+	modelsHeight := height - statusBarModel.Height
 
-	m := &model{
+	m := model{
 		width,
 		height,
-		table.NewNetworkModel(width, modelsHeight),
+		table.NewNetworkModel(modelsHeight),
 		details.NewDetailsModel("", "", "", width, modelsHeight),
 		statusBarModel,
 		NetworkElementKey,
@@ -110,6 +110,123 @@ func Create() {
 	}
 }
 
+func (m *model) setActiveElement(key activeKeyType) {
+	m.activeElement = key
+
+	if key == NetworkElementKey {
+		m.networkTableModel.Focus()
+		m.networkDetailsModel.Blur()
+	} else if key == DetailsElementKey {
+		m.networkDetailsModel.Focus()
+		m.networkTableModel.Blur()
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return tea.SetWindowTitle(fmt.Sprintf("%s: %s", configs.GetConfig().Name, "Proxy"))
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	cmds := []tea.Cmd{}
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+
+		m.networkTableModel.SetHeight(m.height - m.statusBarModel.Height)
+		m.statusBarModel.SetWidth(m.width)
+		m.networkDetailsModel.SetWidth(m.width)
+		m.networkDetailsModel.SetHeight(m.height - m.statusBarModel.Height)
+
+		sysutilities.ClearTerminal()
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			m.setActiveElement(NetworkElementKey)
+			return m, tea.Batch(cmds...)
+		case "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			if m.activeElement != NetworkElementKey {
+				break
+			}
+
+			rowData := m.networkTableModel.GetSelectedRowData()
+			if len(rowData) == 0 {
+				return m, tea.Batch(cmds...)
+			}
+
+			selectedRowPositionID := rowData[1]
+
+			for v, k := range *m.networkTableModel.GetRowPositionMap() {
+				if strconv.Itoa(k) == selectedRowPositionID {
+					m.networkDetailsModel.SetID(v)
+					emptyRequestData := true
+
+					if req, exists := networkData.Requests[v]; exists {
+						m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
+						trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
+						m.networkDetailsModel.SetRequestTrafficData(&trafficData)
+						emptyRequestData = false
+					}
+
+					if resp, exists := networkData.Responses[v]; exists {
+						m.networkDetailsModel.SetResponseStatusCode(resp.Status)
+						trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
+						m.networkDetailsModel.SetResponseTrafficData(&trafficData)
+
+						if emptyRequestData {
+							m.networkDetailsModel.SetRequestInfo(resp.URL, resp.Method)
+							m.networkDetailsModel.SetRequestTrafficData(&traffic.TrafficData{Dummy: true})
+						}
+					} else {
+						m.networkDetailsModel.SetResponseStatusCode(0)
+						m.networkDetailsModel.SetResponseTrafficData(&traffic.TrafficData{})
+					}
+
+					m.setActiveElement(DetailsElementKey)
+					break
+				}
+			}
+
+			return m, tea.Batch(cmds...)
+		}
+	}
+
+	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	if m.activeElement == DetailsElementKey {
+		m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	m.statusBarModel, cmd = m.statusBarModel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
+}
+
+func (m model) View() string {
+	var activeModel string
+	statusBar := m.statusBarModel.View()
+
+	if m.activeElement == NetworkElementKey {
+		activeModel = m.networkTableModel.View()
+	} else if m.activeElement == DetailsElementKey {
+		activeModel = m.networkDetailsModel.View()
+	}
+
+	return lipgloss.NewStyle().
+		Render(lipgloss.JoinVertical(
+			lipgloss.Top,
+			activeModel,
+			statusBar,
+		))
+}
+
 func pushNetworkData(data events.ProxyRequestEventData) {
 	networkDataMutex.Lock()
 	networkData.Requests[data.ID] = &data
@@ -127,7 +244,7 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 		return
 	}
 
-	program.Send(table.TableRowPush(table.TableRowPush{
+	program.Send(table.TableRowPushMsg(table.TableRowPushMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
@@ -175,7 +292,7 @@ func updateNetworkData(data events.ProxyResponseEventData) {
 		return
 	}
 
-	program.Send(table.TableRowUpdate(table.TableRowUpdate{
+	program.Send(table.TableRowUpdateMsg(table.TableRowUpdateMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
@@ -221,133 +338,4 @@ func explodeURL(value string) (string, string) {
 	}
 
 	return parse.Hostname(), path
-}
-
-func (m *model) Init() tea.Cmd {
-	return tea.SetWindowTitle(configs.GetConfig().Name)
-}
-
-func (m *model) SetActiveElement(key activeKeyType) {
-	m.activeElement = key
-
-	if key == NetworkElementKey {
-		m.networkTableModel.Focus()
-		m.networkDetailsModel.Blur()
-	} else if key == DetailsElementKey {
-		m.networkDetailsModel.Focus()
-		m.networkTableModel.Blur()
-	}
-}
-
-func (m *model) SwitchActiveElement() {
-	if m.activeElement == NetworkElementKey {
-		m.SetActiveElement(DetailsElementKey)
-	} else if m.activeElement == DetailsElementKey {
-		m.SetActiveElement(NetworkElementKey)
-	}
-}
-
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	cmds := []tea.Cmd{}
-
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-
-		m.networkTableModel.SetHeight(
-			m.height - m.statusBarModel.Size.Height,
-			m.statusBarModel.Size.Height,
-		)
-
-		m.statusBarModel.SetWidth(m.width)
-		m.networkDetailsModel.SetWidth(m.width)
-		m.networkDetailsModel.SetHeight(m.height - m.statusBarModel.Size.Height)
-
-		sysutilities.ClearTerminal()
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q":
-			m.SetActiveElement(NetworkElementKey)
-			return m, tea.Batch(cmds...)
-		case "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			if m.activeElement != NetworkElementKey {
-				break
-			}
-
-			rowData := m.networkTableModel.GetSelectedRowData()
-			if len(rowData) == 0 {
-				return m, tea.Batch(cmds...)
-			}
-
-			selectedRowPositionID := rowData[1]
-
-			for v, k := range *m.networkTableModel.GetRowPositionMap() {
-				if strconv.Itoa(k) == selectedRowPositionID {
-					m.networkDetailsModel.SetID(v)
-					emptyRequestData := true
-
-					if req, exists := networkData.Requests[v]; exists {
-						m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
-						trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
-						m.networkDetailsModel.SetRequestTrafficData(&trafficData)
-						emptyRequestData = false
-					}
-
-					if resp, exists := networkData.Responses[v]; exists {
-						m.networkDetailsModel.SetResponseStatusCode(resp.Status)
-						trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
-						m.networkDetailsModel.SetResponseTrafficData(&trafficData)
-
-						if emptyRequestData {
-							m.networkDetailsModel.SetRequestInfo(resp.URL, resp.Method)
-							m.networkDetailsModel.SetRequestTrafficData(&traffic.TrafficData{Dummy: true})
-						}
-					} else {
-						m.networkDetailsModel.SetResponseStatusCode(0)
-						m.networkDetailsModel.SetResponseTrafficData(&traffic.TrafficData{})
-					}
-
-					m.SetActiveElement(DetailsElementKey)
-					break
-				}
-			}
-
-			return m, tea.Batch(cmds...)
-		}
-	}
-
-	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	if m.activeElement == DetailsElementKey {
-		m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
-	m.statusBarModel, cmd = m.statusBarModel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	return m, tea.Batch(cmds...)
-}
-
-func (m *model) View() string {
-	var activeModel string
-	statusBar := m.statusBarModel.View()
-
-	if m.activeElement == NetworkElementKey {
-		activeModel = m.networkTableModel.View()
-	} else if m.activeElement == DetailsElementKey {
-		activeModel = m.networkDetailsModel.View()
-	}
-
-	return lipgloss.NewStyle().
-		Render(lipgloss.JoinVertical(
-			lipgloss.Top,
-			activeModel,
-			statusBar,
-		))
 }

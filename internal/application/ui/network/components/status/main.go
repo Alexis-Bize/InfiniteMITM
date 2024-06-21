@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkStatusBarComponent
+package MITMApplicationNetworkUIStatusComponent
 
 import (
 	"infinite-mitm/configs"
@@ -22,15 +22,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type ViewSize struct {
-	Width  int
-	Height int
-}
-
 type StatusBarModel struct {
-	Size ViewSize
-
-	width int
+	Width int
+	Height int
 
 	name ItemProperties
 	info ItemProperties
@@ -76,15 +70,14 @@ func NewStatusBarModel(width int) StatusBarModel {
 		},
 	}
 
-	vwidth, vheight := lipgloss.Size(m.View())
-	m.Size.Width = vwidth
-	m.Size.Height = vheight
+	m.Width = width
+	m.Height = lipgloss.Height(m.View())
 
 	return m
 }
 
 func (m *StatusBarModel) SetWidth(width int) {
-	m.width = width
+	m.Width = width
 }
 
 func (m *StatusBarModel) SetInfoContent(text string) {
@@ -101,15 +94,15 @@ func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *StatusBarModel) View() string {
+func (m StatusBarModel) View() string {
 	bar := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.name.style.Render(m.name.content),
 		m.info.style.Render(m.info.content),
 	)
 
 	return statusBarStyle.
-		Width(m.width).
-		MaxWidth(m.width).
+		Width(m.Width).
+		MaxWidth(m.Width).
 		Margin(1, 2).
 		Render(bar)
 }

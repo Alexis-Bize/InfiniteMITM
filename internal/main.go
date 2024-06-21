@@ -24,14 +24,16 @@ import (
 	"infinite-mitm/configs"
 	application "infinite-mitm/internal/application"
 	embedFS "infinite-mitm/internal/application/embed"
-	events "infinite-mitm/internal/application/events"
+	events "infinite-mitm/internal/application/services/events"
 	mitm "infinite-mitm/internal/application/services/mitm"
-	prompt "infinite-mitm/internal/application/services/prompt"
 	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkView "infinite-mitm/internal/application/services/ui/views/network"
+	network "infinite-mitm/internal/application/ui/network"
+	prompt "infinite-mitm/internal/application/ui/prompt/welcome"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/sysutilities"
+
+	sscg "infinite-mitm/internal/application/ui/tools/sscg"
 
 	"github.com/gookit/event"
 )
@@ -40,7 +42,7 @@ var server *http.Server
 var restartMutex sync.Mutex
 
 func Start(f *embed.FS) *errors.MITMError {
-	embedFS.FileSystem = f
+	embedFS.Set(f)
 
 	var mitmErr *errors.MITMError
 	certInstalled := true
@@ -53,6 +55,9 @@ func Start(f *embed.FS) *errors.MITMError {
 		certInstalled = false
 	}
 
+	sscg.Create()
+	return nil
+
 	option, mitmErr := prompt.WelcomePrompt(certInstalled)
 	if mitmErr != nil {
 		return mitmErr
@@ -64,7 +69,7 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		go func() {
 			defer wg.Done()
-			networkView.Create()
+			network.Create()
 			sysutilities.KillProcess()
 		}()
 
@@ -87,7 +92,7 @@ func Start(f *embed.FS) *errors.MITMError {
 		}
 
 		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
-	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
+	} else if prompt.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()
 		}

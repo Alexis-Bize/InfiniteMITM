@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkTrafficDetailsComponent
+package MITMApplicationNetworkUITrafficDetailsComponent
 
 import (
 	"encoding/hex"
 	"fmt"
-	helpers "infinite-mitm/internal/application/services/ui/helpers"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/sysutilities"
@@ -186,7 +185,7 @@ func (m *TrafficModel) setContent(headers map[string]string, body []byte) {
 		m.headersModel.GotoTop()
 	} else if m.activeView == BodyViewKey {
 		if len(body) <= BodyMaxViewLength {
-			m.bodyModel.SetContent(helpers.FormatHexView(body, m.bodyModel.Width))
+			m.bodyModel.SetContent(utilities.FormatHexView(body, m.bodyModel.Width))
 		} else {
 			m.bodyModel.SetContent("")
 		}

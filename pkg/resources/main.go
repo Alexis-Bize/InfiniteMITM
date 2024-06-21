@@ -16,7 +16,7 @@ package resources
 
 import (
 	"infinite-mitm/configs"
-	embed "infinite-mitm/internal/application/embed"
+	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/errors"
 	"io"
 	"log"
@@ -69,7 +69,7 @@ func CreateRootAssets() *errors.MITMError {
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
-		templateFile, err := embed.FileSystem.Open(sourceMITMTemplate)
+		templateFile, err := embedFS.Get().Open(sourceMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}

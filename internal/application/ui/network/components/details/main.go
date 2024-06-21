@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationUIServiceNetworkDetailsComponent
+package MITMApplicationNetworkUIDetailsComponent
 
 import (
 	"fmt"
-	traffic "infinite-mitm/internal/application/services/ui/views/network/components/details/traffic"
+	traffic "infinite-mitm/internal/application/ui/network/components/details/traffic"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"

@@ -17,7 +17,10 @@ package main
 import (
 	"embed"
 	MITM "infinite-mitm/internal"
+	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/errors"
+
+	"github.com/joho/godotenv"
 )
 
 //go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
@@ -25,7 +28,12 @@ import (
 //go:embed cert/*
 var f embed.FS
 
+func init() {
+	embedFS.Set(&f)
+}
+
 func main() {
+	godotenv.Load()
 	if mitmErr := MITM.Start(&f); mitmErr != nil {
 		if mitmErr.Unwrap() != errors.ErrPromptException {
 			mitmErr.Log()

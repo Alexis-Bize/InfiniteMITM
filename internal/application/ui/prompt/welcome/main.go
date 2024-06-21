@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package MITMApplicationPromptService
+package MITMApplicationWelcomePromptUI
 
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	MITMApplicationSSCGTool "infinite-mitm/internal/application/services/tools/sscg"
+	sscg "infinite-mitm/internal/application/ui/tools/sscg"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/smartcache"
@@ -158,7 +158,7 @@ func showTools() (string, *errors.MITMError) {
 	}
 
 	if PingServers.Is(selected) {
-		MITMApplicationSSCGTool.Run()
+		sscg.Create()
 		return showTools()
 	}
 

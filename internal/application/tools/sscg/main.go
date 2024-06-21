@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	embed "infinite-mitm/internal/application/embed"
+	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/utilities"
@@ -38,8 +38,46 @@ type Server struct {
 	ServerURL string `json:"serverUrl"`
 }
 
+var servers *[]Server
+
+func GetServers() *[]Server {
+	if servers != nil {
+		return servers
+	}
+
+	qosservers, err := embedFS.Get().ReadFile("assets/resources/shared/qosservers.json"); if err != nil {
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+	}
+
+	if err := json.Unmarshal([]byte(qosservers), &servers); err != nil {
+		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+	}
+
+	return servers
+}
+
+func GetPingTime(serverURL string) (int, *errors.MITMError) {
+	cmd := exec.Command("ping", "-c", "1", serverURL)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return -1, errors.Create(errors.ErrPingFailedException, err.Error())
+	}
+
+	outputStr := string(output)
+	if strings.Contains(outputStr, "time=") {
+		timeStr := strings.Split(strings.Split(outputStr, "time=")[1], " ")[0]
+		timeInt, err := strconv.Atoi(strings.Split(timeStr, ".")[0]); if err != nil {
+			timeInt = -1
+		}
+
+		return timeInt, nil
+	}
+
+	return -1, errors.Create(errors.ErrPingFailedException, errors.ErrPingFailedException.Error())
+}
+
 func Run() {
-	qosservers, err := embed.FileSystem.ReadFile("assets/resources/shared/qosservers.json"); if err != nil {
+	qosservers, err := embedFS.Get().ReadFile("assets/resources/shared/qosservers.json"); if err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 	}
 

@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
+	events "infinite-mitm/internal/application/services/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"

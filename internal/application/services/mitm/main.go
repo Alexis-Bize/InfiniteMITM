@@ -20,7 +20,7 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
+	events "infinite-mitm/internal/application/services/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
 	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"

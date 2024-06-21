@@ -16,4 +16,12 @@ package MITMApplicationEmbed
 
 import "embed"
 
-var FileSystem *embed.FS
+var fileSystem *embed.FS
+
+func Set(f *embed.FS) {
+	fileSystem = f
+}
+
+func Get() *embed.FS {
+	return fileSystem
+}

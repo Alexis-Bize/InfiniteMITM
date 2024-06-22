@@ -17,6 +17,8 @@ Override the available servers by keeping only desired ones to force their selec
 -   Start the proxy server.
 -   Restart the game.
 
+**Note:** Saving the configuration will automatically create or update the `qosservers.json` file in the `<drive>:\Users\<username>\InfiniteMITM\resources\json` directory and also update your `mitm.yaml` configuration.
+
 ### Notice
 
 The returned estimated wait time may not be impacted by your changes, but the match search will be.

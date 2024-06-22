@@ -5,24 +5,19 @@ Override the available servers by keeping only desired ones to force their selec
 ## Preview
 
 <p align="center">
-    <img alt="InfiniteMITM - Server Selection" title="InfiniteMITM - Server Selection" src="./preview.png?v=1" />
+    <img alt="InfiniteMITM - Select Servers" title="InfiniteMITM - Select Servers" src="/assets/docs/select-servers-preview-1.jpg?v=1" />
 </p>
 
-## Installation
+## How to Use
 
--   Create a `resources/json` directory in `<drive>:\Users\<username>\InfiniteMITM`.
--   Download and move [`qosservers.json`](./resources/json/qosservers.json) into the `json` directory.
--   Replace available `serverUrl` by the desired ones.
--   Copy and paste the content of `mitm.yaml` into your own file, adapting it to your current configuration.
-    -   Documentation: [Use Provided Examples](/docs/Use-Provided-Examples.md)
+-   Start **InfiniteMITM**.
+-   Go to **Tools** → **Select Servers**.
+-   Wait for the ping results and make your selection.
+-   Save your configuration.
+-   Start the proxy server.
 -   Restart the game.
 
-#### ❓ Feeling confused?
-
--   A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/watch?v=LcAuWuJK5bk) on how to choose specific servers in Halo Infinite.
--   Additionally, you could also use our **Server Selection** generator to get each server's ping and choose the ones you want to prioritize.
-
-## Notice
+### Notice
 
 The returned estimated wait time may not be impacted by your changes, but the match search will be.
 

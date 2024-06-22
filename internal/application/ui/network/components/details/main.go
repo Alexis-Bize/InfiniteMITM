@@ -96,6 +96,7 @@ var (
 	ongoingString      = "Ongoing"
 	windowHeightString = "[ Please increase the window height ]"
 	copiedString       = "✓ Copied"
+	switchString       = "Tab ↹: Switch"
 
 	copyUrlString      = fmt.Sprintf("%s: Copy URL to clipboard", CopyUrlCommand)
 )
@@ -294,7 +295,7 @@ func (m DetailsModel) View() string {
 					lipgloss.NewStyle().
 						MarginLeft(2).
 						Foreground(theme.ColorGrey).
-						Render("Tab ↹: Switch"),
+						Render(switchString),
 				),
 				lipgloss.NewStyle().
 					Padding(1, 2).

@@ -31,6 +31,7 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 
 -   [Install Root Certificate](/docs/Install-Root-Certificate.md)
 -   [Override Requests](/docs/Override-Requests.md)
+-   [Select Servers](/docs/Select-Servers.md)
 -   [Force Kill Proxy](/docs/Force-Kill-Proxy.md)
 -   [Use Provided Examples](/docs/Use-Provided-Examples.md)
 -   [Commands (Pre-Handlers)](/docs/Commands.md)
@@ -44,9 +45,9 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 
 ## Examples (Snippet)
 
--   [Server Selection](/examples/server-selection)
 -   [Watch Film Override](/examples/watch-film-override)
 -   [Flags Override](/examples/flags-override)
+-   [Surasia 🐱](/examples/surasia)
 
 ## But Why Not Fiddler?
 

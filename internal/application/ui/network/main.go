@@ -15,8 +15,6 @@
 package MITMApplicationNetworkUI
 
 import (
-	"fmt"
-	"infinite-mitm/configs"
 	events "infinite-mitm/internal/application/services/events"
 	details "infinite-mitm/internal/application/ui/network/components/details"
 	traffic "infinite-mitm/internal/application/ui/network/components/details/traffic"
@@ -123,7 +121,7 @@ func (m *model) setActiveElement(key activeKeyType) {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.SetWindowTitle(fmt.Sprintf("%s: %s", configs.GetConfig().Name, "Proxy"))
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

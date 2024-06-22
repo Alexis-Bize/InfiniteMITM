@@ -48,6 +48,10 @@ func init() {
 	}
 }
 
+func GetRootPath() string {
+	return projectDir
+}
+
 func GetDirPaths() map[string]string {
 	return dirPaths
 }

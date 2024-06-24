@@ -59,7 +59,7 @@ func Run() {
 	)
 
 	huh.NewSelect[string]().
-		Title("Credits:").
+		Title("🤝 Credits").
 		Options(options...).
 		Value(&selected).
 		WithTheme(theme.ThemeMITM()).

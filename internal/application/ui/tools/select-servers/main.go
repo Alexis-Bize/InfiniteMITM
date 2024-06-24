@@ -62,7 +62,7 @@ var program *tea.Program
 var servers selectServersTool.QOSServers
 
 var (
-	serversHeadlineString = "Select Servers:"
+	serversHeadlineString = "🌎 Select Servers"
 	pingFailString        = "FAIL"
 	waitingString         = "Please wait..."
 	savingString          = "Saving..."

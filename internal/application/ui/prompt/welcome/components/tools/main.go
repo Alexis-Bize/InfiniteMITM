@@ -64,7 +64,7 @@ func Run() {
 	)
 
 	huh.NewSelect[string]().
-		Title("Tools:").
+		Title("🛠️ Tools").
 		Options(options...).
 		Value(&selected).
 		WithTheme(theme.ThemeMITM()).

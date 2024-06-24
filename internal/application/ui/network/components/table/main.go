@@ -17,7 +17,6 @@ package MITMApplicationNetworkUITableComponent
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"infinite-mitm/pkg/theme"
 
@@ -32,7 +31,7 @@ type TableModel struct {
 
 	tableModel table.Model
 
-	rowPositionIDMap *map[string]int
+	rowPositionIDMap map[string]int
 	focused   bool
 }
 
@@ -51,16 +50,14 @@ type TableRowPushMsg   tableRowEvent
 type TableRowUpdateMsg tableRowEvent
 
 const (
-	pruneRowsCommand = "ctrl+r"
+	PruneRowsCommand = "ctrl+r"
 )
-
-var rowAssignMutex = &sync.RWMutex{}
 
 func NewNetworkModel(height int) TableModel {
 	m := TableModel{
 		height: height,
 		tableModel: table.New(),
-		rowPositionIDMap: &map[string]int{},
+		rowPositionIDMap: map[string]int{},
 		focused: true,
 	}
 
@@ -113,38 +110,23 @@ func (m TableModel) GetSelectedRowData() table.Row {
 }
 
 func (m TableModel) GetRowPosition(id string) int {
-	rowAssignMutex.RLock()
-	defer rowAssignMutex.RUnlock()
-
-	position, exists := (*m.rowPositionIDMap)[id]
-	if !exists {
+	position, exists := m.rowPositionIDMap[id]; if !exists {
 		return -1
 	}
 
 	return position
 }
 
-func (m TableModel) GetRowPositionMap() *map[string]int {
+func (m TableModel) GetRowPositionMap() map[string]int {
 	return m.rowPositionIDMap
 }
 
 func (m TableModel) getNextRowPosition() int {
-	rowAssignMutex.Lock()
-	defer rowAssignMutex.Unlock()
-	return len(*m.rowPositionIDMap) + 1
+	return len(m.rowPositionIDMap) + 1
 }
 
-func (m TableModel) assignRowPosition(id string, position int) {
-	rowAssignMutex.Lock()
-	defer rowAssignMutex.Unlock()
-	(*m.rowPositionIDMap)[id] = position
-}
-
-func (m TableModel) pruneRows() {
-	rowAssignMutex.Lock()
-	defer rowAssignMutex.Unlock()
-
-	m.rowPositionIDMap = &map[string]int{}
+func (m *TableModel) pruneRows() {
+	m.rowPositionIDMap = map[string]int{}
 	m.tableModel.SetRows([]table.Row{})
 }
 
@@ -201,7 +183,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			contentType = strings.Split(msg.ContentType, ";")[0]
 		}
 
-		m.assignRowPosition(msg.ID, position)
+		m.rowPositionIDMap[msg.ID] = position
 		m.tableModel.SetRows(append(m.tableModel.Rows(), table.Row([]string{
 			msg.Prefix,
 			fmt.Sprintf("%d", position),
@@ -229,7 +211,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.ready && m.focused {
 			switch msg.String() {
-			case pruneRowsCommand:
+			case PruneRowsCommand:
 				m.pruneRows()
 			}
 		}

@@ -42,7 +42,7 @@ A big thanks to **xGHarp** for their [fantastic video](https://www.youtube.com/w
 
 -   Documentation: [SmartCache](/docs/SmartCache.md)
 
-## Examples (Snippet)
+## Examples
 
 -   [Watch Film Override](/examples/watch-film-override)
 -   [Flags Override](/examples/flags-override)

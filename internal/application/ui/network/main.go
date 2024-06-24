@@ -56,12 +56,23 @@ const (
 	DetailsElementKey activeKeyType = "details"
 )
 
-var program *tea.Program
-var networkDataMutex = &sync.Mutex{}
-var networkData = &networkDataType{
-	Requests:  make(map[string]*eventsService.ProxyRequestEventData),
-	Responses: make(map[string]*eventsService.ProxyResponseEventData),
-}
+const (
+	QuitCommand  = "q"
+	StopCommand  = "ctrl+c"
+	EnterCommand = "enter"
+)
+var (
+	once    sync.Once
+	program *tea.Program
+)
+
+var (
+	networkDataMutex = &sync.Mutex{}
+	networkData = networkDataType{
+		Requests:  make(map[string]*eventsService.ProxyRequestEventData),
+		Responses: make(map[string]*eventsService.ProxyResponseEventData),
+	}
+)
 
 func Create() {
 	width, height := sysutilities.GetTerminalSize()
@@ -79,28 +90,30 @@ func Create() {
 
 	m.networkTableModel.Focus()
 
-	event.On(eventsService.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-		details := e.Data()["details"].(string)
-		data := eventsService.ParseRequestEventData(details)
-		pushNetworkData(data)
+	once.Do(func() {
+		event.On(eventsService.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+			details := e.Data()["details"].(string)
+			data := eventsService.ParseRequestEventData(details)
+			go pushNetworkData(data)
 
-		return nil
-	}), event.Normal)
+			return nil
+		}), event.Normal)
 
-	event.On(eventsService.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
-		details := e.Data()["details"].(string)
-		data := eventsService.ParseResponseEventData(details)
-		updateNetworkData(data)
+		event.On(eventsService.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+			details := e.Data()["details"].(string)
+			data := eventsService.ParseResponseEventData(details)
+			go updateNetworkData(data)
 
-		return nil
-	}), event.Normal)
+			return nil
+		}), event.Normal)
 
-	event.On(eventsService.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
-		details := e.Data()["details"].(string)
-		updateStatusBar(details)
+		event.On(eventsService.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
+			details := e.Data()["details"].(string)
+			go updateStatusBar(details)
 
-		return nil
-	}), event.Normal)
+			return nil
+		}), event.Normal)
+	})
 
 	program = tea.NewProgram(m)
 	if _, err := program.Run(); err != nil {
@@ -141,12 +154,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		sysutilities.ClearTerminal()
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q":
+		case QuitCommand:
+			if m.activeElement == NetworkElementKey {
+				sysutilities.ClearTerminal()
+				return m, tea.Quit
+			}
+
 			m.setActiveElement(NetworkElementKey)
 			return m, tea.Batch(cmds...)
-		case "ctrl+c":
+		case StopCommand:
+			sysutilities.ClearTerminal()
 			return m, tea.Quit
-		case "enter":
+		case EnterCommand:
 			if m.activeElement != NetworkElementKey {
 				break
 			}
@@ -157,36 +176,39 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			selectedRowPositionID := rowData[1]
+			rowPositionMap := m.networkTableModel.GetRowPositionMap()
 
-			for v, k := range *m.networkTableModel.GetRowPositionMap() {
-				if strconv.Itoa(k) == selectedRowPositionID {
-					m.networkDetailsModel.SetID(v)
-					emptyRequestData := true
-
-					if req, exists := networkData.Requests[v]; exists {
-						m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
-						trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
-						m.networkDetailsModel.SetRequestTrafficData(&trafficData)
-						emptyRequestData = false
-					}
-
-					if resp, exists := networkData.Responses[v]; exists {
-						m.networkDetailsModel.SetResponseStatusCode(resp.Status)
-						trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
-						m.networkDetailsModel.SetResponseTrafficData(&trafficData)
-
-						if emptyRequestData {
-							m.networkDetailsModel.SetRequestInfo(resp.URL, resp.Method)
-							m.networkDetailsModel.SetRequestTrafficData(&traffic.TrafficData{Dummy: true})
-						}
-					} else {
-						m.networkDetailsModel.SetResponseStatusCode(0)
-						m.networkDetailsModel.SetResponseTrafficData(&traffic.TrafficData{})
-					}
-
-					m.setActiveElement(DetailsElementKey)
-					break
+			for v, k := range rowPositionMap {
+				if strconv.Itoa(k) != selectedRowPositionID {
+					continue
 				}
+
+				m.networkDetailsModel.SetID(v)
+				emptyRequestData := true
+
+				if req, exists := networkData.Requests[v]; exists {
+					m.networkDetailsModel.SetRequestInfo(req.URL, req.Method)
+					trafficData := traffic.TrafficData{Headers: req.Headers, Body: req.Body}
+					m.networkDetailsModel.SetRequestTrafficData(&trafficData)
+					emptyRequestData = false
+				}
+
+				if resp, exists := networkData.Responses[v]; exists {
+					m.networkDetailsModel.SetResponseStatusCode(resp.Status)
+					trafficData := traffic.TrafficData{Headers: resp.Headers, Body: resp.Body}
+					m.networkDetailsModel.SetResponseTrafficData(&trafficData)
+
+					if emptyRequestData {
+						m.networkDetailsModel.SetRequestInfo(resp.URL, resp.Method)
+						m.networkDetailsModel.SetRequestTrafficData(&traffic.TrafficData{Dummy: true})
+					}
+				} else {
+					m.networkDetailsModel.SetResponseStatusCode(0)
+					m.networkDetailsModel.SetResponseTrafficData(&traffic.TrafficData{})
+				}
+
+				m.setActiveElement(DetailsElementKey)
+				break
 			}
 
 			return m, tea.Batch(cmds...)

@@ -30,6 +30,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -133,10 +134,14 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
-	go func() {
-		proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
-		proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			var resp *http.Response
+	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
+	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		var resp *http.Response
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
 
 			customCtx := context.ContextHandler(ctx)
 			customCtx.SetUserData("uuid", uuid.New().String())
@@ -155,33 +160,50 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			for _, handler := range clientRequestHandlers {
 				if handler.Match(req, ctx) {
 					req, resp = handler.Fn(req, ctx)
-					return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+					handlers.HandleRequest(trafficOptions, req, resp, ctx)
+					return
 				}
 			}
 
-			return handlers.HandleRequest(trafficOptions, req, resp, ctx)
-		})
+			handlers.HandleRequest(trafficOptions, req, resp, ctx)
+		}()
 
-		proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+		wg.Wait()
+		return req, resp
+	})
+
+	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
 			for _, handler := range clientResponseHandlers {
 				if handler.Match(resp, ctx) {
 					resp = handler.Fn(resp, ctx)
-					return handlers.HandleResponse(trafficOptions, resp, ctx)
+					handlers.HandleResponse(trafficOptions, resp, ctx)
+					return
 				}
 			}
 
-			return handlers.HandleResponse(trafficOptions, resp, ctx)
-		})
-	}()
+			handlers.HandleResponse(trafficOptions, resp, ctx)
+		}()
+
+		wg.Wait()
+		return resp
+	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
+		Addr: fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
 		Handler: proxy,
 		TLSConfig: &tls.Config{
-			RootCAs:            CACertPool,
-			Certificates:       []tls.Certificate{cert},
+			RootCAs: CACertPool,
+			Certificates: []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		},
+		ReadTimeout: -1,
+		WriteTimeout: -1,
 	}
 
 	return server, nil

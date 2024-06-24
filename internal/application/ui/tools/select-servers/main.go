@@ -48,7 +48,6 @@ const (
 	MoveUpCommand   = "up"
 	MoveDownCommand = "down"
 	SaveCommand     = "ctrl+s"
-	ResetCommand    = "ctrl+r"
 	EnterCommand    = "enter"
 	QuitCommand     = "q"
 )
@@ -236,7 +235,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.setPingForRegion(selectServersTool.PingResult(msg))
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case QuitCommand:
 			sysutilities.ClearTerminal()
 			return m, tea.Quit
 		case MoveUpCommand:

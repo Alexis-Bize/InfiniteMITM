@@ -34,10 +34,6 @@ import (
 func Init() *errors.MITMError {
 	var mitmErr *errors.MITMError
 
-	if os.Getenv("SKIP_INIT") == "true" {
-		return mitmErr
-	}
-
 	spinner.New().Title("Looking for updates...").
 		TitleStyle(lipgloss.NewStyle().
 		Foreground(theme.ColorNormalFg)).

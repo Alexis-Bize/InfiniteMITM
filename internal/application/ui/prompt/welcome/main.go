@@ -17,16 +17,12 @@ package MITMApplicationWelcomePromptUI
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	selectServersUI "infinite-mitm/internal/application/ui/tools/select-servers"
+	credits "infinite-mitm/internal/application/ui/prompt/welcome/components/credits"
+	tools "infinite-mitm/internal/application/ui/prompt/welcome/components/tools"
 	"infinite-mitm/pkg/errors"
-	"infinite-mitm/pkg/proxy"
-	"infinite-mitm/pkg/smartcache"
-	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type PromptOption int
@@ -38,38 +34,16 @@ const (
 	Tools
 	Credits
 	Exit
-	// Tools
-	PingServers
-	ForceKillProxy
-	ClearSmartCache
-	// Credits
-	Author
-	Supporter
-	GitHub
-	// Generic
-	GoBack
 )
 
 var optionToString = map[PromptOption]string{
 	// Welcome
 	Start:                  "🔒 Start Proxy Server",
 	InstallRootCertificate: "🔐 Install Root Certificate",
-	Tools:                  "🛠️ Tools [new]",
-	Credits:                "🤝 Show Credits",
+	Tools:                  "🛠️ Tools",
+	Credits:                "🤝 Credits",
 	Exit:                   "👋 Exit",
-	// Tools
-	PingServers:            "🌎 Ping Servers",
-	ForceKillProxy:         "🛑 Force Kill Proxy",
-	ClearSmartCache:        "🧹 Clear SmartCache",
-	// Credits
-	Author:                 "Made by: Zeny IC",
-	Supporter:              "Supporter: Grunt.API",
-	GitHub:                 "Source code: GitHub",
-	// Generic
-	GoBack:                 "← Go back",
 }
-
-var hasRootCertificateInstalled *bool
 
 func (d PromptOption) String() string {
 	return optionToString[d]
@@ -79,9 +53,7 @@ func (d PromptOption) Is(option string) bool {
 	return d.String() == option
 }
 
-func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
-	hasRootCertificateInstalled = &rootCertificateInstalled
-
+func Run(rootCertificateInstalled bool) (string, *errors.MITMError) {
 	var selected string
 	var options []huh.Option[string]
 
@@ -110,88 +82,12 @@ func WelcomePrompt(rootCertificateInstalled bool) (string, *errors.MITMError) {
 	}
 
 	if Tools.Is(selected) {
-		return showTools()
+		tools.Run()
+		return Run(rootCertificateInstalled)
 	} else if Credits.Is(selected) {
-		return showCredits()
+		credits.Run()
+		return Run(rootCertificateInstalled)
 	}
 
 	return selected, nil
-}
-
-func showTools() (string, *errors.MITMError) {
-	var selected string
-	var options []huh.Option[string]
-
-	options = append(
-		options,
-		huh.NewOption(PingServers.String(), PingServers.String()),
-		huh.NewOption(ForceKillProxy.String(), ForceKillProxy.String()),
-		huh.NewOption(ClearSmartCache.String(), ClearSmartCache.String()),
-		huh.NewOption(GoBack.String(), GoBack.String()),
-	)
-
-	huh.NewSelect[string]().
-		Title("Tools:").
-		Options(options...).
-		Value(&selected).
-		WithTheme(theme.ThemeMITM()).
-		Run()
-
-	if ClearSmartCache.Is(selected) {
-		spinner.New().Title("Clearing local cached files...").
-		TitleStyle(lipgloss.NewStyle().
-			Foreground(theme.ColorNormalFg)).
-			Run()
-
-		smartcache.Flush()
-		return showTools()
-	}
-
-	if ForceKillProxy.Is(selected) {
-		spinner.New().Title("Killing active proxy...").
-			TitleStyle(lipgloss.NewStyle().
-				Foreground(theme.ColorNormalFg)).
-				Run()
-
-		proxy.ToggleProxy("off")
-		return showTools()
-	}
-
-	if PingServers.Is(selected) {
-		selectServersUI.Create()
-		return showTools()
-	}
-
-	return WelcomePrompt(*hasRootCertificateInstalled)
-}
-
-func showCredits() (string, *errors.MITMError) {
-	var selected string
-	var options []huh.Option[string]
-
-	options = append(
-		options,
-		huh.NewOption(Author.String(), Author.String()),
-		huh.NewOption(Supporter.String(), Supporter.String()),
-		huh.NewOption(GitHub.String(), GitHub.String()),
-		huh.NewOption(GoBack.String(), GoBack.String()),
-	)
-
-	huh.NewSelect[string]().
-		Title("Credits:").
-		Options(options...).
-		Value(&selected).
-		WithTheme(theme.ThemeMITM()).
-		Run()
-
-	switch selected {
-	case Author.String():
-		sysutilities.OpenBrowser("https://x.com/zeny_ic")
-	case Supporter.String():
-		sysutilities.OpenBrowser("https://x.com/gruntdotapi")
-	case GitHub.String():
-		sysutilities.OpenBrowser(configs.GetConfig().Repository)
-	}
-
-	return WelcomePrompt(*hasRootCertificateInstalled)
 }

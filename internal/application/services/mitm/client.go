@@ -35,15 +35,16 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/event"
 )
 
-func WatchClientMITMConfig() {
+
+func WatchClientMITMConfig(stopChan <-chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
+
 	if err != nil {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
@@ -51,8 +52,8 @@ func WatchClientMITMConfig() {
 
 		return
 	}
-	defer watcher.Close()
 
+	defer watcher.Close()
 	err = watcher.Add(mitm.MITMConfigFilepath)
 	if err != nil {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{
@@ -64,13 +65,14 @@ func WatchClientMITMConfig() {
 
 	for {
 		select {
+		case <-stopChan:
+			return
 		case watchEvent, ok := <-watcher.Events:
 			if ok && watchEvent.Op&fsnotify.Write == fsnotify.Write {
 				event.MustFire(eventsService.ProxyStatusMessage, event.M{
 					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", mitm.ConfigFilename),
 				})
 
-				time.Sleep(time.Second * 1)
 				event.MustFire(eventsService.RestartServer, event.M{})
 			}
 		case err, ok := <-watcher.Errors:

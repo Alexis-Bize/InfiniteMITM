@@ -149,7 +149,7 @@ func WriteMITMFile() {
 
 	var updatedLobbyDomain = []domains.YAMLDomainNode{}
 	for _, config := range content.Domains.Lobby {
-		if !strings.Contains(config.Path, "/qosservers") {
+		if !strings.HasSuffix(config.Path, "/qosservers") {
 			updatedLobbyDomain = append(updatedLobbyDomain, config)
 		}
 	}
@@ -159,10 +159,8 @@ func WriteMITMFile() {
 		Methods: []string{"GET"},
 		Response: domains.YAMLDomainResponseNode{
 			Body: filePathPattern,
+			Headers: map[string]string{"content-type": pattern.MatchParameters.JSON},
 			StatusCode: 200,
-			Headers: map[string]string{
-				"content-type": pattern.MatchParameters.JSON,
-			},
 		},
 	})
 

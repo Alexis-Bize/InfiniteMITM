@@ -63,9 +63,10 @@ const (
 	defaultDuration = 7 * 24 * time.Hour
 )
 
-var RWMutex = &sync.RWMutex{}
-var fileOSMutex = &sync.Mutex{}
-var flushSmartCacheMutex = &sync.Mutex{}
+var (
+	mutexes = &sync.Map{}
+	flushSmartCacheMutex = &sync.Mutex{}
+)
 
 func init() {
 	gob.Register(http.Header{})
@@ -94,17 +95,20 @@ func Flush() {
 }
 
 func (s *SmartCache) Get(key string) *SmartCacheItem {
-	if s.strategy == Persistent {
-		fileOSMutex.Lock()
-		defer fileOSMutex.Unlock()
+	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
+	currentMutex := mutex.(*sync.Mutex)
 
+	currentMutex.Lock()
+	defer currentMutex.Unlock()
+
+	if s.strategy == Persistent {
 		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
 		file, err := os.Open(target)
 		if err != nil {
 			return nil
 		}
-		defer file.Close()
 
+		defer file.Close()
 		var item *SmartCacheItem
 		err = gob.NewDecoder(file).Decode(&item);
 		if err != nil {
@@ -118,9 +122,6 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 
 		return item
 	}
-
-	RWMutex.RLock()
-	defer RWMutex.RUnlock()
 
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
@@ -137,6 +138,12 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 }
 
 func (s *SmartCache) Write(key string, item *SmartCacheItem) {
+	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
+	currentMutex := mutex.(*sync.Mutex)
+
+	currentMutex.Lock()
+	defer currentMutex.Unlock()
+
 	item.Created = time.Now()
 	item.Expires = time.Now().Add(s.duration)
 
@@ -146,21 +153,18 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	item.Header.Del(request.CacheControlHeaderKey)
 
 	if s.strategy == Memory {
-		RWMutex.Lock()
 		s.items[key] = item
-		RWMutex.Unlock()
 		return
 	}
 
-	fileOSMutex.Lock()
-	defer fileOSMutex.Unlock()
-
 	target := filepath.Join(resources.GetSmartCacheDirPath(), key)
-	file, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-	if err == nil {
-		defer file.Close()
-		gob.NewEncoder(file).Encode(item)
+	file, err := os.Open(target)
+	if err != nil {
+		return
 	}
+
+	defer file.Close()
+	gob.NewEncoder(file).Encode(item)
 }
 
 func (s *SmartCache) isExpired(item *SmartCacheItem) bool {

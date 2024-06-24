@@ -70,7 +70,7 @@ var (
 
 	toggleHintString      = "Enter ↵: Select/Unselect"
 	moveHintString        = "↑/↓: Move"
-	resetHintString       = "Saving an empty selection will restore the default list of servers."
+	resetHintString       = "Saving an empty selection will restore the default servers list."
 
 	quitString            = fmt.Sprintf("%s: Quit", QuitCommand)
 	saveString            = fmt.Sprintf("%s: Save to %s", SaveCommand, resources.GetRootPath())

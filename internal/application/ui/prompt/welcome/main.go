@@ -40,7 +40,7 @@ var optionToString = map[PromptOption]string{
 	// Welcome
 	Start:                  "🔒 Start Proxy Server",
 	InstallRootCertificate: "🔐 Install Root Certificate",
-	Tools:                  "🛠️ Show Tools",
+	Tools:                  "🧰 Show Tools",
 	Credits:                "🤝 Show Credits",
 	Exit:                   "👋 Quit",
 }

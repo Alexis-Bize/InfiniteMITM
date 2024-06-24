@@ -7,7 +7,7 @@
 ## How to Select Your Servers
 
 -   Start **InfiniteMITM**.
--   **🛠️ Show Tools** → **🌎 Select Servers**.
+-   **🧰 Show Tools** → **🌎 Select Servers**.
 -   Wait for the ping results and make your selection.
 -   Save your configuration.
 -   Start the proxy server.

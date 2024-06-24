@@ -16,7 +16,6 @@ package MITMApplicationWelcomePromptUICreditsComponent
 
 import (
 	"infinite-mitm/configs"
-	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 
@@ -47,7 +46,7 @@ func (d PromptOption) Is(option string) bool {
 	return d.String() == option
 }
 
-func Run() *errors.MITMError {
+func Run() {
 	var selected string
 	var options []huh.Option[string]
 
@@ -69,14 +68,9 @@ func Run() *errors.MITMError {
 	switch selected {
 	case Author.String():
 		sysutilities.OpenBrowser("https://x.com/zeny_ic")
-		return Run()
 	case Supporter.String():
 		sysutilities.OpenBrowser("https://x.com/gruntdotapi")
-		return Run()
 	case GitHub.String():
 		sysutilities.OpenBrowser(configs.GetConfig().Repository)
-		return Run()
 	}
-
-	return nil
 }

@@ -16,7 +16,6 @@ package MITMApplicationWelcomePromptUIToolsComponent
 
 import (
 	selectServersUI "infinite-mitm/internal/application/ui/tools/select-servers"
-	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/smartcache"
 	"infinite-mitm/pkg/theme"
@@ -52,7 +51,7 @@ func (d PromptOption) Is(option string) bool {
 	return d.String() == option
 }
 
-func Run() *errors.MITMError {
+func Run() {
 	var selected string
 	var options []huh.Option[string]
 
@@ -78,23 +77,14 @@ func Run() *errors.MITMError {
 			Run()
 
 		smartcache.Flush()
-		return Run()
-	}
-
-	if ForceKillProxy.Is(selected) {
+	} else if ForceKillProxy.Is(selected) {
 		spinner.New().Title("Killing active proxy...").
 			TitleStyle(lipgloss.NewStyle().
 				Foreground(theme.ColorNormalFg)).
 				Run()
 
 		proxy.ToggleProxy("off")
-		return Run()
-	}
-
-	if SelectServers.Is(selected) {
+	} else if SelectServers.Is(selected) {
 		selectServersUI.Create()
-		return Run()
 	}
-
-	return nil
 }

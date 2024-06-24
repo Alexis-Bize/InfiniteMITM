@@ -17,7 +17,7 @@ package MITMApplicationWelcomePromptUI
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	sscg "infinite-mitm/internal/application/ui/tools/sscg"
+	selectServersUI "infinite-mitm/internal/application/ui/tools/select-servers"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/smartcache"
@@ -158,7 +158,7 @@ func showTools() (string, *errors.MITMError) {
 	}
 
 	if PingServers.Is(selected) {
-		sscg.Create()
+		selectServersUI.Create()
 		return showTools()
 	}
 

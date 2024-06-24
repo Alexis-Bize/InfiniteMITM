@@ -15,7 +15,7 @@
 package MITMApplicationNetworkUI
 
 import (
-	events "infinite-mitm/internal/application/services/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	details "infinite-mitm/internal/application/ui/network/components/details"
 	traffic "infinite-mitm/internal/application/ui/network/components/details/traffic"
 	status "infinite-mitm/internal/application/ui/network/components/status"
@@ -47,8 +47,8 @@ type model struct {
 }
 
 type networkDataType struct {
-	Requests  map[string]*events.ProxyRequestEventData
-	Responses map[string]*events.ProxyResponseEventData
+	Requests  map[string]*eventsService.ProxyRequestEventData
+	Responses map[string]*eventsService.ProxyResponseEventData
 }
 
 const (
@@ -59,8 +59,8 @@ const (
 var program *tea.Program
 var networkDataMutex = &sync.Mutex{}
 var networkData = &networkDataType{
-	Requests:  make(map[string]*events.ProxyRequestEventData),
-	Responses: make(map[string]*events.ProxyResponseEventData),
+	Requests:  make(map[string]*eventsService.ProxyRequestEventData),
+	Responses: make(map[string]*eventsService.ProxyResponseEventData),
 }
 
 func Create() {
@@ -79,23 +79,23 @@ func Create() {
 
 	m.networkTableModel.Focus()
 
-	event.On(events.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
+	event.On(eventsService.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
 		details := e.Data()["details"].(string)
-		data := events.ParseRequestEventData(details)
+		data := eventsService.ParseRequestEventData(details)
 		pushNetworkData(data)
 
 		return nil
 	}), event.Normal)
 
-	event.On(events.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
+	event.On(eventsService.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
 		details := e.Data()["details"].(string)
-		data := events.ParseResponseEventData(details)
+		data := eventsService.ParseResponseEventData(details)
 		updateNetworkData(data)
 
 		return nil
 	}), event.Normal)
 
-	event.On(events.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
+	event.On(eventsService.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
 		details := e.Data()["details"].(string)
 		updateStatusBar(details)
 
@@ -225,7 +225,7 @@ func (m model) View() string {
 		))
 }
 
-func pushNetworkData(data events.ProxyRequestEventData) {
+func pushNetworkData(data eventsService.ProxyRequestEventData) {
 	networkDataMutex.Lock()
 	networkData.Requests[data.ID] = &data
 	networkDataMutex.Unlock()
@@ -257,7 +257,7 @@ func pushNetworkData(data events.ProxyRequestEventData) {
 	}))
 }
 
-func updateNetworkData(data events.ProxyResponseEventData) {
+func updateNetworkData(data eventsService.ProxyResponseEventData) {
 	networkDataMutex.Lock()
 	networkData.Responses[data.ID] = &data
 	networkDataMutex.Unlock()

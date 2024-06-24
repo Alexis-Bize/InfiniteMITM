@@ -34,33 +34,33 @@ type Domains struct {
 }
 
 type YAMLDomains struct {
-	Root      []YAMLDomainNode `yaml:"root"`
-	Blobs     []YAMLDomainNode `yaml:"blobs"`
-	Authoring []YAMLDomainNode `yaml:"authoring"`
-	Discovery []YAMLDomainNode `yaml:"discovery"`
-	HaloStats []YAMLDomainNode `yaml:"stats"`
-	Settings  []YAMLDomainNode `yaml:"settings"`
-	GameCMS   []YAMLDomainNode `yaml:"gamecms"`
-	Economy   []YAMLDomainNode `yaml:"economy"`
-	Lobby     []YAMLDomainNode `yaml:"lobby"`
-	Skill     []YAMLDomainNode `yaml:"skill"`
+	Root      []YAMLDomainNode `yaml:"root,omitempty"`
+	Blobs     []YAMLDomainNode `yaml:"blobs,omitempty"`
+	Authoring []YAMLDomainNode `yaml:"authoring,omitempty"`
+	Discovery []YAMLDomainNode `yaml:"discovery,omitempty"`
+	HaloStats []YAMLDomainNode `yaml:"stats,omitempty"`
+	Settings  []YAMLDomainNode `yaml:"settings,omitempty"`
+	GameCMS   []YAMLDomainNode `yaml:"gamecms,omitempty"`
+	Economy   []YAMLDomainNode `yaml:"economy,omitempty"`
+	Lobby     []YAMLDomainNode `yaml:"lobby,omitempty"`
+	Skill     []YAMLDomainNode `yaml:"skill,omitempty"`
 }
 
 type YAMLDomainNode struct {
 	Path     string   `yaml:"path"`
-	Methods  []string `yaml:"methods"`
-	Request  YAMLDomainRequestNode `yaml:"request"`
-	Response YAMLDomainResponseNode `yaml:"response"`
+	Methods  []string `yaml:"methods,omitempty"`
+	Request  YAMLDomainRequestNode `yaml:"request,omitempty"`
+	Response YAMLDomainResponseNode `yaml:"response,omitempty"`
 }
 
 type YAMLDomainRequestNode struct {
-	Body    string `yaml:"body"`
-	Headers map[string]string `yaml:"headers"`
-	Before  YAMLDomainTrafficCommands `yaml:"before"`
+	Body    string `yaml:"body,omitempty"`
+	Headers map[string]string `yaml:"headers,omitempty"`
+	Before  YAMLDomainTrafficCommands `yaml:"before,omitempty"`
 }
 
 type YAMLDomainTrafficCommands struct {
-	Commands []YAMLDomainTrafficRunCommand `yaml:"commands"`
+	Commands []YAMLDomainTrafficRunCommand `yaml:"commands,omitempty"`
 }
 
 type YAMLDomainTrafficRunCommand struct {
@@ -68,10 +68,10 @@ type YAMLDomainTrafficRunCommand struct {
 }
 
 type YAMLDomainResponseNode struct {
-	Body       string `yaml:"body"`
-	Headers    map[string]string `yaml:"headers"`
-	StatusCode int `yaml:"code"`
-	Before     YAMLDomainTrafficCommands `yaml:"before"`
+	Body       string `yaml:"body,omitempty"`
+	Headers    map[string]string `yaml:"headers,omitempty"`
+	StatusCode int `yaml:"code,omitempty"`
+	Before     YAMLDomainTrafficCommands `yaml:"before,omitempty"`
 }
 
 type YAMLContentDomainPair struct {
@@ -137,6 +137,6 @@ func DomainToHostname(domain DomainType) string {
 	return strings.Split(domain, ":")[0]
 }
 
-func DomainToBaseUrl(domain DomainType) string {
+func DomainToBaseURL(domain DomainType) string {
 	return fmt.Sprintf("https://%s", DomainToHostname(domain))
 }

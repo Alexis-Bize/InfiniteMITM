@@ -16,9 +16,9 @@ package MITMApplicationMITMServiceHandlers
 
 import (
 	"bytes"
-	events "infinite-mitm/internal/application/services/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
 	"io"
@@ -28,7 +28,7 @@ import (
 	"github.com/gookit/event"
 )
 
-func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 	if req.Method == http.MethodOptions {
 		return req, resp
 	}
@@ -53,9 +53,9 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
 
-	if options.TrafficDisplay == traffic.TrafficOverrides && !isProxified && smartCache == nil {
+	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
 		return req, resp
-	} else if options.TrafficDisplay == traffic.TrafficSmartCache && smartCache == nil {
+	} else if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
 		return req, resp
 	}
 
@@ -75,12 +75,12 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 		))
 	}
 
-	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
-		options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
+	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
+		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
+		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
 
 	if shouldDispatch {
-		details := events.StringifyRequestEventData(events.ProxyRequestEventData{
+		details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
 			ID: uuid,
 			URL: req.URL.String(),
 			Method: req.Method,
@@ -90,7 +90,7 @@ func HandleRequest(options traffic.TrafficOptions, req *http.Request, resp *http
 			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
 		})
 
-		event.MustFire(events.ProxyRequestSent, event.M{"details": details})
+		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
 	}
 
 	if smartCachedItem != nil {

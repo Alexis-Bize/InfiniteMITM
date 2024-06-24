@@ -39,7 +39,7 @@ type DetailsModel struct {
 
 	trafficID     string
 	requestMethod string
-	requestUrl    string
+	requestURL    string
 
 	responseStatusCode  int
 
@@ -105,7 +105,7 @@ func NewDetailsModel(id string, method string, url string, width int, height int
 	m := DetailsModel{
 		trafficID: id,
 		requestMethod: method,
-		requestUrl: url,
+		requestURL: url,
 		requestTrafficModel: traffic.NewTrafficDetailsModel(width, 12),
 		responseTrafficModel: traffic.NewTrafficDetailsModel(width, 12),
 		activeTab: RequestTabKey,
@@ -146,12 +146,12 @@ func (m *DetailsModel) SetHeight(height int) {
 }
 
 func (m *DetailsModel) SetRequestTrafficData(data *traffic.TrafficData) {
-	data.URL = m.requestUrl
+	data.URL = m.requestURL
 	m.requestTrafficModel.SetTrafficData(data)
 }
 
 func (m *DetailsModel) SetResponseTrafficData(data *traffic.TrafficData) {
-	data.URL = m.requestUrl
+	data.URL = m.requestURL
 	m.responseTrafficModel.SetTrafficData(data)
 }
 
@@ -159,8 +159,8 @@ func (m *DetailsModel) SetID(trafficID string) {
 	m.trafficID = trafficID
 }
 
-func (m *DetailsModel) SetRequestInfo(requestUrl string, requestMethod string) {
-	m.requestUrl = requestUrl
+func (m *DetailsModel) SetRequestInfo(requestURL string, requestMethod string) {
+	m.requestURL = requestURL
 	m.requestMethod = requestMethod
 }
 
@@ -202,7 +202,7 @@ func (m *DetailsModel) switchActiveTab() {
 
 func (m *DetailsModel) copyToClipboard() {
 	m.setCopyPress(true)
-	sysutilities.CopyToClipboard(request.StripPort(m.requestUrl))
+	sysutilities.CopyToClipboard(request.StripPort(m.requestURL))
 }
 
 func (m DetailsModel) Update(msg tea.Msg) (DetailsModel, tea.Cmd) {
@@ -256,7 +256,7 @@ func (m DetailsModel) View() string {
 	var tabs []string
 
 	if m.height > 15 {
-		url := request.StripPort(m.requestUrl)
+		url := request.StripPort(m.requestURL)
 		method := lipgloss.NewStyle().Bold(true).Render(m.requestMethod)
 		statusCode := m.responseStatusCode
 		statusText := http.StatusText(statusCode)

@@ -81,8 +81,8 @@ func isNewVersionAvailable(currentVersion, latestVersion string) (bool, error) {
 }
 
 func extractOwnerAndRepo() (string, string) {
-	githubUrl := configs.GetConfig().Repository
-	u, err := url.Parse(githubUrl)
+	githubURL := configs.GetConfig().Repository
+	u, err := url.Parse(githubURL)
 	if err != nil {
 		return "", ""
 	}

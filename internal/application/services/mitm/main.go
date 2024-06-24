@@ -20,12 +20,12 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/services/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
 	"regexp"
@@ -66,8 +66,8 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	proxy.Verbose = false
 	proxy.Logger = emptyLogger{}
 
-	content, mitmErr := ReadClientMITMConfig(); if mitmErr != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 	}
 
 	if mitmErr == nil {
@@ -102,10 +102,10 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			}
 		}
 
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
 				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
-				YAMLFilename,
+				mitm.ConfigFilename,
 				content.Options.TrafficDisplay,
 				smartCacheText,
 				totalClientHandlersCount,
@@ -129,7 +129,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		)
 	}
 
-	trafficOptions := traffic.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
+	trafficOptions := mitm.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
 	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 

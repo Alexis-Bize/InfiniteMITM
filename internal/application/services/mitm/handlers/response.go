@@ -16,9 +16,9 @@ package MITMApplicationMITMServiceHandlers
 
 import (
 	"bytes"
-	events "infinite-mitm/internal/application/services/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
 	"io"
@@ -28,7 +28,7 @@ import (
 	"github.com/gookit/event"
 )
 
-func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
+func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
 	if resp.Request.Method == http.MethodOptions {
 		return resp
 	}
@@ -55,9 +55,9 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
 
-	if options.TrafficDisplay == traffic.TrafficOverrides && !isProxified && smartCache == nil {
+	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
 		return resp
-	} else if options.TrafficDisplay == traffic.TrafficSmartCache && smartCache == nil {
+	} else if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
 		return resp
 	}
 
@@ -96,12 +96,12 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		}
 	}
 
-	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
-		options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
+	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
+		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
+		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
 
 	if shouldDispatch {
-		details := events.StringifyResponseEventData(events.ProxyResponseEventData{
+		details := eventsService.StringifyResponseEventData(eventsService.ProxyResponseEventData{
 			ID: uuid,
 			URL: resp.Request.URL.String(),
 			Method: resp.Request.Method,
@@ -112,7 +112,7 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 			SmartCached: !isProxified && smartCache != nil,
 		})
 
-		event.MustFire(events.ProxyResponseReceived, event.M{"details": details})
+		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})
 	}
 
 	return resp

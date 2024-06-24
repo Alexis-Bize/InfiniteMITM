@@ -17,8 +17,8 @@ package MITMApplication
 import (
 	"fmt"
 	"infinite-mitm/configs"
-	mitm "infinite-mitm/internal/application/services/mitm"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"

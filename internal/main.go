@@ -22,18 +22,17 @@ import (
 	"sync"
 
 	"infinite-mitm/configs"
-	application "infinite-mitm/internal/application"
+	mitmApplication "infinite-mitm/internal/application"
 	embedFS "infinite-mitm/internal/application/embed"
-	events "infinite-mitm/internal/application/services/events"
-	mitm "infinite-mitm/internal/application/services/mitm"
-	kill "infinite-mitm/internal/application/services/signal/kill"
-	network "infinite-mitm/internal/application/ui/network"
-	prompt "infinite-mitm/internal/application/ui/prompt/welcome"
+	eventsService "infinite-mitm/internal/application/services/events"
+	mitmService "infinite-mitm/internal/application/services/mitm"
+	killService "infinite-mitm/internal/application/services/signal/kill"
+	networkUI "infinite-mitm/internal/application/ui/network"
+	welcomePromptUI "infinite-mitm/internal/application/ui/prompt/welcome"
+	selectServersUI "infinite-mitm/internal/application/ui/tools/select-servers"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/sysutilities"
-
-	sscg "infinite-mitm/internal/application/ui/tools/sscg"
 
 	"github.com/gookit/event"
 )
@@ -47,7 +46,7 @@ func Start(f *embed.FS) *errors.MITMError {
 	var mitmErr *errors.MITMError
 	certInstalled := true
 
-	if mitmErr := application.Init(); mitmErr != nil {
+	if mitmErr := mitmApplication.Init(); mitmErr != nil {
 		if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
 			return mitmErr
 		}
@@ -55,21 +54,21 @@ func Start(f *embed.FS) *errors.MITMError {
 		certInstalled = false
 	}
 
-	sscg.Create()
+	selectServersUI.Create()
 	return nil
 
-	option, mitmErr := prompt.WelcomePrompt(certInstalled)
+	option, mitmErr := welcomePromptUI.WelcomePrompt(certInstalled)
 	if mitmErr != nil {
 		return mitmErr
 	}
 
-	if prompt.Start.Is(option) {
+	if welcomePromptUI.Start.Is(option) {
 		var wg sync.WaitGroup
 		wg.Add(4)
 
 		go func() {
 			defer wg.Done()
-			network.Create()
+			networkUI.Create()
 			sysutilities.KillProcess()
 		}()
 
@@ -81,18 +80,18 @@ func Start(f *embed.FS) *errors.MITMError {
 
 		go func() {
 			defer wg.Done()
-			mitm.WatchClientMITMConfig()
+			mitmService.WatchClientMITMConfig()
 		}()
 
 		wg.Wait()
-	} else if prompt.InstallRootCertificate.Is(option) {
+	} else if welcomePromptUI.InstallRootCertificate.Is(option) {
 		if runtime.GOOS == "windows" {
 			sysutilities.InstallRootCertificate(f, fmt.Sprintf("%s.cer", configs.GetConfig().Proxy.Certificate.Name))
 			return Start(f)
 		}
 
 		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
-	} else if prompt.Exit.Is(option) {
+	} else if welcomePromptUI.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()
 		}
@@ -103,7 +102,7 @@ func Start(f *embed.FS) *errors.MITMError {
 }
 
 func enableProxy() {
-	kill.Register(func() {
+	killService.Register(func() {
 		proxy.ToggleProxy("off")
 	})
 
@@ -113,16 +112,16 @@ func enableProxy() {
 }
 
 func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
-	s, mitmErr := mitm.CreateServer(f)
+	s, mitmErr := mitmService.CreateServer(f)
 	if mitmErr != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 		return
 	}
 
 	server = s
 
 	if !isRestart {
-		event.On(events.RestartServer, event.ListenerFunc(func(e event.Event) error {
+		event.On(eventsService.RestartServer, event.ListenerFunc(func(e event.Event) error {
 			restartServer(f, wg)
 			return nil
 		}))
@@ -130,7 +129,7 @@ func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
 
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
+			event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": err.Error()})
 		}
 	}
 }

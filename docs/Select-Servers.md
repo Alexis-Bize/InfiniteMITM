@@ -4,7 +4,7 @@
     <img alt="InfiniteMITM - Select Servers" title="InfiniteMITM - Select Servers" src="/assets/docs/select-servers-preview-1.jpg?v=1" />
 </p>
 
-## How to Use
+## How to Select Your Servers
 
 -   Start **InfiniteMITM**.
 -   Go to **Tools** → **Select Servers**.
@@ -14,6 +14,10 @@
 -   Restart the game.
 
 **Note:** Saving the configuration will automatically create or update the `qosservers.json` file in the `<drive>:\Users\<username>\InfiniteMITM\resources\json` directory and also update your `mitm.yaml` configuration.
+
+### How Does It Work?
+
+In Halo Infinite, you can't manually choose your server. However, this specific feature will allow the game to prioritize certain servers by changing their URLs. It assigns the URLs of the selected servers to those with the lowest ping and sets the URLs of non-selected servers to those with the highest ping. This effectively tricks the game into searching for the selected servers, even if they are far from your current location.
 
 ## Server Regions and URLs
 

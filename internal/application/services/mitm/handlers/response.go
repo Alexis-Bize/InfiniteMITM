@@ -39,8 +39,9 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		return resp
 	}
 
+	smartCached := resp.Header.Get(request.MITMCacheHeaderKey) == request.MITMCacheHeaderHitValue
 	proxified := customCtx.GetUserData("proxified").(map[string]bool)
-	isProxified := proxified["resp"]
+	isProxified := !smartCached && proxified["resp"]
 
 	if isProxified {
 		resp.Header.Set(request.MITMProxyHeaderKey, request.MITMProxyEnabledValue)
@@ -51,7 +52,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 
 	var smartCache *smartcache.SmartCache
 	cacheCtx := customCtx.GetUserData("cache")
-	if cacheCtx != nil {
+	if !isProxified && cacheCtx != nil {
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
 
@@ -65,7 +66,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 	var smartCachedItem *smartcache.SmartCacheItem
 	var smartCacheKey string
 
-	if smartCache != nil && !isProxified {
+	if !smartCached && smartCache != nil {
 		smartCacheKey = smartCache.CreateKey(
 			request.StripPort(resp.Request.URL.String()),
 			resp.Request.Header.Get("Accept"),
@@ -81,15 +82,11 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		bodyBytes, _ = io.ReadAll(resp.Body)
 	}
 
-	if smartCache != nil {
-		if smartCachedItem == nil {
-			isSmartCachable := !isProxified && resp.StatusCode >= 200 && resp.StatusCode < 300
-			if isSmartCachable {
-				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
-			}
-		} else {
-			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
+	if !smartCached && smartCache != nil && smartCachedItem == nil {
+		isSmartCachable := resp.StatusCode >= 200 && resp.StatusCode < 300
+		if isSmartCachable {
+			smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
+			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
 		}
 	}
 
@@ -107,7 +104,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 			Headers: headersMap,
 			Body: bodyBytes,
 			Proxified: isProxified,
-			SmartCached: !isProxified && smartCache != nil,
+			SmartCached: smartCached || (!isProxified && smartCache != nil),
 		})
 
 		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})

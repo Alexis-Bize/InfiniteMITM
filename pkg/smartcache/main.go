@@ -60,7 +60,7 @@ const (
 )
 
 const (
-	version = 1
+	version = 2
 	defaultDuration = 7 * 24 * time.Hour
 )
 
@@ -121,16 +121,21 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 			return nil
 		}
 
+		since := time.Since(item.Created)
+		seconds := int(since.Seconds())
+
+		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
+		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+
 		return item
 	}
 
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
+		since := time.Since(item.Created)
+		seconds := int(since.Seconds())
+
+		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
-		if item.Created != (time.Time{}) {
-			since := time.Since(item.Created)
-			seconds := int(since.Seconds())
-			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
-		}
 
 		return item
 	}
@@ -148,6 +153,7 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	item.Created = time.Now()
 	item.Expires = time.Now().Add(s.duration)
 
+	item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 	item.Header.Set(request.ExpiresHeaderKey, item.Expires.Format(time.RFC1123))
 	item.Header.Set(request.DateHeaderKey, item.Created.Format(time.RFC1123))
 	item.Header.Set(request.AgeHeaderKey, "0")

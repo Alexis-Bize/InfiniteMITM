@@ -49,7 +49,7 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 
 	var smartCache *smartcache.SmartCache
 	cacheCtx := customCtx.GetUserData("cache")
-	if cacheCtx != nil {
+	if !isProxified && cacheCtx != nil {
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
 
@@ -66,14 +66,25 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 
 	var smartCachedItem *smartcache.SmartCacheItem
 
-	if smartCache != nil && !isProxified {
-		smartCacheKey := smartCache.CreateKey(
+	if smartCache != nil {
+		smartCachedItem = smartCache.Get(smartCache.CreateKey(
 			request.StripPort(req.URL.String()),
 			req.Header.Get("Accept"),
 			req.Header.Get("Accept-Language"),
-		)
+		))
 
-		smartCachedItem = smartCache.Get(smartCacheKey)
+		if smartCachedItem != nil {
+			resp = goproxy.NewResponse(
+				req,
+				smartCachedItem.Header.Get(request.ContentTypeHeaderKey),
+				http.StatusOK,
+				string(smartCachedItem.Body),
+			)
+
+			for k, v := range request.HeadersToMap(smartCachedItem.Header) {
+				resp.Header.Set(k, v)
+			}
+		}
 	}
 
 	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
@@ -93,19 +104,6 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		})
 
 		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
-	}
-
-	if smartCachedItem != nil {
-		resp := goproxy.NewResponse(
-			req,
-			smartCachedItem.Header.Get(request.ContentTypeHeaderKey),
-			http.StatusOK,
-			string(smartCachedItem.Body),
-		)
-
-		for k, v := range request.HeadersToMap(smartCachedItem.Header) {
-			resp.Header.Set(k, v)
-		}
 	}
 
 	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))

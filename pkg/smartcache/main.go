@@ -209,17 +209,15 @@ func CreateHash(input string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func IsURLSmartCachable(target string, method string) bool {
-	if method != http.MethodGet {
+func IsRequestSmartCachable(req *http.Request) bool {
+	if req.Method != http.MethodGet {
 		return false
 	}
 
-	parse, _ := url.Parse(target)
-	hostname := parse.Hostname()
-	isSupportedDomain := utilities.Contains(domains.SmartCachableHostnames, hostname)
+	hostname := req.URL.Hostname()
+	path := req.URL.Path
 
-	if isSupportedDomain {
-		path := strings.ToLower(parse.Path)
+	if utilities.Contains(domains.SmartCachableHostnames, hostname) {
 		if hostname == domains.DomainToHostname(domains.Skill) {
 			return strings.HasSuffix(path, "/skill")
 		} else if hostname == domains.DomainToHostname(domains.HaloStats) {

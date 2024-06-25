@@ -85,7 +85,6 @@ func Start(f *embed.FS, omitInit bool) *errors.MITMError {
 
 		go func() {
 			defer wg.Done()
-
 			once.Do(func() {
 				killService.Register(func() {
 					disableProxy()

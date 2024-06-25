@@ -86,13 +86,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 			isSmartCachable := resp.StatusCode >= 200 && resp.StatusCode < 300
 			if isSmartCachable {
 				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(
-					smartCacheKey,
-					&smartcache.SmartCacheItem{
-						Body: bodyBytes,
-						Header: resp.Header,
-					},
-				)
+				smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{Body: bodyBytes,Header: resp.Header})
 			}
 		} else {
 			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)

@@ -30,7 +30,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -136,13 +135,13 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
 	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
-	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		var resp *http.Response
 		customCtx := context.ContextHandler(ctx)
 		customCtx.SetUserData("uuid", uuid.New().String())
 		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
 
-		if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
+		if smartCacheEnabled && smartcache.IsRequestSmartCachable(req) {
 			customCtx.SetUserData("cache", smartCache)
 		}
 
@@ -162,7 +161,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 	})
 
-	proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
 		for _, handler := range clientResponseHandlers {
 			if handler.Match(resp, ctx) {
 				resp = handler.Fn(resp, ctx)
@@ -181,9 +180,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			Certificates: []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		},
-		ReadTimeout: 10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout: 15 * time.Second,
 	}
 
 	return server, nil

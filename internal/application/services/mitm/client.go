@@ -44,7 +44,6 @@ import (
 
 func WatchClientMITMConfig(stopChan <-chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
-
 	if err != nil {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),

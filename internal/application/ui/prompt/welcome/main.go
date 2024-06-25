@@ -38,11 +38,11 @@ const (
 
 var optionToString = map[PromptOption]string{
 	// Welcome
-	Start:                  "🔒 Start Proxy Server",
-	InstallRootCertificate: "🔐 Install Root Certificate",
-	Tools:                  "🧰 Show Tools",
-	Credits:                "🤝 Show Credits",
-	Exit:                   "👋 Quit",
+	Start:                  "→ Start Proxy Server",
+	InstallRootCertificate: "→ Install Root Certificate",
+	Tools:                  "→ Show Tools",
+	Credits:                "→ Show Credits",
+	Exit:                   "→ Quit",
 }
 
 func (d PromptOption) String() string {

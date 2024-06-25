@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,14 +80,18 @@ func GetPingTime(serverURL string) (int, *errors.MITMError) {
 		return -1, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
-	outputStr := string(output)
-	if strings.Contains(outputStr, "time=") {
-		timeStr := strings.Split(strings.Split(outputStr, "time=")[1], " ")[0]
-		timeInt, err := strconv.Atoi(strings.Split(timeStr, ".")[0]); if err != nil {
-			timeInt = -1
+	outputStr := strings.ToLower(string(output))
+	re := regexp.MustCompile(`([0-9]+\.?[0-9]*) ms`)
+	matches := re.FindStringSubmatch(outputStr)
+
+	if len(matches) > 1 {
+		timeStr := matches[1]
+		timeFloat, err := strconv.ParseFloat(timeStr, 64)
+		if err != nil {
+			return -1, nil
 		}
 
-		return timeInt, nil
+		return int(timeFloat), nil
 	}
 
 	return -1, errors.Create(errors.ErrPingFailedException, errors.ErrPingFailedException.Error())

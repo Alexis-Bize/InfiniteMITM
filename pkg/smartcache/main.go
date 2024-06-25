@@ -41,9 +41,9 @@ type SmartCache struct {
 }
 
 type SmartCacheYAMLOptions struct {
-	Enabled  bool
-	Strategy StrategyType
-	TTL      string
+	Enabled  bool `yaml:"enabled"`
+	Strategy StrategyType `yaml:"strategy"`
+	TTL      string `yaml:"ttl"`
 }
 
 type SmartCacheItem struct {

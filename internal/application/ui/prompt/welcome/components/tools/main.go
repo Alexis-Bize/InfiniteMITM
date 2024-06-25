@@ -34,13 +34,11 @@ const (
 )
 
 var optionToString = map[PromptOption]string{
-	SelectServers:   "🌎 Select Servers",
-	ForceKillProxy:  "🛑 Force Kill Proxy",
-	ClearSmartCache: "🧹 Clear SmartCache",
+	SelectServers:   "→ Select Servers",
+	ForceKillProxy:  "→ Force Kill Proxy",
+	ClearSmartCache: "→ Clear SmartCache",
 	GoBack:          "← Go back",
 }
-
-var hasRootCertificateInstalled *bool
 
 func (d PromptOption) String() string {
 	return optionToString[d]
@@ -63,7 +61,7 @@ func Run() {
 	)
 
 	huh.NewSelect[string]().
-		Title("🧰 Tools").
+		Title("Tools").
 		Options(options...).
 		Value(&selected).
 		WithTheme(theme.ThemeMITM()).

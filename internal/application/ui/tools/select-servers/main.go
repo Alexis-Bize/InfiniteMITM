@@ -50,6 +50,7 @@ const (
 	SaveCommand     = "ctrl+s"
 	EnterCommand    = "enter"
 	QuitCommand     = "q"
+	ExitCommand     = "ctrl+c"
 )
 
 var (
@@ -62,7 +63,7 @@ var program *tea.Program
 var servers selectServersTool.QOSServers
 
 var (
-	serversHeadlineString = "🌎 Select Servers"
+	serversHeadlineString = "Select Servers"
 	pingFailString        = "FAIL"
 	waitingString         = "Please wait..."
 	savingString          = "Saving..."
@@ -78,7 +79,12 @@ var (
 
 var (
 	containerStyle = lipgloss.NewStyle().Padding(1, 2)
-	serversHeadlineStyle = lipgloss.NewStyle().Bold(true)
+	serversHeadlineStyle = lipgloss.NewStyle().
+		Foreground(theme.ColorSunsetOrange).
+		Bold(true).
+		BorderBottom(true).
+		BorderBottomForeground(theme.ColorSunsetOrange).
+		BorderStyle(lipgloss.ThickBorder())
 
 	selectedRegionStyle = lipgloss.NewStyle().
 		Foreground(theme.ColorLightYellow).
@@ -235,7 +241,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.setPingForRegion(selectServersTool.PingResult(msg))
 	case tea.KeyMsg:
 		switch msg.String() {
-		case QuitCommand:
+		case QuitCommand, ExitCommand:
 			sysutilities.ClearTerminal()
 			return m, tea.Quit
 		case MoveUpCommand:
@@ -275,13 +281,11 @@ func (m model) View() string {
 
 	total := len(servers)
 	for i := 0; i < total; i++ {
-		content := "..."
+		content := "[ ]"
 
 		if m.pingFinished {
 			if utilities.Contains(m.selectedRegions, servers[i].Region) {
-				content = "[✔]"
-			} else {
-				content = "[ ]"
+				content = "[x]"
 			}
 
 			if m.cursor == i {

@@ -33,9 +33,9 @@ const (
 )
 
 var optionToString = map[PromptOption]string{
-	Author:    "Made by: Zeny IC",
-	Supporter: "Supporter: Grunt.API",
-	GitHub:    "Source code: GitHub",
+	Author:    "→ Made by: Zeny IC",
+	Supporter: "→ Supporter: Grunt.API",
+	GitHub:    "→ Source code: GitHub",
 	GoBack:    "← Go back",
 }
 
@@ -60,22 +60,21 @@ func Run() {
 	)
 
 	huh.NewSelect[string]().
-		Title("🤝 Credits").
+		Title("Credits").
 		Options(options...).
 		Value(&selected).
 		WithTheme(theme.ThemeMITM()).
 		Run()
 
-	if selected != "" {
-		spinner.Run("Attempting to open your browser...")
-	}
-
 	switch selected {
 	case Author.String():
+		spinner.Run("Attempting to open your browser...")
 		sysutilities.OpenBrowser("https://x.com/zeny_ic")
 	case Supporter.String():
+		spinner.Run("Attempting to open your browser...")
 		sysutilities.OpenBrowser("https://x.com/gruntdotapi")
 	case GitHub.String():
+		spinner.Run("Attempting to open your browser...")
 		sysutilities.OpenBrowser(configs.GetConfig().Repository)
 	}
 }

@@ -82,19 +82,17 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 
 	if shouldDispatch {
 		headersMap := request.HeadersToMap(req.Header)
-		go func() {
-			details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
-				ID: uuid,
-				URL: req.URL.String(),
-				Method: req.Method,
-				Headers: headersMap,
-				Body: bodyBytes,
-				Proxified: isProxified,
-				SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
-			})
+		details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
+			ID: uuid,
+			URL: req.URL.String(),
+			Method: req.Method,
+			Headers: headersMap,
+			Body: bodyBytes,
+			Proxified: isProxified,
+			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
+		})
 
-			event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
-		}()
+		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
 	}
 
 	if smartCachedItem != nil {

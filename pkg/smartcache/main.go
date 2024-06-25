@@ -15,6 +15,7 @@
 package smartcache
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/hex"
@@ -158,13 +159,12 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	}
 
 	target := filepath.Join(resources.GetSmartCacheDirPath(), key)
-	file, err := os.OpenFile(target, os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		return
-	}
 
-	defer file.Close()
-	gob.NewEncoder(file).Encode(item)
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(item); err == nil {
+		os.WriteFile(target, buf.Bytes(), 0666)
+	}
 }
 
 func (s *SmartCache) isExpired(item *SmartCacheItem) bool {

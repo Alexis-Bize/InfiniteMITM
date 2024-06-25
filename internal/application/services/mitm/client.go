@@ -35,6 +35,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/fsnotify/fsnotify"
@@ -72,6 +73,7 @@ func WatchClientMITMConfig(stopChan <-chan struct{}) {
 					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", mitm.ConfigFilename),
 				})
 
+				time.Sleep(1 * time.Second)
 				event.MustFire(eventsService.RestartServer, event.M{})
 			}
 		case err, ok := <-watcher.Errors:

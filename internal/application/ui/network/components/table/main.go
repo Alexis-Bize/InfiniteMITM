@@ -201,7 +201,7 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 		rows := m.tableModel.Rows()
 		index := m.GetRowPosition(msg.ID) - 1
 
-		if index == -1 {
+		if index < 0 {
 			return m.Update(TableRowPushMsg(msg))
 		} else if index >= 0 && index < len(rows) {
 			rows[index][0] = msg.Prefix

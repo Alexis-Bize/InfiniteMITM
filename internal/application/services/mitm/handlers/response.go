@@ -63,13 +63,16 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 
 	var bodyBytes []byte
 	var smartCachedItem *smartcache.SmartCacheItem
+	var smartCacheKey string
 
 	if smartCache != nil && !isProxified {
-		smartCachedItem = smartCache.Get(smartCache.CreateKey(
+		smartCacheKey = smartCache.CreateKey(
 			request.StripPort(resp.Request.URL.String()),
 			resp.Request.Header.Get("Accept"),
 			resp.Request.Header.Get("Accept-Language"),
-		))
+		)
+
+		smartCachedItem = smartCache.Get(smartCacheKey)
 	}
 
 	if smartCachedItem != nil {
@@ -78,18 +81,18 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		bodyBytes, _ = io.ReadAll(resp.Body)
 	}
 
-	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	if smartCache != nil {
-		isSmartCachable := !isProxified && resp.StatusCode >= 200 && resp.StatusCode < 300
+	if smartCache != nil && !isProxified {
 		if smartCachedItem == nil {
+			isSmartCachable := resp.StatusCode >= 200 && resp.StatusCode < 300
 			if isSmartCachable {
 				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(smartCache.CreateKey(
-					request.StripPort(resp.Request.URL.String()),
-					resp.Request.Header.Get("Accept"),
-					resp.Request.Header.Get("Accept-Language"),
-				), &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
+				smartCache.Write(
+					smartCacheKey,
+					&smartcache.SmartCacheItem{
+						Body: bodyBytes,
+						Header: resp.Header,
+					},
+				)
 			}
 		} else {
 			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
@@ -101,19 +104,23 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
 
 	if shouldDispatch {
-		details := eventsService.StringifyResponseEventData(eventsService.ProxyResponseEventData{
-			ID: uuid,
-			URL: resp.Request.URL.String(),
-			Method: resp.Request.Method,
-			Status: resp.StatusCode,
-			Headers: request.HeadersToMap(resp.Header),
-			Body: bodyBytes,
-			Proxified: isProxified,
-			SmartCached: !isProxified && smartCache != nil,
-		})
+		headersMap := request.HeadersToMap(resp.Header)
+		go func() {
+			details := eventsService.StringifyResponseEventData(eventsService.ProxyResponseEventData{
+				ID: uuid,
+				URL: resp.Request.URL.String(),
+				Method: resp.Request.Method,
+				Status: resp.StatusCode,
+				Headers: headersMap,
+				Body: bodyBytes,
+				Proxified: isProxified,
+				SmartCached: !isProxified && smartCache != nil,
+			})
 
-		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})
+			event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})
+		}()
 	}
 
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	return resp
 }

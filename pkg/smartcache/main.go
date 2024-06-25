@@ -158,7 +158,7 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	}
 
 	target := filepath.Join(resources.GetSmartCacheDirPath(), key)
-	file, err := os.Open(target)
+	file, err := os.OpenFile(target, os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return
 	}

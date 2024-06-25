@@ -64,15 +64,16 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		bodyBytes, _ = io.ReadAll(req.Body)
 	}
 
-	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	var smartCachedItem *smartcache.SmartCacheItem
 
 	if smartCache != nil && !isProxified {
-		smartCachedItem = smartCache.Get(smartCache.CreateKey(
+		smartCacheKey := smartCache.CreateKey(
 			request.StripPort(req.URL.String()),
 			req.Header.Get("Accept"),
 			req.Header.Get("Accept-Language"),
-		))
+		)
+
+		smartCachedItem = smartCache.Get(smartCacheKey)
 	}
 
 	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
@@ -80,17 +81,20 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
 
 	if shouldDispatch {
-		details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
-			ID: uuid,
-			URL: req.URL.String(),
-			Method: req.Method,
-			Headers: request.HeadersToMap(req.Header),
-			Body: bodyBytes,
-			Proxified: isProxified,
-			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
-		})
+		headersMap := request.HeadersToMap(req.Header)
+		go func() {
+			details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
+				ID: uuid,
+				URL: req.URL.String(),
+				Method: req.Method,
+				Headers: headersMap,
+				Body: bodyBytes,
+				Proxified: isProxified,
+				SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
+			})
 
-		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
+			event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
+		}()
 	}
 
 	if smartCachedItem != nil {
@@ -106,5 +110,6 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		}
 	}
 
+	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	return req, resp
 }

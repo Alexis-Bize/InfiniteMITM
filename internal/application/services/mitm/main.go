@@ -30,7 +30,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -65,6 +65,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
+	proxy.KeepHeader = false
 	proxy.Logger = emptyLogger{}
 
 	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
@@ -135,63 +136,41 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
 	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
-	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+	proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		var resp *http.Response
-		var wg sync.WaitGroup
-		wg.Add(1)
+		customCtx := context.ContextHandler(ctx)
+		customCtx.SetUserData("uuid", uuid.New().String())
+		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
 
-		go func() {
-			defer wg.Done()
+		if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
+			customCtx.SetUserData("cache", smartCache)
+		}
 
-			customCtx := context.ContextHandler(ctx)
-			customCtx.SetUserData("uuid", uuid.New().String())
-			customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+		// :stats-svc/:title/players/:xuid/decks
+		if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
+			// fix: clearance (flight ID) may break /decks request
+			req.Header.Del("343-Clearance")
+		}
 
-			if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
-				customCtx.SetUserData("cache", smartCache)
+		for _, handler := range clientRequestHandlers {
+			if handler.Match(req, ctx) {
+				req, resp = handler.Fn(req, ctx)
+				return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 			}
+		}
 
-			// :stats-svc/:title/players/:xuid/decks
-			if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
-				// fix: clearance (flight ID) may break /decks request
-				req.Header.Del("343-Clearance")
-			}
-
-			for _, handler := range clientRequestHandlers {
-				if handler.Match(req, ctx) {
-					req, resp = handler.Fn(req, ctx)
-					handlers.HandleRequest(trafficOptions, req, resp, ctx)
-					return
-				}
-			}
-
-			handlers.HandleRequest(trafficOptions, req, resp, ctx)
-		}()
-
-		wg.Wait()
-		return req, resp
+		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 	})
 
-	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			for _, handler := range clientResponseHandlers {
-				if handler.Match(resp, ctx) {
-					resp = handler.Fn(resp, ctx)
-					handlers.HandleResponse(trafficOptions, resp, ctx)
-					return
-				}
+	proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+		for _, handler := range clientResponseHandlers {
+			if handler.Match(resp, ctx) {
+				resp = handler.Fn(resp, ctx)
+				return handlers.HandleResponse(trafficOptions, resp, ctx)
 			}
+		}
 
-			handlers.HandleResponse(trafficOptions, resp, ctx)
-		}()
-
-		wg.Wait()
-		return resp
+		return handlers.HandleResponse(trafficOptions, resp, ctx)
 	})
 
 	server := &http.Server{
@@ -202,8 +181,9 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			Certificates: []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		},
-		ReadTimeout: -1,
-		WriteTimeout: -1,
+		ReadTimeout: 10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout: 15 * time.Second,
 	}
 
 	return server, nil

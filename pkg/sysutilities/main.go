@@ -28,7 +28,6 @@ import (
 	"syscall"
 
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/ncruces/zenity"
 	"golang.org/x/term"
 )
@@ -55,8 +54,6 @@ func GetTerminalSize() (int, int) {
 }
 
 func OpenBrowser(url string) {
-	spinner.New().Title("Attempting to open your browser...").Run()
-
 	switch runtime.GOOS {
 	case "linux":
 		exec.Command("xdg-open", url).Start()

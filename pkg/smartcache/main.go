@@ -15,6 +15,7 @@
 package smartcache
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/hex"
@@ -41,9 +42,9 @@ type SmartCache struct {
 }
 
 type SmartCacheYAMLOptions struct {
-	Enabled  bool
-	Strategy StrategyType
-	TTL      string
+	Enabled  bool `yaml:"enabled"`
+	Strategy StrategyType `yaml:"strategy"`
+	TTL      string `yaml:"ttl"`
 }
 
 type SmartCacheItem struct {
@@ -59,13 +60,14 @@ const (
 )
 
 const (
-	version = 1
+	version = 2
 	defaultDuration = 7 * 24 * time.Hour
 )
 
-var RWMutex = &sync.RWMutex{}
-var fileOSMutex = &sync.Mutex{}
-var flushSmartCacheMutex = &sync.Mutex{}
+var (
+	mutexes = &sync.Map{}
+	flushSmartCacheMutex = &sync.Mutex{}
+)
 
 func init() {
 	gob.Register(http.Header{})
@@ -94,17 +96,20 @@ func Flush() {
 }
 
 func (s *SmartCache) Get(key string) *SmartCacheItem {
-	if s.strategy == Persistent {
-		fileOSMutex.Lock()
-		defer fileOSMutex.Unlock()
+	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
+	currentMutex := mutex.(*sync.Mutex)
 
+	currentMutex.Lock()
+	defer currentMutex.Unlock()
+
+	if s.strategy == Persistent {
 		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
 		file, err := os.Open(target)
 		if err != nil {
 			return nil
 		}
-		defer file.Close()
 
+		defer file.Close()
 		var item *SmartCacheItem
 		err = gob.NewDecoder(file).Decode(&item);
 		if err != nil {
@@ -116,19 +121,21 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 			return nil
 		}
 
+		since := time.Since(item.Created)
+		seconds := int(since.Seconds())
+
+		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
+		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
+
 		return item
 	}
 
-	RWMutex.RLock()
-	defer RWMutex.RUnlock()
-
 	if item, exists := s.items[key]; exists && !s.isExpired(item) {
+		since := time.Since(item.Created)
+		seconds := int(since.Seconds())
+
+		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
-		if item.Created != (time.Time{}) {
-			since := time.Since(item.Created)
-			seconds := int(since.Seconds())
-			item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
-		}
 
 		return item
 	}
@@ -137,29 +144,32 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 }
 
 func (s *SmartCache) Write(key string, item *SmartCacheItem) {
+	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
+	currentMutex := mutex.(*sync.Mutex)
+
+	currentMutex.Lock()
+	defer currentMutex.Unlock()
+
 	item.Created = time.Now()
 	item.Expires = time.Now().Add(s.duration)
 
+	item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 	item.Header.Set(request.ExpiresHeaderKey, item.Expires.Format(time.RFC1123))
 	item.Header.Set(request.DateHeaderKey, item.Created.Format(time.RFC1123))
 	item.Header.Set(request.AgeHeaderKey, "0")
 	item.Header.Del(request.CacheControlHeaderKey)
 
 	if s.strategy == Memory {
-		RWMutex.Lock()
 		s.items[key] = item
-		RWMutex.Unlock()
 		return
 	}
 
-	fileOSMutex.Lock()
-	defer fileOSMutex.Unlock()
-
 	target := filepath.Join(resources.GetSmartCacheDirPath(), key)
-	file, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-	if err == nil {
-		defer file.Close()
-		gob.NewEncoder(file).Encode(item)
+
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(item); err == nil {
+		os.WriteFile(target, buf.Bytes(), 0666)
 	}
 }
 
@@ -205,17 +215,15 @@ func CreateHash(input string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func IsURLSmartCachable(target string, method string) bool {
-	if method != http.MethodGet {
+func IsRequestSmartCachable(req *http.Request) bool {
+	if req.Method != http.MethodGet {
 		return false
 	}
 
-	parse, _ := url.Parse(target)
-	hostname := parse.Hostname()
-	isSupportedDomain := utilities.Contains(domains.SmartCachableHostnames, hostname)
+	hostname := req.URL.Hostname()
+	path := req.URL.Path
 
-	if isSupportedDomain {
-		path := strings.ToLower(parse.Path)
+	if utilities.Contains(domains.SmartCachableHostnames, hostname) {
 		if hostname == domains.DomainToHostname(domains.Skill) {
 			return strings.HasSuffix(path, "/skill")
 		} else if hostname == domains.DomainToHostname(domains.HaloStats) {

@@ -12,28 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package MITMApplicationPromptUI
 
 import (
-	"embed"
-	MITM "infinite-mitm/internal"
-	embedFS "infinite-mitm/internal/application/embed"
+	welcomePromptUI "infinite-mitm/internal/application/ui/prompt/welcome"
 	"infinite-mitm/pkg/errors"
 )
 
-//go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
-//go:embed assets/resources/shared/*
-//go:embed cert/*
-var f embed.FS
-
-func init() {
-	embedFS.Set(&f)
-}
-
-func main() {
-	if mitmErr := MITM.Start(&f, false); mitmErr != nil {
-		if mitmErr.Unwrap() != errors.ErrPromptException {
-			mitmErr.Log()
-		}
-	}
+func Run(rootCertificateInstalled bool) (string, *errors.MITMError) {
+	return welcomePromptUI.Run(rootCertificateInstalled)
 }

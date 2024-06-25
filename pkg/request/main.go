@@ -86,14 +86,6 @@ func StripPort(u string) string {
 	return strings.Replace(parse.String(), fmt.Sprintf(":%s", parse.Port()), "", -1)
 }
 
-func ComputeUrl(baseUrl string, path string) string {
-	if path != "" && !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	return baseUrl + path
-}
-
 func HeadersToMap(header http.Header) map[string]string {
 	headersMap := make(map[string]string)
 	for key, values := range header {

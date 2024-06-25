@@ -15,8 +15,8 @@
 package resources
 
 import (
-	"embed"
 	"infinite-mitm/configs"
+	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/errors"
 	"io"
 	"log"
@@ -24,44 +24,69 @@ import (
 	"path/filepath"
 )
 
-var projectDir string
-var resourcesPath string
+const (
+	SmartCacheDirKey = "smartcache"
+	DownloadsDirKey  = "downloads"
+	ResourcesDirKey  = "resources"
+	UGCDirKey        = "ugc"
+	UGCMapsDirKey    = "ugc-maps"
+	UGCEGVDirKey     = "ugc-egv"
+	UGCEGVCGUIDirKey = "ugc-egv-cgui"
+	BinDirKey        = "bin"
+	BinFlagsDirKey   = "bin-flags"
+	ToolsDirKey      = "tools"
+	ToolsIVTDirKey   = "tools-ivt"
+	JsonDirKey       = "json"
+)
+
+var projectDir = configs.GetConfig().Extra.ProjectDir
 var dirPaths map[string]string
 
 func init() {
-	projectDir = configs.GetConfig().Extra.ProjectDir
-	resourcesPath = filepath.Join(projectDir, "resources")
+	var resourcesPath = filepath.Join(projectDir, ResourcesDirKey)
 	dirPaths = map[string]string{
 		// ~/InfiniteMITM
-		"smartcache":       filepath.Join(projectDir, "cache"),
-		"downloads":        filepath.Join(projectDir, "downloads"),
-		// ~/InfiniteMITM/resources
-		"ugc":              filepath.Join(resourcesPath, "ugc"),
-		"ugc-maps":         filepath.Join(resourcesPath, "ugc", "maps"),
-		"ugc-egv":          filepath.Join(resourcesPath, "ugc", "enginegamevariants"),
-		"ugc-egv-cgui":     filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"),
-		"bin":              filepath.Join(resourcesPath, "bin"),
-		"bin-flags":        filepath.Join(resourcesPath, "bin", "flags"),
-		"tools":            filepath.Join(resourcesPath, "tools"),
-		"tools-ivt":        filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
-		"json":             filepath.Join(resourcesPath, "json"),
+		SmartCacheDirKey:  filepath.Join(projectDir, "cache"),
+		DownloadsDirKey:   filepath.Join(projectDir, "downloads"),
+		ResourcesDirKey:   filepath.Join(projectDir, "resources"),
+		// ~/InfiniteMITM/resources/ugc
+		UGCDirKey:         filepath.Join(resourcesPath, "ugc"),
+		UGCMapsDirKey:     filepath.Join(resourcesPath, "ugc", "maps"),
+		UGCEGVDirKey:      filepath.Join(resourcesPath, "ugc", "enginegamevariants"),
+		UGCEGVCGUIDirKey:  filepath.Join(resourcesPath, "ugc", "enginegamevariants", "cgui-markups"),
+		// ~/InfiniteMITM/resources/bin
+		BinDirKey:         filepath.Join(resourcesPath, "bin"),
+		BinFlagsDirKey:    filepath.Join(resourcesPath, "bin", "flags"),
+		// ~/InfiniteMITM/resources/tools
+		ToolsDirKey:       filepath.Join(resourcesPath, "tools"),
+		ToolsIVTDirKey:    filepath.Join(resourcesPath, "tools", "InfiniteVariantTool"),
+		// ~/InfiniteMITM/resources/json
+		JsonDirKey:        filepath.Join(resourcesPath, "json"),
 	}
+}
+
+func GetRootPath() string {
+	return projectDir
 }
 
 func GetDirPaths() map[string]string {
 	return dirPaths
 }
 
+func GetResourcesPath() string {
+	return dirPaths[ResourcesDirKey]
+}
+
 func GetSmartCacheDirPath() string {
-	return dirPaths["smartcache"]
+	return dirPaths[SmartCacheDirKey]
 }
 
 func GetDownloadsDirPath() string {
-	return dirPaths["downloads"]
+	return dirPaths[DownloadsDirKey]
 }
 
-func CreateRootAssets(f *embed.FS) *errors.MITMError {
-	sourceMITMTemplate := "assets/resources/shared/templates/mitm.yaml"
+func CreateRootAssets() *errors.MITMError {
+	sourceMITMTemplate := "assets/resources/shared/mitm.yaml"
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -69,7 +94,7 @@ func CreateRootAssets(f *embed.FS) *errors.MITMError {
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
-		templateFile, err := f.Open(sourceMITMTemplate)
+		templateFile, err := embedFS.Get().Open(sourceMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}

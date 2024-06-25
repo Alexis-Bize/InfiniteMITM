@@ -16,9 +16,9 @@ package MITMApplicationMITMServiceHandlers
 
 import (
 	"bytes"
-	events "infinite-mitm/internal/application/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/smartcache"
 	"io"
@@ -28,7 +28,7 @@ import (
 	"github.com/gookit/event"
 )
 
-func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
+func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response  {
 	if resp.Request.Method == http.MethodOptions {
 		return resp
 	}
@@ -39,8 +39,9 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		return resp
 	}
 
+	smartCached := resp.Header.Get(request.MITMCacheHeaderKey) == request.MITMCacheHeaderHitValue
 	proxified := customCtx.GetUserData("proxified").(map[string]bool)
-	isProxified := proxified["resp"]
+	isProxified := !smartCached && proxified["resp"]
 
 	if isProxified {
 		resp.Header.Set(request.MITMProxyHeaderKey, request.MITMProxyEnabledValue)
@@ -51,25 +52,28 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 
 	var smartCache *smartcache.SmartCache
 	cacheCtx := customCtx.GetUserData("cache")
-	if cacheCtx != nil {
+	if !isProxified && cacheCtx != nil {
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
 
-	if options.TrafficDisplay == traffic.TrafficOverrides && !isProxified && smartCache == nil {
+	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
 		return resp
-	} else if options.TrafficDisplay == traffic.TrafficSmartCache && smartCache == nil {
+	} else if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
 		return resp
 	}
 
 	var bodyBytes []byte
 	var smartCachedItem *smartcache.SmartCacheItem
+	var smartCacheKey string
 
-	if smartCache != nil && !isProxified {
-		smartCachedItem = smartCache.Get(smartCache.CreateKey(
+	if !smartCached && smartCache != nil {
+		smartCacheKey = smartCache.CreateKey(
 			request.StripPort(resp.Request.URL.String()),
 			resp.Request.Header.Get("Accept"),
 			resp.Request.Header.Get("Accept-Language"),
-		))
+		)
+
+		smartCachedItem = smartCache.Get(smartCacheKey)
 	}
 
 	if smartCachedItem != nil {
@@ -78,42 +82,34 @@ func HandleResponse(options traffic.TrafficOptions, resp *http.Response, ctx *go
 		bodyBytes, _ = io.ReadAll(resp.Body)
 	}
 
-	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	if smartCache != nil {
-		isSmartCachable := !isProxified && resp.StatusCode >= 200 && resp.StatusCode < 300
-		if smartCachedItem == nil {
-			if isSmartCachable {
-				resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-				smartCache.Write(smartCache.CreateKey(
-					request.StripPort(resp.Request.URL.String()),
-					resp.Request.Header.Get("Accept"),
-					resp.Request.Header.Get("Accept-Language"),
-				), &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
-			}
-		} else {
-			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
+	if !smartCached && smartCache != nil && smartCachedItem == nil {
+		isSmartCachable := resp.StatusCode >= 200 && resp.StatusCode < 300
+		if isSmartCachable {
+			smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
+			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
 		}
 	}
 
-	shouldDispatch := options.TrafficDisplay == traffic.TrafficAll || (
-		options.TrafficDisplay == traffic.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == traffic.TrafficSmartCache && smartCache != nil)
+	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
+		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
+		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
 
 	if shouldDispatch {
-		details := events.StringifyResponseEventData(events.ProxyResponseEventData{
+		headersMap := request.HeadersToMap(resp.Header)
+		details := eventsService.StringifyResponseEventData(eventsService.ProxyResponseEventData{
 			ID: uuid,
 			URL: resp.Request.URL.String(),
 			Method: resp.Request.Method,
 			Status: resp.StatusCode,
-			Headers: request.HeadersToMap(resp.Header),
+			Headers: headersMap,
 			Body: bodyBytes,
 			Proxified: isProxified,
-			SmartCached: !isProxified && smartCache != nil,
+			SmartCached: smartCached || (!isProxified && smartCache != nil),
 		})
 
-		event.MustFire(events.ProxyResponseReceived, event.M{"details": details})
+		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})
 	}
 
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	return resp
 }

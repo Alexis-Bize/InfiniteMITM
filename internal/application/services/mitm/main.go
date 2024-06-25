@@ -20,12 +20,12 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/smartcache"
 	"net/http"
 	"regexp"
@@ -64,10 +64,11 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
+	proxy.KeepHeader = false
 	proxy.Logger = emptyLogger{}
 
-	content, mitmErr := ReadClientMITMConfig(); if mitmErr != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 	}
 
 	if mitmErr == nil {
@@ -102,10 +103,10 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 			}
 		}
 
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
 				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
-				YAMLFilename,
+				mitm.ConfigFilename,
 				content.Options.TrafficDisplay,
 				smartCacheText,
 				totalClientHandlersCount,
@@ -129,57 +130,54 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		)
 	}
 
-	trafficOptions := traffic.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
+	trafficOptions := mitm.TrafficOptions{TrafficDisplay: content.Options.TrafficDisplay}
 	mitmPattern := regexp.MustCompile(`^.*` + regexp.QuoteMeta(domains.HaloWaypointSVCDomains.Root)  + `(:[0-9]+)?$`)
 	rootCondition := goproxy.ReqHostMatches(mitmPattern)
 
-	go func() {
-		proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
-		proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			var resp *http.Response
+	proxy.OnRequest(rootCondition).HandleConnect(goproxy.AlwaysMitm)
+	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		var resp *http.Response
+		customCtx := context.ContextHandler(ctx)
+		customCtx.SetUserData("uuid", uuid.New().String())
+		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
 
-			customCtx := context.ContextHandler(ctx)
-			customCtx.SetUserData("uuid", uuid.New().String())
-			customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+		if smartCacheEnabled && smartcache.IsRequestSmartCachable(req) {
+			customCtx.SetUserData("cache", smartCache)
+		}
 
-			if smartCacheEnabled && smartcache.IsURLSmartCachable(req.URL.String(), req.Method) {
-				customCtx.SetUserData("cache", smartCache)
+		// :stats-svc/:title/players/:xuid/decks
+		if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
+			// fix: clearance (flight ID) may break /decks request
+			req.Header.Del("343-Clearance")
+		}
+
+		for _, handler := range clientRequestHandlers {
+			if handler.Match(req, ctx) {
+				req, resp = handler.Fn(req, ctx)
+				return handlers.HandleRequest(trafficOptions, req, resp, ctx)
 			}
+		}
 
-			// :stats-svc/:title/players/:xuid/decks
-			if req.URL.Hostname() == domains.HaloStats && strings.HasSuffix(req.URL.Path, "/decks") {
-				// fix: clearance (flight ID) may break /decks request
-				req.Header.Del("343-Clearance")
+		return handlers.HandleRequest(trafficOptions, req, resp, ctx)
+	})
+
+	proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
+		for _, handler := range clientResponseHandlers {
+			if handler.Match(resp, ctx) {
+				resp = handler.Fn(resp, ctx)
+				return handlers.HandleResponse(trafficOptions, resp, ctx)
 			}
+		}
 
-			for _, handler := range clientRequestHandlers {
-				if handler.Match(req, ctx) {
-					req, resp = handler.Fn(req, ctx)
-					return handlers.HandleRequest(trafficOptions, req, resp, ctx)
-				}
-			}
-
-			return handlers.HandleRequest(trafficOptions, req, resp, ctx)
-		})
-
-		proxy.OnResponse(rootCondition).DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) (*http.Response) {
-			for _, handler := range clientResponseHandlers {
-				if handler.Match(resp, ctx) {
-					resp = handler.Fn(resp, ctx)
-					return handlers.HandleResponse(trafficOptions, resp, ctx)
-				}
-			}
-
-			return handlers.HandleResponse(trafficOptions, resp, ctx)
-		})
-	}()
+		return handlers.HandleResponse(trafficOptions, resp, ctx)
+	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
+		Addr: fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
 		Handler: proxy,
 		TLSConfig: &tls.Config{
-			RootCAs:            CACertPool,
-			Certificates:       []tls.Certificate{cert},
+			RootCAs: CACertPool,
+			Certificates: []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		},
 	}

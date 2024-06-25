@@ -12,28 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package spinner
 
 import (
-	"embed"
-	MITM "infinite-mitm/internal"
-	embedFS "infinite-mitm/internal/application/embed"
-	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/sysutilities"
+	"infinite-mitm/pkg/theme"
+
+	huhSpinner "github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 )
 
-//go:generate goversioninfo -icon=assets/resources/windows/icon_256x256.ico
-//go:embed assets/resources/shared/*
-//go:embed cert/*
-var f embed.FS
+func Run(title string) {
+	huhSpinner.New().
+		Style(lipgloss.NewStyle().MarginLeft(2).MarginTop(1).Foreground(theme.ColorSunsetOrange)).
+		TitleStyle(lipgloss.NewStyle().Foreground(theme.ColorNormalFg).MarginLeft(1).MarginTop(-1)).
+		Title(title).
+		Type(huhSpinner.Line).
+		Run()
 
-func init() {
-	embedFS.Set(&f)
-}
-
-func main() {
-	if mitmErr := MITM.Start(&f, false); mitmErr != nil {
-		if mitmErr.Unwrap() != errors.ErrPromptException {
-			mitmErr.Log()
-		}
-	}
+	sysutilities.ClearTerminal()
 }

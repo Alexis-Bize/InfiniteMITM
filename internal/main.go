@@ -22,69 +22,97 @@ import (
 	"sync"
 
 	"infinite-mitm/configs"
-	application "infinite-mitm/internal/application"
-	events "infinite-mitm/internal/application/events"
-	mitm "infinite-mitm/internal/application/services/mitm"
-	prompt "infinite-mitm/internal/application/services/prompt"
-	kill "infinite-mitm/internal/application/services/signal/kill"
-	networkView "infinite-mitm/internal/application/services/ui/views/network"
+	mitmApplication "infinite-mitm/internal/application"
+	embedFS "infinite-mitm/internal/application/embed"
+	eventsService "infinite-mitm/internal/application/services/events"
+	mitmService "infinite-mitm/internal/application/services/mitm"
+	killService "infinite-mitm/internal/application/services/signal/kill"
+	networkUI "infinite-mitm/internal/application/ui/network"
+	welcomePromptUI "infinite-mitm/internal/application/ui/prompt/welcome"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
+	"infinite-mitm/pkg/spinner"
 	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/gookit/event"
 )
 
-var server *http.Server
-var restartMutex sync.Mutex
+var (
+	server *http.Server
+	restartMutex sync.Mutex
+	once sync.Once
+)
 
-func Start(f *embed.FS) *errors.MITMError {
+func Start(f *embed.FS, omitInit bool) *errors.MITMError {
 	var mitmErr *errors.MITMError
+
 	certInstalled := true
+	sysutilities.ClearTerminal()
 
-	if mitmErr := application.Init(f); mitmErr != nil {
-		if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
-			return mitmErr
+	if !omitInit {
+		embedFS.Set(f)
+
+		if mitmErr := mitmApplication.Init(); mitmErr != nil {
+			if errors.ErrProxyCertificateException != mitmErr.Unwrap() {
+				return mitmErr
+			}
+
+			certInstalled = false
 		}
-
-		certInstalled = false
 	}
 
-	option, mitmErr := prompt.WelcomePrompt(certInstalled)
+	option, mitmErr := welcomePromptUI.Run(certInstalled)
 	if mitmErr != nil {
 		return mitmErr
 	}
 
-	if prompt.Start.Is(option) {
+	if welcomePromptUI.Start.Is(option) {
 		var wg sync.WaitGroup
-		wg.Add(4)
+		var stopChan = make(chan struct{})
+
+		wg.Add(3)
 
 		go func() {
 			defer wg.Done()
-			networkView.Create()
-			sysutilities.KillProcess()
+			networkUI.Create()
+			stopServer()
+			close(stopChan)
 		}()
 
 		go func() {
 			defer wg.Done()
-			enableProxy()
-			startServer(f, false, &wg)
+			mitmService.WatchClientMITMConfig(stopChan)
 		}()
 
 		go func() {
 			defer wg.Done()
-			mitm.WatchClientMITMConfig()
+			once.Do(func() {
+				killService.Register(func() {
+					disableProxy()
+				})
+
+				event.On(eventsService.RestartServer, event.ListenerFunc(func(e event.Event) error {
+					restartServer(f, &wg)
+					return nil
+				}))
+			})
+
+			startServer(f)
 		}()
 
 		wg.Wait()
-	} else if prompt.InstallRootCertificate.Is(option) {
+		return Start(f, true)
+	}
+
+	if welcomePromptUI.InstallRootCertificate.Is(option) {
 		if runtime.GOOS == "windows" {
 			sysutilities.InstallRootCertificate(f, fmt.Sprintf("%s.cer", configs.GetConfig().Proxy.Certificate.Name))
-			return Start(f)
+			return Start(f, false)
 		}
 
+		spinner.Run("Attempting to open your browser...")
 		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
-	} else if prompt.ForceKillProxy.Is(option) || prompt.Exit.Is(option) {
+	} else if welcomePromptUI.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
 			mitmErr.Log()
 		}
@@ -94,42 +122,20 @@ func Start(f *embed.FS) *errors.MITMError {
 	return nil
 }
 
-func enableProxy() {
-	kill.Register(func() {
-		proxy.ToggleProxy("off")
-	})
+func startServer(f *embed.FS) {
+	enableProxy()
 
-	if mitmErr := proxy.ToggleProxy("on"); mitmErr != nil {
-		mitmErr.Log()
-	}
-}
-
-func startServer(f *embed.FS, isRestart bool, wg *sync.WaitGroup) {
-	s, mitmErr := mitm.CreateServer(f)
+	s, mitmErr := mitmService.CreateServer(f)
 	if mitmErr != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 		return
 	}
 
 	server = s
-
-	if !isRestart {
-		event.On(events.RestartServer, event.ListenerFunc(func(e event.Event) error {
-			restartServer(f, wg)
-			return nil
-		}))
-	}
-
 	if err := server.ListenAndServe(); err != nil {
 		if err != http.ErrServerClosed {
-			event.MustFire(events.ProxyStatusMessage, event.M{"details": err.Error()})
+			event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": err.Error()})
 		}
-	}
-}
-
-func shutdownServer() {
-	if err := server.Close(); err != nil {
-		errors.Create(errors.ErrProxyServerException, err.Error()).Log()
 	}
 }
 
@@ -137,11 +143,31 @@ func restartServer(f *embed.FS, wg *sync.WaitGroup) {
 	restartMutex.Lock()
 	defer restartMutex.Unlock()
 
-	shutdownServer()
 	wg.Add(1)
+	stopServer()
 
 	go func() {
 		defer wg.Done()
-		startServer(f, true, wg)
+		startServer(f)
 	}()
+}
+
+func stopServer() {
+	disableProxy()
+
+	if err := server.Close(); err != nil {
+		errors.Create(errors.ErrProxyServerException, err.Error()).Log()
+	}
+}
+
+func enableProxy() {
+	if mitmErr := proxy.ToggleProxy("on"); mitmErr != nil {
+		mitmErr.Log()
+	}
+}
+
+func disableProxy() {
+	if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {
+		mitmErr.Log()
+	}
 }

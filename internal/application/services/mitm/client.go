@@ -17,20 +17,17 @@ package MITMApplicationMITMService
 import (
 	"bytes"
 	"fmt"
-	"infinite-mitm/configs"
-	events "infinite-mitm/internal/application/events"
+	eventsService "infinite-mitm/internal/application/services/events"
 	handlers "infinite-mitm/internal/application/services/mitm/handlers"
 	helpers "infinite-mitm/internal/application/services/mitm/helpers"
 	context "infinite-mitm/internal/application/services/mitm/modules/context"
-	traffic "infinite-mitm/internal/application/services/mitm/modules/traffic"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/request"
-	"infinite-mitm/pkg/smartcache"
 	"infinite-mitm/pkg/utilities"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -43,38 +40,23 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gookit/event"
-	"gopkg.in/yaml.v2"
 )
 
-type YAMLOptions struct {
-	SmartCache     smartcache.SmartCacheYAMLOptions `yaml:"smart_cache"`
-	TrafficDisplay traffic.TrafficDisplay `yaml:"traffic_display"`
-}
 
-type YAML struct {
-	Domains domains.YAMLDomains `yaml:"domains"`
-	Options YAMLOptions `yaml:"options"`
-	Version int `yaml:"version"`
-}
-
-const YAMLFilename = "mitm.yaml"
-const YAMLVersion = 1
-
-func WatchClientMITMConfig() {
+func WatchClientMITMConfig(stopChan <-chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 		})
 
 		return
 	}
-	defer watcher.Close()
 
-	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
-	err = watcher.Add(filePath)
+	defer watcher.Close()
+	err = watcher.Add(mitm.MITMConfigFilepath)
 	if err != nil {
-		event.MustFire(events.ProxyStatusMessage, event.M{
+		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 		})
 
@@ -83,18 +65,20 @@ func WatchClientMITMConfig() {
 
 	for {
 		select {
+		case <-stopChan:
+			return
 		case watchEvent, ok := <-watcher.Events:
 			if ok && watchEvent.Op&fsnotify.Write == fsnotify.Write {
-				event.MustFire(events.ProxyStatusMessage, event.M{
-					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", YAMLFilename),
+				event.MustFire(eventsService.ProxyStatusMessage, event.M{
+					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", mitm.ConfigFilename),
 				})
 
-				time.Sleep(time.Second * 1)
-				event.MustFire(events.RestartServer, event.M{})
+				time.Sleep(1 * time.Second)
+				event.MustFire(eventsService.RestartServer, event.M{})
 			}
 		case err, ok := <-watcher.Errors:
 			if ok && err != nil {
-				event.MustFire(events.ProxyStatusMessage, event.M{
+				event.MustFire(eventsService.ProxyStatusMessage, event.M{
 					"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
 				})
 			}
@@ -102,25 +86,7 @@ func WatchClientMITMConfig() {
 	}
 }
 
-func ReadClientMITMConfig() (YAML, *errors.MITMError) {
-	filePath := filepath.Join(configs.GetConfig().Extra.ProjectDir, YAMLFilename)
-	yamlFile, err := os.ReadFile(filePath); if err != nil {
-		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
-	}
-
-	var content YAML
-	if err = yaml.Unmarshal(yamlFile, &content); err != nil {
-		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
-	}
-
-	if content.Version != YAMLVersion {
-		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, all configs will be ignored", YAMLFilename))
-	}
-
-	return content, nil
-}
-
-func CreateClientMITMHandlers(yaml YAML) ([]handlers.RequestHandlerStruct, []handlers.ResponseHandlerStruct) {
+func CreateClientMITMHandlers(yaml mitm.YAML) ([]handlers.RequestHandlerStruct, []handlers.ResponseHandlerStruct) {
 	var clientRequestHandlers []handlers.RequestHandlerStruct
 	var clientResponseHandlers []handlers.ResponseHandlerStruct
 
@@ -152,7 +118,7 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.RequestHandlerStruct {
 	target := pattern.Create(domain, node.Path)
 	return handlers.RequestHandlerStruct{
-		Match: helpers.MatchRequestUrl(target),
+		Match: helpers.MatchRequestURL(target),
 		Fn: func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			if !utilities.Contains(node.Methods, req.Method) {
 				return req, nil
@@ -174,7 +140,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				buffer, err := readBodyFile(body, matches, req.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
-					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
 					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
@@ -200,7 +166,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNode) handlers.ResponseHandlerStruct {
 	target := pattern.Create(domain, node.Path)
 	return handlers.ResponseHandlerStruct{
-		Match: helpers.MatchResponseUrl(target),
+		Match: helpers.MatchResponseURL(target),
 		Fn: func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			if !utilities.Contains(node.Methods, resp.Request.Method) {
 				return resp
@@ -222,7 +188,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				buffer, err := readBodyFile(body, matches, resp.Request.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
-					event.MustFire(events.ProxyStatusMessage, event.M{"details": mitmErr.String()})
+					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
 					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
@@ -250,7 +216,7 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 	}
 }
 
-func isUrl(str string) bool {
+func isURL(str string) bool {
 	_, err := url.ParseRequestURI(str); if err != nil {
 		return false
 	}
@@ -267,7 +233,7 @@ func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []st
 			var runList []string
 			for _, run := range commands.Run {
 				replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
-				if !isUrl(replace) {
+				if !isURL(replace) {
 					replace = filepath.Clean(replace)
 				}
 
@@ -307,7 +273,7 @@ func runCommands(commands []string) {
 			}
 
 			if err := c.Run(); err != nil {
-				event.MustFire(events.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
+				event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
 			}
 		}
 	}()
@@ -318,7 +284,7 @@ func runCommands(commands []string) {
 func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
 	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
-	if isUrl(str) {
+	if isURL(str) {
 		buffer, mitmErr := request.Send("GET", str, nil, header);
 		if mitmErr != nil {
 			return nil, fmt.Errorf(mitmErr.Message)

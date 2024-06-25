@@ -38,8 +38,8 @@ var (
 func ThemeMITM() *huh.Theme {
 	t := huh.ThemeBase()
 
-	t.Focused.Base = t.Focused.Base.BorderForeground(lipgloss.Color("238"))
-	t.Focused.Title = t.Focused.Title.Foreground(ColorSunsetOrange).Bold(true)
+	t.Focused.Base = t.Focused.Base.Border(lipgloss.Border{}).Padding(1, 2)
+	t.Focused.Title = t.Focused.Title.Foreground(ColorSunsetOrange).Bold(true).BorderBottom(true).BorderBottomForeground(ColorSunsetOrange).BorderStyle(lipgloss.ThickBorder())
 	t.Focused.NoteTitle = t.Focused.NoteTitle.Foreground(ColorSunsetOrange).Bold(true).MarginBottom(1)
 	t.Focused.Directory = t.Focused.Directory.Foreground(ColorTwilightBlue)
 	t.Focused.Description = t.Focused.Description.Foreground(lipgloss.AdaptiveColor{Light: "236", Dark: "243"})

@@ -31,6 +31,7 @@ import (
 	welcomePromptUI "infinite-mitm/internal/application/ui/prompt/welcome"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/proxy"
+	"infinite-mitm/pkg/spinner"
 	"infinite-mitm/pkg/sysutilities"
 
 	"github.com/gookit/event"
@@ -109,6 +110,7 @@ func Start(f *embed.FS, omitInit bool) *errors.MITMError {
 			return Start(f, false)
 		}
 
+		spinner.Run("Attempting to open your browser...")
 		sysutilities.OpenBrowser(configs.GetConfig().Repository + "/blob/main/cert/" + fmt.Sprintf("%s.pem", configs.GetConfig().Proxy.Certificate.Name))
 	} else if welcomePromptUI.Exit.Is(option) {
 		if mitmErr := proxy.ToggleProxy("off"); mitmErr != nil {

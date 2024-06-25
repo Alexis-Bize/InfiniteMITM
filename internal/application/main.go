@@ -20,25 +20,19 @@ import (
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/resources"
+	"infinite-mitm/pkg/spinner"
 	"infinite-mitm/pkg/sysutilities"
-	"infinite-mitm/pkg/theme"
 	"infinite-mitm/pkg/updater"
 	"os"
 	"runtime"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func Init() *errors.MITMError {
 	var mitmErr *errors.MITMError
 
-	spinner.New().Title("Looking for updates...").
-		TitleStyle(lipgloss.NewStyle().
-		Foreground(theme.ColorNormalFg)).
-		Run()
-
+	spinner.Run("Looking for updates...")
 	updateAvailable, latest, _ := updater.CheckForUpdates()
 	if updateAvailable {
 		var ignoreUpdate bool
@@ -50,27 +44,20 @@ func Init() *errors.MITMError {
 			Run()
 
 		if !ignoreUpdate {
+			spinner.Run("Attempting to open your browser...")
 			sysutilities.OpenBrowser(fmt.Sprintf(configs.GetConfig().Repository + "/releases/tag/%s", latest))
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}
 
 	if runtime.GOOS == "windows" {
-		spinner.New().Title("Verifying admin privileges...").
-			TitleStyle(lipgloss.NewStyle().
-				Foreground(theme.ColorNormalFg)).
-				Run()
-
+		spinner.Run("Verifying admin privileges...")
 		if !sysutilities.IsAdmin() {
 			sysutilities.RunAsAdmin()
 		}
 	}
 
-	spinner.New().Title("Verifying local assets integrity...").
-		TitleStyle(lipgloss.NewStyle().
-		Foreground(theme.ColorNormalFg)).
-		Run()
-
+	spinner.Run("Verifying local assets integrity...")
 	mitmErr = resources.CreateRootAssets(); if mitmErr != nil {
 		return mitmErr
 	}
@@ -80,11 +67,7 @@ func Init() *errors.MITMError {
 		return nil
 	}
 
-	spinner.New().Title("Looking for root certificate...").
-		TitleStyle(lipgloss.NewStyle().
-		Foreground(theme.ColorNormalFg)).
-		Run()
-
+	spinner.Run("Looking for root certificate...")
 	_, mitmErr = sysutilities.CheckForRootCertificate(configs.GetConfig().Proxy.Certificate.Name);
 	if mitmErr != nil {
 		return mitmErr

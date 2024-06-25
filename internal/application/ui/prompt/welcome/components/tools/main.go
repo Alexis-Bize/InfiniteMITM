@@ -18,11 +18,10 @@ import (
 	selectServersUI "infinite-mitm/internal/application/ui/tools/select-servers"
 	"infinite-mitm/pkg/proxy"
 	"infinite-mitm/pkg/smartcache"
+	"infinite-mitm/pkg/spinner"
 	"infinite-mitm/pkg/theme"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type PromptOption int
@@ -71,18 +70,10 @@ func Run() {
 		Run()
 
 	if ClearSmartCache.Is(selected) {
-		spinner.New().Title("Clearing local cached files...").
-		TitleStyle(lipgloss.NewStyle().
-			Foreground(theme.ColorNormalFg)).
-			Run()
-
+		spinner.Run("Clearing local cached files...")
 		smartcache.Flush()
 	} else if ForceKillProxy.Is(selected) {
-		spinner.New().Title("Killing active proxy...").
-			TitleStyle(lipgloss.NewStyle().
-				Foreground(theme.ColorNormalFg)).
-				Run()
-
+		spinner.Run("Killing active proxy...")
 		proxy.ToggleProxy("off")
 	} else if SelectServers.Is(selected) {
 		selectServersUI.Create()

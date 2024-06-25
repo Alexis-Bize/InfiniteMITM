@@ -16,6 +16,7 @@ package MITMApplicationWelcomePromptUICreditsComponent
 
 import (
 	"infinite-mitm/configs"
+	"infinite-mitm/pkg/spinner"
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/theme"
 
@@ -64,6 +65,10 @@ func Run() {
 		Value(&selected).
 		WithTheme(theme.ThemeMITM()).
 		Run()
+
+	if selected != "" {
+		spinner.Run("Attempting to open your browser...")
+	}
 
 	switch selected {
 	case Author.String():

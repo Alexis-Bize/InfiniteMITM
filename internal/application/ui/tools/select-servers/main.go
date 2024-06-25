@@ -326,21 +326,21 @@ func (m model) View() string {
 
 	s.WriteString("\n")
 
-	extraContent := ""
+	extraContent := waitingString
 	if m.pingFinished {
 		if m.savingServers {
-			extraContent = actionStyle.Render(savingString)
+			extraContent = savingString
 		} else if m.serverSaved {
-			extraContent = actionStyle.Render(savedString)
+			extraContent = savedString
 		} else {
-			extraContent = actionStyle.Render(saveString)
+			extraContent = saveString
 		}
 	}
 
 	s.WriteString(lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		actionStyle.Render(quitString),
-		extraContent,
+		actionStyle.Render(extraContent),
 	))
 
 	return containerStyle.Render(

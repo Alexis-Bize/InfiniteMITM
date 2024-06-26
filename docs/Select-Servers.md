@@ -11,7 +11,7 @@
 -   Wait for the ping results and make your selection.
 -   Save your configuration (`ctrl+s`).
 -   Start the proxy server.
--   Restart the game.
+-   Restart the game, or sign out and sign back in.
 
 **Note:** Saving the configuration will automatically create or update the `qosservers.json` file in the `<drive>:\Users\<username>\InfiniteMITM\resources\json` directory and also update your `mitm.yaml` configuration.
 

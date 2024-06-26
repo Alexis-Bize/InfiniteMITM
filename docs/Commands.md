@@ -27,7 +27,7 @@ domains:
           commands:
             # Run InfiniteVariantToolCLI.exe to pack the file and output it using ":cgui-bin" as the output filename
             - run:
-              - ":mitm-dir/resources/tools/InfiniteVariantToolCLI/InfiniteVariantToolCLI.exe"
+              - ":mitm-dir/resources/tools/InfiniteVariantTool/InfiniteVariantToolCLI.exe"
               - "bond"
               - "pack"
               - ":mitm-dir/resources/ugc/enginegamevariants/cgui-markups/Slayer-FFA-MITM.xml"

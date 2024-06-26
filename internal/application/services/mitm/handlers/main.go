@@ -53,6 +53,7 @@ func isRequestProxified(customCtx *context.CustomProxyCtx) bool {
 	proxified := customCtx.GetUserData("proxified").(map[string]bool)
 	return proxified["req"]
 }
+
 func isResponseProxified(customCtx *context.CustomProxyCtx) bool {
 	proxified := customCtx.GetUserData("proxified").(map[string]bool)
 	return proxified["resp"]

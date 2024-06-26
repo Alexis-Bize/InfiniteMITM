@@ -19,6 +19,7 @@
 -   `CustomsBrowserEnabled`
 -   `DebugConsoleEnabled`
 -   `DiskCacheOfflinePackageEnabled`
+-   `director_enable_third_person_camera_game_option`
 -   `enableFilmLatencyEmulation`
 -   `enableObserverLatencyEmulation`
 -   `ForgeEnabled`

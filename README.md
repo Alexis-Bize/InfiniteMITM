@@ -9,7 +9,7 @@
 
 **InfiniteMITM** is an interactive MITM (Man-In-The-Middle) CLI for **Halo Infinite** which enables you to intercept and modify the game's requests and responses on the fly.
 
-**Note:** While this interactive CLI is primarily designed to work with Halo Infinite and [halowaypoint.com](https://www.halowaypoint.com), other Halo titles may also be supported.
+**Note:** While this interactive CLI is primarily designed to work with Halo Infinite, it may also support other Halo titles such as Halo 5: Forge, HMCC, etc. Additionally, it could be extended to other games, though this requires some development knowledge.
 
 <img alt="InfiniteMITM CLI" title="InfiniteMITM CLI" src="./assets/preview.gif?v=3" width="800" />
 

@@ -33,35 +33,19 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		return req, resp
 	}
 
-	customCtx := context.ContextHandler(ctx)
-	uuid := customCtx.GetUserData("uuid").(string)
-	if uuid == "" {
+	customCtx := context.ContextHandler(ctx); if customCtx == nil {
 		return req, resp
 	}
 
-	proxified := customCtx.GetUserData("proxified").(map[string]bool)
-	isProxified := proxified["req"]
-
-	if isProxified {
-		req.Header.Set(request.CacheControlHeaderKey, "no-store, no-cache, must-revalidate")
-		req.Header.Set(request.PragmaHeaderKey, "no-cache")
+	uuid := getUUID(customCtx)
+	smartCache := getSmartCache(customCtx)
+	if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
+		return req, resp
 	}
 
-	var smartCache *smartcache.SmartCache
-	cacheCtx := customCtx.GetUserData("cache")
-	if !isProxified && cacheCtx != nil {
-		smartCache = cacheCtx.(*smartcache.SmartCache)
-	}
-
+	isProxified := isRequestProxified(customCtx) || isResponseProxified(customCtx)
 	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
 		return req, resp
-	} else if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
-		return req, resp
-	}
-
-	var bodyBytes []byte
-	if req.Body != nil {
-		bodyBytes, _ = io.ReadAll(req.Body)
 	}
 
 	var smartCachedItem *smartcache.SmartCacheItem
@@ -87,9 +71,19 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		}
 	}
 
+	if isProxified {
+		req.Header.Set(request.CacheControlHeaderKey, "no-store, no-cache, must-revalidate")
+		req.Header.Set(request.PragmaHeaderKey, "no-cache")
+	}
+
+	var bodyBytes []byte
+	if req.Body != nil {
+		bodyBytes, _ = io.ReadAll(req.Body)
+	}
+
 	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
 		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
+		options.TrafficDisplay == mitm.TrafficSmartCache && !isProxified && smartCache != nil)
 
 	if shouldDispatch {
 		headersMap := request.HeadersToMap(req.Header)
@@ -100,7 +94,7 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 			Headers: headersMap,
 			Body: bodyBytes,
 			Proxified: isProxified,
-			SmartCached: !isProxified && (smartCache != nil || smartCachedItem != nil),
+			SmartCached: !isProxified && smartCache != nil,
 		})
 
 		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})

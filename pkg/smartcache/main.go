@@ -124,6 +124,7 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 		since := time.Since(item.Created)
 		seconds := int(since.Seconds())
 
+		item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
 
@@ -134,6 +135,7 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 		since := time.Since(item.Created)
 		seconds := int(since.Seconds())
 
+		item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 		item.Header.Set(request.AgeHeaderKey, fmt.Sprintf("%d", seconds))
 		item.Header.Set(request.DateHeaderKey, time.Now().Format(time.RFC1123))
 
@@ -155,8 +157,6 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 
 	item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 	item.Header.Set(request.ExpiresHeaderKey, item.Expires.Format(time.RFC1123))
-	item.Header.Set(request.DateHeaderKey, item.Created.Format(time.RFC1123))
-	item.Header.Set(request.AgeHeaderKey, "0")
 	item.Header.Del(request.CacheControlHeaderKey)
 
 	if s.strategy == Memory {

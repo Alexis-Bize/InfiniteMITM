@@ -35,7 +35,7 @@ type TableModel struct {
 	focused   bool
 }
 
-type tableRowEvent  struct {
+type TableRowMsg   struct {
 	ID           string
 	Prefix       string
 	Method       string
@@ -45,9 +45,6 @@ type tableRowEvent  struct {
 	Status       int
 	ContentType  string
 }
-
-type TableRowPushMsg   tableRowEvent
-type TableRowUpdateMsg tableRowEvent
 
 const (
 	PruneRowsCommand = "ctrl+r"
@@ -121,13 +118,10 @@ func (m TableModel) GetRowPositionMap() map[string]int {
 	return m.rowPositionIDMap
 }
 
-func (m TableModel) getNextRowPosition() int {
-	return len(m.rowPositionIDMap) + 1
-}
-
 func (m *TableModel) pruneRows() {
 	m.rowPositionIDMap = map[string]int{}
 	m.tableModel.SetRows([]table.Row{})
+	m.tableModel.SetCursor(0)
 }
 
 func (m *TableModel) draw(width int) {
@@ -167,12 +161,16 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 		}
 
 		m.tableModel.SetColumns(CreateColums(msg.Width))
-	case TableRowPushMsg:
+	case TableRowMsg:
 		if !m.ready {
 			return m, cmd
 		}
 
-		position := m.getNextRowPosition()
+		id := msg.ID
+		prefix := msg.Prefix
+		position := m.GetRowPosition(id)
+		rows := m.tableModel.Rows()
+
 		statusCode := "..."
 		if msg.Status != 0 {
 			statusCode = fmt.Sprintf("%d", msg.Status)
@@ -183,33 +181,33 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 			contentType = strings.Split(msg.ContentType, ";")[0]
 		}
 
-		m.rowPositionIDMap[msg.ID] = position
-		m.tableModel.SetRows(append(m.tableModel.Rows(), table.Row([]string{
-			msg.Prefix,
-			fmt.Sprintf("%d", position),
-			msg.Method,
-			statusCode,
-			msg.Host,
-			msg.PathAndQuery,
-			contentType,
-		})))
-	case TableRowUpdateMsg:
+		if position < 0 {
+			nextPosition := len(rows) + 1
+			m.rowPositionIDMap[id] = nextPosition
+
+			m.tableModel.SetRows(append(rows, table.Row([]string{
+				prefix,
+				fmt.Sprintf("%d", nextPosition),
+				msg.Method,
+				statusCode,
+				msg.Host,
+				msg.PathAndQuery,
+				contentType,
+			})))
+
+			break
+		}
+
+		index := position - 1
+		rows[index][0] = prefix
+		rows[index][3] = statusCode
+		rows[index][6] = contentType
+	case tea.KeyMsg:
 		if !m.ready {
 			return m, cmd
 		}
 
-		rows := m.tableModel.Rows()
-		index := m.GetRowPosition(msg.ID) - 1
-
-		if index < 0 {
-			return m.Update(TableRowPushMsg(msg))
-		} else if index >= 0 && index < len(rows) {
-			rows[index][0] = msg.Prefix
-			rows[index][3] = fmt.Sprintf("%d", msg.Status)
-			rows[index][6] = strings.Split(msg.ContentType, ";")[0]
-		}
-	case tea.KeyMsg:
-		if m.ready && m.focused {
+		if m.focused {
 			switch msg.String() {
 			case PruneRowsCommand:
 				m.pruneRows()

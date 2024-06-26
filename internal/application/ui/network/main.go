@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -264,18 +265,20 @@ func pushNetworkData(data eventsService.ProxyRequestEventData) {
 		return
 	}
 
-	program.Send(table.TableRowPushMsg(table.TableRowPushMsg{
+	time.Sleep(50 * time.Millisecond)
+	program.Send(details.RequestTraffic(details.RequestTraffic{
+		ID: data.ID,
+		Headers: data.Headers,
+		Body: data.Body,
+	}))
+
+	time.Sleep(50 * time.Millisecond)
+	program.Send(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
 		Host: hostname,
 		PathAndQuery: path,
-	}))
-
-	program.Send(details.RequestTraffic(details.RequestTraffic{
-		ID: data.ID,
-		Headers: data.Headers,
-		Body: data.Body,
 	}))
 }
 
@@ -312,7 +315,21 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 		return
 	}
 
-	program.Send(table.TableRowUpdateMsg(table.TableRowUpdateMsg{
+	time.Sleep(50 * time.Millisecond)
+	program.Send(details.ResponseStatus(details.ResponseStatus{
+		ID: data.ID,
+		Status: data.Status,
+	}))
+
+	time.Sleep(50 * time.Millisecond)
+	program.Send(details.ResponseTraffic(details.ResponseTraffic{
+		ID: data.ID,
+		Headers: data.Headers,
+		Body: data.Body,
+	}))
+
+	time.Sleep(50 * time.Millisecond)
+	program.Send(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
@@ -320,17 +337,6 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 		PathAndQuery: path,
 		Status: data.Status,
 		ContentType: data.Headers[request.ContentTypeHeaderKey],
-	}))
-
-	program.Send(details.ResponseTraffic(details.ResponseTraffic{
-		ID: data.ID,
-		Headers: data.Headers,
-		Body: data.Body,
-	}))
-
-	program.Send(details.ResponseStatus(details.ResponseStatus{
-		ID: data.ID,
-		Status: data.Status,
 	}))
 }
 

@@ -42,9 +42,6 @@ var certName = configs.GetConfig().Proxy.Certificate.Name
 var smartCache *smartcache.SmartCache
 
 func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
-	var clientRequestHandlers []handlers.RequestHandlerStruct
-	var clientResponseHandlers []handlers.ResponseHandlerStruct
-
 	CACert, err := f.ReadFile(fmt.Sprintf("cert/%s.pem", certName)); if err != nil {
 		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
@@ -71,11 +68,15 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 	}
 
+	var clientRequestHandlers []handlers.RequestHandlerStruct
+	var clientResponseHandlers []handlers.ResponseHandlerStruct
+
+	var totalReqProxy int
+	var totalRespProxy int
+
 	if mitmErr == nil {
-		clientRequestHandlers, clientResponseHandlers = CreateClientMITMHandlers(content)
-		clientActiveRequestHandlersCount := len(clientRequestHandlers)
-		clientActiveResponseHandlersCount := len(clientResponseHandlers)
-		totalClientHandlersCount := len(clientRequestHandlers) + len(clientResponseHandlers)
+		clientRequestHandlers, clientResponseHandlers, totalReqProxy, totalRespProxy = CreateClientMITMHandlers(content)
+		totalClientHandlersCount := totalReqProxy + totalRespProxy
 
 		domainText := "handler"
 		if totalClientHandlersCount == 0 || totalClientHandlersCount > 1 {
@@ -83,12 +84,12 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		}
 
 		requestText := "request"
-		if clientActiveRequestHandlersCount == 0 || clientActiveRequestHandlersCount > 1 {
+		if totalReqProxy == 0 || totalReqProxy > 1 {
 			requestText += "s"
 		}
 
 		responseText := "response"
-		if clientActiveResponseHandlersCount == 0 || clientActiveResponseHandlersCount > 1 {
+		if totalRespProxy == 0 || totalRespProxy > 1 {
 			responseText += "s"
 		}
 
@@ -111,9 +112,9 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 				smartCacheText,
 				totalClientHandlersCount,
 				domainText,
-				clientActiveRequestHandlersCount,
+				totalReqProxy,
 				requestText,
-				clientActiveResponseHandlersCount,
+				totalRespProxy,
 				responseText,
 			),
 		})

@@ -33,15 +33,21 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		return resp
 	}
 
-	customCtx := context.ContextHandler(ctx)
-	uuid := customCtx.GetUserData("uuid").(string)
-	if uuid == "" {
+	customCtx := context.ContextHandler(ctx); if customCtx == nil {
 		return resp
 	}
 
-	smartCached := resp.Header.Get(request.MITMCacheHeaderKey) == request.MITMCacheHeaderHitValue
-	proxified := customCtx.GetUserData("proxified").(map[string]bool)
-	isProxified := !smartCached && proxified["resp"]
+	uuid := getUUID(customCtx)
+	smartCache := getSmartCache(customCtx)
+	isSmartCached := request.MITMCacheHeaderKey == request.MITMCacheHeaderHitValue
+	if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil && !isSmartCached {
+		return resp
+	}
+
+	isProxified := !isSmartCached && isResponseProxified(customCtx)
+	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
+		return resp
+	}
 
 	if isProxified {
 		resp.Header.Set(request.MITMProxyHeaderKey, request.MITMProxyEnabledValue)
@@ -50,23 +56,12 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		resp.Header.Set(request.ExpiresHeaderKey, "0")
 	}
 
-	var smartCache *smartcache.SmartCache
-	cacheCtx := customCtx.GetUserData("cache")
-	if !isProxified && cacheCtx != nil {
-		smartCache = cacheCtx.(*smartcache.SmartCache)
-	}
-
-	if options.TrafficDisplay == mitm.TrafficOverrides && !isProxified && smartCache == nil {
-		return resp
-	} else if options.TrafficDisplay == mitm.TrafficSmartCache && smartCache == nil {
-		return resp
-	}
-
 	var bodyBytes []byte
-	var smartCachedItem *smartcache.SmartCacheItem
 	var smartCacheKey string
+	var smartCachedItem *smartcache.SmartCacheItem
 
-	if !smartCached && smartCache != nil {
+	trySmartCache := !isSmartCached && smartCache != nil
+	if trySmartCache {
 		smartCacheKey = smartCache.CreateKey(
 			request.StripPort(resp.Request.URL.String()),
 			resp.Request.Header.Get("Accept"),
@@ -82,17 +77,19 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		bodyBytes, _ = io.ReadAll(resp.Body)
 	}
 
-	if !smartCached && smartCache != nil && smartCachedItem == nil {
-		isSmartCachable := resp.StatusCode >= 200 && resp.StatusCode < 300
-		if isSmartCachable {
-			smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{Body: bodyBytes, Header: resp.Header})
-			resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
-		}
+	isSmartCachable := trySmartCache && smartCachedItem == nil && resp.StatusCode >= 200 && resp.StatusCode < 300
+	if isSmartCachable {
+		smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{
+			Body: bodyBytes,
+			Header: resp.Header,
+		})
+
+		resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
 	}
 
 	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
 		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == mitm.TrafficSmartCache && smartCache != nil)
+		options.TrafficDisplay == mitm.TrafficSmartCache && !isProxified && smartCache != nil)
 
 	if shouldDispatch {
 		headersMap := request.HeadersToMap(resp.Header)
@@ -104,7 +101,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 			Headers: headersMap,
 			Body: bodyBytes,
 			Proxified: isProxified,
-			SmartCached: smartCached || (!isProxified && smartCache != nil),
+			SmartCached: isSmartCached || (!isProxified && smartCache != nil),
 		})
 
 		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})

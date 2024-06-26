@@ -17,6 +17,9 @@ package MITMApplicationMITMServiceHandlers
 import (
 	"net/http"
 
+	context "infinite-mitm/internal/application/services/mitm/modules/context"
+	"infinite-mitm/pkg/smartcache"
+
 	"github.com/elazarl/goproxy"
 )
 
@@ -30,3 +33,27 @@ type ResponseHandlerStruct struct {
 	Fn    func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response
 }
 
+func getUUID(customCtx *context.CustomProxyCtx) string {
+	uuid := customCtx.GetUserData("uuid").(string)
+	return uuid
+}
+
+func getSmartCache(customCtx *context.CustomProxyCtx) *smartcache.SmartCache {
+	var smartCache *smartcache.SmartCache
+
+	cacheCtx := customCtx.GetUserData("cache")
+	if cacheCtx != nil {
+		smartCache = cacheCtx.(*smartcache.SmartCache)
+	}
+
+	return smartCache
+}
+
+func isRequestProxified(customCtx *context.CustomProxyCtx) bool {
+	proxified := customCtx.GetUserData("proxified").(map[string]bool)
+	return proxified["req"]
+}
+func isResponseProxified(customCtx *context.CustomProxyCtx) bool {
+	proxified := customCtx.GetUserData("proxified").(map[string]bool)
+	return proxified["resp"]
+}

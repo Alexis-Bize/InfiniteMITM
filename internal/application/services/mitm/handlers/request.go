@@ -50,7 +50,7 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 
 	var smartCachedItem *smartcache.SmartCacheItem
 
-	if smartCache != nil {
+	if !isResponseProxified(customCtx) && smartCache != nil {
 		smartCachedItem = smartCache.Get(smartCache.CreateKey(
 			request.StripPort(req.URL.String()),
 			req.Header.Get("Accept"),
@@ -71,7 +71,7 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		}
 	}
 
-	if isProxified {
+	if isRequestProxified(customCtx) {
 		req.Header.Set(request.CacheControlHeaderKey, "no-store, no-cache, must-revalidate")
 		req.Header.Set(request.PragmaHeaderKey, "no-cache")
 	}

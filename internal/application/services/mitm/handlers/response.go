@@ -59,6 +59,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 	var bodyBytes []byte
 	var smartCacheKey string
 	var smartCachedItem *smartcache.SmartCacheItem
+	var smartCacheKey string
 
 	trySmartCache := !isSmartCached && smartCache != nil
 	if trySmartCache {

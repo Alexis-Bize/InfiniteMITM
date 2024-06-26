@@ -155,6 +155,7 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	item.Created = time.Now()
 	item.Expires = time.Now().Add(s.duration)
 
+	item.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderHitValue)
 	item.Header.Set(request.ExpiresHeaderKey, item.Expires.Format(time.RFC1123))
 	item.Header.Del(request.CacheControlHeaderKey)
 

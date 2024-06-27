@@ -81,7 +81,7 @@ func GetPingTime(serverURL string) (int, *errors.MITMError) {
 	}
 
 	outputStr := strings.ToLower(string(output))
-	re := regexp.MustCompile(`([0-9]+\.?[0-9]*) ms`)
+	re := regexp.MustCompile(`([0-9]+\.?[0-9]*)\s?ms`)
 	matches := re.FindStringSubmatch(outputStr)
 
 	if len(matches) > 1 {

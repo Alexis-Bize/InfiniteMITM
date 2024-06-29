@@ -139,11 +139,11 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	proxy.OnRequest(rootCondition).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		var resp *http.Response
 		customCtx := context.ContextHandler(ctx)
-		customCtx.SetUserData("uuid", uuid.New().String())
-		customCtx.SetUserData("proxified", map[string]bool{"req": false, "resp": false})
+		customCtx.SetUserData(context.IDKey, uuid.New().String())
+		customCtx.SetUserData(context.ProxyKey, map[string]bool{"req": false, "resp": false})
 
 		if smartCacheEnabled && smartcache.IsRequestSmartCachable(req) {
-			customCtx.SetUserData("cache", smartCache)
+			customCtx.SetUserData(context.CacheKey, smartCache)
 		}
 
 		// :stats-svc/:title/players/:xuid/decks

@@ -85,8 +85,6 @@ func WrapText(text string, width int) string {
 	return sb.String()
 }
 
-
-
 func FormatHexView(data []byte, width int) string {
 	bytesPerLine := (width - 10)
 	if bytesPerLine <= 10 {

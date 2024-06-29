@@ -43,10 +43,14 @@ const (
 	MITMProxyEnabledValue    = "ENABLED"
 )
 
-func Send(method, url string, payload []byte, header http.Header) ([]byte, *errors.MITMError) {
+var client = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+func Send(method, url string, payload []byte, header http.Header) ([]byte, http.Header, *errors.MITMError) {
 	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
-		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
+		return nil, http.Header{}, errors.Create(errors.ErrHTTPRequestException, err.Error())
 	}
 
 	for key, values := range header {
@@ -55,26 +59,22 @@ func Send(method, url string, payload []byte, header http.Header) ([]byte, *erro
 		}
 	}
 
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Create(errors.ErrHTTPRequestException, err.Error())
+		return nil, http.Header{}, errors.Create(errors.ErrHTTPRequestException, err.Error())
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, errors.Create(errors.ErrHTTPCodeError, fmt.Sprintf("status code: %d", resp.StatusCode))
+		return nil, http.Header{}, errors.Create(errors.ErrHTTPCodeError, fmt.Sprintf("status code: %d", resp.StatusCode))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Create(errors.ErrHTTPBodyReadException, err.Error())
+		return nil, http.Header{}, errors.Create(errors.ErrHTTPBodyReadException, err.Error())
 	}
 
-	return body, nil
+	return body, resp.Header, nil
 }
 
 func StripPort(u string) string {

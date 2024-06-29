@@ -16,9 +16,17 @@ package MITMApplicationMITMServiceContextModule
 
 import "github.com/elazarl/goproxy"
 
+type dataKey string
+
+const (
+	IDKey    dataKey = "uuid"
+	ProxyKey dataKey = "proxified"
+	CacheKey dataKey = "cache"
+)
+
 type CustomProxyCtx struct {
 	*goproxy.ProxyCtx
-	UserDataMap map[string]interface{}
+	UserDataMap map[dataKey]interface{}
 }
 
 func ContextHandler(ctx *goproxy.ProxyCtx) *CustomProxyCtx {
@@ -28,18 +36,22 @@ func ContextHandler(ctx *goproxy.ProxyCtx) *CustomProxyCtx {
 
 	customCtx := &CustomProxyCtx{
 		ProxyCtx:    ctx,
-		UserDataMap: make(map[string]interface{}),
+		UserDataMap: make(map[dataKey]interface{}),
 	}
 
 	ctx.UserData = customCtx
 	return customCtx
 }
 
-func (c *CustomProxyCtx) SetUserData(key string, value interface{}) {
+func (c *CustomProxyCtx) SetUserData(key dataKey, value interface{}) {
 	c.UserDataMap[key] = value
 }
 
-func (c *CustomProxyCtx) GetUserData(key string) interface{} {
+func (c *CustomProxyCtx) UnsetUserData(key dataKey) {
+	delete(c.UserDataMap, key)
+}
+
+func (c *CustomProxyCtx) GetUserData(key dataKey) interface{} {
 	return c.UserDataMap[key]
 }
 

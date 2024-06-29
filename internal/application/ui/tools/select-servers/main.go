@@ -130,11 +130,16 @@ func (m *model) pingServers() {
 
 			go func(v selectServersTool.QOSServer) {
 				defer wg.Done()
-				pingTime, _ := selectServersTool.GetPingTime(v.ServerURL)
+				rtt := -1
+				stats, _ := selectServersTool.GetPingTime(v.ServerURL)
+				if len(stats.Rtts) > 0 {
+					rtt = int(stats.AvgRtt.Milliseconds())
+				}
+
 				program.Send(setPingForServerMsg{
 					ServerURL: v.ServerURL,
 					Region: v.Region,
-					Ping: pingTime,
+					Ping: rtt,
 				})
 			}(v)
 		}
@@ -186,19 +191,21 @@ func (m *model) saveServers() {
 	if len(m.selectedRegions) != 0 {
 		minMax := selectServersTool.GetMinMax(m.pingResults)
 
-		for _, server := range servers {
-			var assignedServerURL = server.ServerURL
+		if minMax.Min.ServerURL != "" && minMax.Max.ServerURL != "" {
+			for _, server := range servers {
+				var assignedServerURL = server.ServerURL
 
-			if utilities.Contains(m.selectedRegions, server.Region) {
-				assignedServerURL = minMax.Min.ServerURL
-			} else {
-				assignedServerURL = minMax.Max.ServerURL
+				if utilities.Contains(m.selectedRegions, server.Region) {
+					assignedServerURL = minMax.Min.ServerURL
+				} else {
+					assignedServerURL = minMax.Max.ServerURL
+				}
+
+				updatedServers = append(updatedServers, selectServersTool.QOSServer{
+					Region: server.Region,
+					ServerURL: assignedServerURL,
+				})
 			}
-
-			updatedServers = append(updatedServers, selectServersTool.QOSServer{
-				Region: server.Region,
-				ServerURL: assignedServerURL,
-			})
 		}
 	}
 

@@ -77,7 +77,13 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		bodyBytes, _ = io.ReadAll(resp.Body)
 	}
 
-	isSmartCachable := trySmartCache && smartCachedItem == nil && resp.StatusCode >= 200 && resp.StatusCode < 300
+	isSmartCachable :=
+		!isProxified &&
+		trySmartCache &&
+		smartCachedItem == nil &&
+		resp.StatusCode == 200 &&
+		resp.StatusCode < 300
+
 	if isSmartCachable {
 		smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{
 			Body: bodyBytes,

@@ -24,7 +24,6 @@ import (
 	"infinite-mitm/pkg/utilities"
 	"log"
 	"strings"
-	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -123,23 +122,19 @@ func (m *model) pingServers() {
 	}
 
 	go func() {
-		var wg sync.WaitGroup
-
 		for _, v := range servers {
-			wg.Add(1)
+			rtt := -1
+			stats, _ := selectServersTool.GetPingTime(v.ServerURL)
+			if len(stats.Rtts) > 0 {
+				rtt = int(stats.Rtts[0].Milliseconds())
+			}
 
-			go func(v selectServersTool.QOSServer) {
-				defer wg.Done()
-				pingTime, _ := selectServersTool.GetPingTime(v.ServerURL)
-				program.Send(setPingForServerMsg{
-					ServerURL: v.ServerURL,
-					Region: v.Region,
-					Ping: pingTime,
-				})
-			}(v)
+			program.Send(setPingForServerMsg{
+				ServerURL: v.ServerURL,
+				Region: v.Region,
+				Ping: rtt,
+			})
 		}
-
-		wg.Wait()
 	}()
 
 	m.pingStarted = true
@@ -186,19 +181,21 @@ func (m *model) saveServers() {
 	if len(m.selectedRegions) != 0 {
 		minMax := selectServersTool.GetMinMax(m.pingResults)
 
-		for _, server := range servers {
-			var assignedServerURL = server.ServerURL
+		if minMax.Min.ServerURL != "" && minMax.Max.ServerURL != "" {
+			for _, server := range servers {
+				var assignedServerURL = server.ServerURL
 
-			if utilities.Contains(m.selectedRegions, server.Region) {
-				assignedServerURL = minMax.Min.ServerURL
-			} else {
-				assignedServerURL = minMax.Max.ServerURL
+				if utilities.Contains(m.selectedRegions, server.Region) {
+					assignedServerURL = minMax.Min.ServerURL
+				} else {
+					assignedServerURL = minMax.Max.ServerURL
+				}
+
+				updatedServers = append(updatedServers, selectServersTool.QOSServer{
+					Region: server.Region,
+					ServerURL: assignedServerURL,
+				})
 			}
-
-			updatedServers = append(updatedServers, selectServersTool.QOSServer{
-				Region: server.Region,
-				ServerURL: assignedServerURL,
-			})
 		}
 	}
 

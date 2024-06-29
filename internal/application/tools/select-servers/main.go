@@ -16,6 +16,7 @@ package MITMApplicationSelectServersTool
 
 import (
 	"encoding/json"
+	"fmt"
 	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
@@ -24,13 +25,14 @@ import (
 	"infinite-mitm/pkg/resources"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
-	"strconv"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
+
+	probing "github.com/prometheus-community/pro-bing"
 )
 
 type QOSServers []QOSServer
@@ -73,28 +75,27 @@ func GetQOSServers() QOSServers {
 	return servers
 }
 
-func GetPingTime(serverURL string) (int, *errors.MITMError) {
-	cmd := exec.Command("ping", "-c", "1", serverURL)
-	output, err := cmd.CombinedOutput()
+func GetPingTime(serverURL string) (*probing.Statistics, *errors.MITMError) {
+	pinger, err := probing.NewPinger(serverURL)
+	if runtime.GOOS == "windows" {
+		pinger.SetPrivileged(true)
+	}
+
 	if err != nil {
-		return -1, errors.Create(errors.ErrPingFailedException, err.Error())
+		fmt.Println(err.Error())
+		return nil, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
-	outputStr := strings.ToLower(string(output))
-	re := regexp.MustCompile(`([0-9]+\.?[0-9]*)\s?ms`)
-	matches := re.FindStringSubmatch(outputStr)
+	pinger.Count = 1
+	pinger.Timeout = time.Second * 5
 
-	if len(matches) > 1 {
-		timeStr := matches[1]
-		timeFloat, err := strconv.ParseFloat(timeStr, 64)
-		if err != nil {
-			return -1, nil
-		}
-
-		return int(timeFloat), nil
+	err = pinger.Run()
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
-	return -1, errors.Create(errors.ErrPingFailedException, errors.ErrPingFailedException.Error())
+	return pinger.Statistics(), nil
 }
 
 func GetMinMax(pairs []PingResult) MinMax {

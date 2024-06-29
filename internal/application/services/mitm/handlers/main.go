@@ -34,14 +34,14 @@ type ResponseHandlerStruct struct {
 }
 
 func getUUID(customCtx *context.CustomProxyCtx) string {
-	uuid := customCtx.GetUserData("uuid").(string)
+	uuid := customCtx.GetUserData(context.IDKey).(string)
 	return uuid
 }
 
 func getSmartCache(customCtx *context.CustomProxyCtx) *smartcache.SmartCache {
 	var smartCache *smartcache.SmartCache
 
-	cacheCtx := customCtx.GetUserData("cache")
+	cacheCtx := customCtx.GetUserData(context.CacheKey)
 	if cacheCtx != nil {
 		smartCache = cacheCtx.(*smartcache.SmartCache)
 	}
@@ -50,11 +50,11 @@ func getSmartCache(customCtx *context.CustomProxyCtx) *smartcache.SmartCache {
 }
 
 func isRequestProxified(customCtx *context.CustomProxyCtx) bool {
-	proxified := customCtx.GetUserData("proxified").(map[string]bool)
+	proxified := customCtx.GetUserData(context.ProxyKey).(map[string]bool)
 	return proxified["req"]
 }
 
 func isResponseProxified(customCtx *context.CustomProxyCtx) bool {
-	proxified := customCtx.GetUserData("proxified").(map[string]bool)
+	proxified := customCtx.GetUserData(context.ProxyKey).(map[string]bool)
 	return proxified["resp"]
 }

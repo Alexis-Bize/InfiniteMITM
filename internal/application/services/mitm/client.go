@@ -113,28 +113,19 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 	var activeRespHandlers int
 
 	for _, v := range contentList {
-		var requestHandler *handlers.RequestHandlerStruct
-		var responseHandler *handlers.ResponseHandlerStruct
 		hijackResponse := v.Response.Body != ""
-
 		overrideRequest := v.Request.Body != "" || len(v.Request.Headers) != 0 || len(v.Request.Before.Commands) != 0
 		overrideResponse := hijackResponse || len(v.Response.Headers) != 0 || len(v.Response.Before.Commands) != 0 || v.Response.StatusCode != 0
 
-		if overrideResponse {
-			responseHandler = createResponseHandler(domain, v)
-			clientResponseHandlers = append(clientResponseHandlers, *responseHandler)
+		if hijackResponse {
+			clientRequestHandlers = append(clientRequestHandlers, * createRequestHandler(domain, v, createResponseHandler(domain, v)))
+		} else if overrideResponse {
+			clientResponseHandlers = append(clientResponseHandlers, *createResponseHandler(domain, v))
 			activeRespHandlers++
 		}
 
-		if hijackResponse {
-			requestHandler = createRequestHandler(domain, v, responseHandler)
-			clientRequestHandlers = append(clientRequestHandlers, *requestHandler)
-			continue
-		}
-
 		if overrideRequest {
-			requestHandler = createRequestHandler(domain, v, nil)
-			clientRequestHandlers = append(clientRequestHandlers, *requestHandler)
+			clientRequestHandlers = append(clientRequestHandlers, *createRequestHandler(domain, v, nil))
 			activeReqHandlers++
 		}
 	}
@@ -151,26 +142,14 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
-			if responseHandler != nil {
-				hijackedResp := responseHandler.Fn(&http.Response{
-					Request: req,
-					StatusCode: http.StatusOK,
-					Status: http.StatusText(http.StatusOK),
-					Header: http.Header{},
-				}, ctx)
-
-				return req, hijackedResp
-			}
-
 			customCtx := context.ContextHandler(ctx)
-			proxified := customCtx.GetUserData("proxified")
-			if proxified == nil {
+			proxified := customCtx.GetUserData(context.ProxyKey); if proxified == nil {
 				return req, nil
 			}
 
 			pr := proxified.(map[string]bool)
 			pr["req"] = true
-			customCtx.SetUserData("proxified", pr)
+			customCtx.SetUserData(context.ProxyKey, pr)
 
 			body := node.Request.Body
 			matches := pattern.Match(target, request.StripPort(req.URL.String()))
@@ -187,16 +166,30 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 			runCommands(beforeCommands)
 
 			if body != "" {
-				buffer, err := readBodyFile(body, matches, req.Header)
+				buffer, _, err := readBodyFile(body, matches, req.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
+
 					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
 					req.ContentLength = int64(bufferLength)
+
 					req.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 				}
+			}
+
+			if responseHandler != nil {
+				customCtx.UnsetUserData(context.CacheKey)
+				hijackedResp := responseHandler.Fn(&http.Response{
+					Request: req,
+					StatusCode: http.StatusOK,
+					Status: http.StatusText(http.StatusOK),
+					Header: http.Header{},
+				}, ctx)
+
+				return req, hijackedResp
 			}
 
 			return req, nil
@@ -214,14 +207,13 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			}
 
 			customCtx := context.ContextHandler(ctx)
-			proxified := customCtx.GetUserData("proxified")
-			if proxified == nil {
+			proxified := customCtx.GetUserData(context.ProxyKey); if proxified == nil {
 				return resp
 			}
 
 			pr := proxified.(map[string]bool)
 			pr["resp"] = true
-			customCtx.SetUserData("proxified", pr)
+			customCtx.SetUserData(context.ProxyKey, pr)
 
 			body := node.Response.Body
 			matches := pattern.Match(target, request.StripPort(resp.Request.URL.String()))
@@ -238,15 +230,22 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			runCommands(beforeCommands)
 
 			if body != "" {
-				buffer, err := readBodyFile(body, matches, resp.Request.Header)
+				buffer, httpHeader, err := readBodyFile(body, matches, resp.Request.Header)
 				if err != nil {
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
+
 					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
 					resp.ContentLength = int64(bufferLength)
-					resp.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
+
+					for k, v := range httpHeader {
+						resp.Header.Set(k, strings.Join(v, ", "))
+					}
+
+					resp.Status = http.StatusText(http.StatusOK)
+					resp.StatusCode = http.StatusOK
 				}
 			}
 
@@ -325,22 +324,22 @@ func runCommands(commands []string) {
 	wg.Wait()
 }
 
-func readBodyFile(body string, matches []string, header http.Header) ([]byte, error) {
+func readBodyFile(body string, matches []string, header http.Header) ([]byte, http.Header, error) {
 	str := pattern.ReplaceParameters(pattern.ReplaceMatches(body, matches))
 
 	if isURL(str) {
-		buffer, mitmErr := request.Send("GET", str, nil, header);
+		buffer, httpHeader, mitmErr := request.Send("GET", str, nil, header);
 		if mitmErr != nil {
-			return nil, fmt.Errorf(mitmErr.Message)
+			return nil, httpHeader, fmt.Errorf(mitmErr.Message)
 		}
 
-		return buffer, nil
+		return buffer, httpHeader, nil
 	}
 
 	buffer, err := os.ReadFile(filepath.Clean(str));
 	if err != nil {
-		return nil, err
+		return nil, http.Header{}, err
 	}
 
-	return buffer, nil
+	return buffer, http.Header{}, nil
 }

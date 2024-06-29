@@ -24,6 +24,7 @@ import (
 	"infinite-mitm/pkg/utilities"
 	"log"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -122,19 +123,28 @@ func (m *model) pingServers() {
 	}
 
 	go func() {
-		for _, v := range servers {
-			rtt := -1
-			stats, _ := selectServersTool.GetPingTime(v.ServerURL)
-			if len(stats.Rtts) > 0 {
-				rtt = int(stats.Rtts[0].Milliseconds())
-			}
+		var wg sync.WaitGroup
 
-			program.Send(setPingForServerMsg{
-				ServerURL: v.ServerURL,
-				Region: v.Region,
-				Ping: rtt,
-			})
+		for _, v := range servers {
+			wg.Add(1)
+
+			go func(v selectServersTool.QOSServer) {
+				defer wg.Done()
+				rtt := -1
+				stats, _ := selectServersTool.GetPingTime(v.ServerURL)
+				if len(stats.Rtts) > 0 {
+					rtt = int(stats.AvgRtt.Milliseconds())
+				}
+
+				program.Send(setPingForServerMsg{
+					ServerURL: v.ServerURL,
+					Region: v.Region,
+					Ping: rtt,
+				})
+			}(v)
 		}
+
+		wg.Wait()
 	}()
 
 	m.pingStarted = true

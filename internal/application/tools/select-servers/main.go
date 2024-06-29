@@ -86,7 +86,7 @@ func GetPingTime(serverURL string) (*probing.Statistics, *errors.MITMError) {
 		return nil, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
-	pinger.Count = 1
+	pinger.Count = 3
 	pinger.Timeout = time.Second * 5
 
 	err = pinger.Run()

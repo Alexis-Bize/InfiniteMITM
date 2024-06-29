@@ -118,7 +118,8 @@ func processNodes(contentList []domains.YAMLDomainNode, domain domains.DomainTyp
 		overrideResponse := hijackResponse || len(v.Response.Headers) != 0 || len(v.Response.Before.Commands) != 0 || v.Response.StatusCode != 0
 
 		if hijackResponse {
-			clientRequestHandlers = append(clientRequestHandlers, * createRequestHandler(domain, v, createResponseHandler(domain, v)))
+			clientRequestHandlers = append(clientRequestHandlers, *createRequestHandler(domain, v, createResponseHandler(domain, v)))
+			activeRespHandlers++
 		} else if overrideResponse {
 			clientResponseHandlers = append(clientResponseHandlers, *createResponseHandler(domain, v))
 			activeRespHandlers++
@@ -147,7 +148,10 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
-			pr := proxified.(map[string]bool)
+			pr := proxified.(map[string]bool); if pr["resp"] {
+				return req, nil
+			}
+
 			pr["req"] = true
 			customCtx.SetUserData(context.ProxyKey, pr)
 
@@ -211,7 +215,10 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				return resp
 			}
 
-			pr := proxified.(map[string]bool)
+			pr := proxified.(map[string]bool); if pr["resp"] {
+				return resp
+			}
+
 			pr["resp"] = true
 			customCtx.SetUserData(context.ProxyKey, pr)
 

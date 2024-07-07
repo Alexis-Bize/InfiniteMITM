@@ -92,7 +92,10 @@ func Flush() {
 	flushSmartCacheMutex.Lock()
 	defer flushSmartCacheMutex.Unlock()
 
-	os.RemoveAll(resources.GetSmartCacheDirPath())
+	err := os.RemoveAll(resources.GetSmartCacheDirPath())
+	if err != nil {
+		os.MkdirAll(resources.GetSmartCacheDirPath(), 0755)
+	}
 }
 
 func (s *SmartCache) Get(key string) *SmartCacheItem {

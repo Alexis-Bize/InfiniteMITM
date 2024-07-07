@@ -48,8 +48,8 @@ type model struct {
 }
 
 type networkDataType struct {
-	Requests  map[string]*eventsService.ProxyRequestEventData
-	Responses map[string]*eventsService.ProxyResponseEventData
+	Requests  map[string]eventsService.ProxyRequestEventData
+	Responses map[string]eventsService.ProxyResponseEventData
 }
 
 const (
@@ -58,9 +58,10 @@ const (
 )
 
 const (
-	QuitCommand  = "q"
-	StopCommand  = "ctrl+c"
-	EnterCommand = "enter"
+	QuitCommand      = "q"
+	StopCommand      = "ctrl+c"
+	EnterCommand     = "enter"
+	PruneRowsCommand = "ctrl+r"
 )
 var (
 	once    sync.Once
@@ -69,9 +70,9 @@ var (
 
 var (
 	networkDataMutex = &sync.Mutex{}
-	networkData = networkDataType{
-		Requests:  make(map[string]*eventsService.ProxyRequestEventData),
-		Responses: make(map[string]*eventsService.ProxyResponseEventData),
+	networkData = &networkDataType{
+		Requests:  make(map[string]eventsService.ProxyRequestEventData),
+		Responses: make(map[string]eventsService.ProxyResponseEventData),
 	}
 )
 
@@ -122,6 +123,11 @@ func Create() {
 	}
 }
 
+func pruneNetworkData() {
+	networkData.Requests = make(map[string]eventsService.ProxyRequestEventData)
+	networkData.Responses = make(map[string]eventsService.ProxyResponseEventData)
+}
+
 func (m *model) setActiveElement(key activeKeyType) {
 	m.activeElement = key
 
@@ -132,6 +138,10 @@ func (m *model) setActiveElement(key activeKeyType) {
 		m.networkDetailsModel.Focus()
 		m.networkTableModel.Blur()
 	}
+}
+
+func (m model) isElementActive(key activeKeyType) bool {
+	return m.activeElement == key
 }
 
 func (m model) Init() tea.Cmd {
@@ -155,19 +165,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		sysutilities.ClearTerminal()
 	case tea.KeyMsg:
 		switch msg.String() {
+		case StopCommand:
+			pruneNetworkData()
+			sysutilities.ClearTerminal()
+			return m, tea.Quit
 		case QuitCommand:
-			if m.activeElement == NetworkElementKey {
+			if m.isElementActive(NetworkElementKey) {
+				pruneNetworkData()
 				sysutilities.ClearTerminal()
 				return m, tea.Quit
 			}
 
 			m.setActiveElement(NetworkElementKey)
 			return m, tea.Batch(cmds...)
-		case StopCommand:
-			sysutilities.ClearTerminal()
-			return m, tea.Quit
 		case EnterCommand:
-			if m.activeElement != NetworkElementKey {
+			if !m.isElementActive(NetworkElementKey) {
 				break
 			}
 
@@ -213,19 +225,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return m, tea.Batch(cmds...)
+		case PruneRowsCommand:
+			pruneNetworkData()
+			m.networkTableModel.PruneRows()
+			return m, tea.Batch(cmds...)
 		}
-	}
-
-	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	if m.activeElement == DetailsElementKey {
-		m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
-		cmds = append(cmds, cmd)
 	}
 
 	m.statusBarModel, cmd = m.statusBarModel.Update(msg)
 	cmds = append(cmds, cmd)
+
+	m.networkTableModel, cmd = m.networkTableModel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	if m.isElementActive(DetailsElementKey) {
+		m.networkDetailsModel, cmd = m.networkDetailsModel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -249,13 +265,9 @@ func (m model) View() string {
 }
 
 func pushNetworkData(data eventsService.ProxyRequestEventData) {
-	networkDataMutex.Lock()
-	networkData.Requests[data.ID] = &data
-	networkDataMutex.Unlock()
-
 	prefix := ""
 	if data.SmartCached {
-		prefix = "°"
+		prefix = "⧖"
 	} else if data.Proxified {
 		prefix = "≈"
 	}
@@ -265,14 +277,16 @@ func pushNetworkData(data eventsService.ProxyRequestEventData) {
 		return
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	networkDataMutex.Lock()
+	networkData.Requests[data.ID] = data
+	networkDataMutex.Unlock()
+
 	program.Send(details.RequestTraffic(details.RequestTraffic{
 		ID: data.ID,
 		Headers: data.Headers,
 		Body: data.Body,
 	}))
 
-	time.Sleep(50 * time.Millisecond)
 	program.Send(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,
@@ -283,10 +297,6 @@ func pushNetworkData(data eventsService.ProxyRequestEventData) {
 }
 
 func updateNetworkData(data eventsService.ProxyResponseEventData) {
-	networkDataMutex.Lock()
-	networkData.Responses[data.ID] = &data
-	networkDataMutex.Unlock()
-
 	prefix := ""
 	if data.SmartCached {
 		prefix = "λ"
@@ -301,8 +311,8 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 
 		if smartCacheHeaderValue != request.MITMCacheHeaderHitValue {
 			if data.Status == 200 {
-				prefix = "∙"
-			} else if data.Status != 302 && (data.Status < 200 || data.Status >= 300) {
+				prefix = "⧗"
+			} else {
 				prefix = ""
 			}
 		}
@@ -315,20 +325,22 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 		return
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	networkDataMutex.Lock()
+	networkData.Responses[data.ID] = data
+	networkDataMutex.Unlock()
+
 	program.Send(details.ResponseStatus(details.ResponseStatus{
 		ID: data.ID,
 		Status: data.Status,
 	}))
 
-	time.Sleep(50 * time.Millisecond)
 	program.Send(details.ResponseTraffic(details.ResponseTraffic{
 		ID: data.ID,
 		Headers: data.Headers,
 		Body: data.Body,
 	}))
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	program.Send(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,

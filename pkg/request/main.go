@@ -40,7 +40,7 @@ const (
 const (
 	MITMCacheHeaderHitValue  = "HIT"
 	MITMCacheHeaderMissValue = "MISS"
-	MITMProxyEnabledValue    = "ENABLED"
+	MITMProxyEnabledValue    = "enabled"
 )
 
 var client = &http.Client{

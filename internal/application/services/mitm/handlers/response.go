@@ -107,7 +107,7 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 			Headers: headersMap,
 			Body: bodyBytes,
 			Proxified: isProxified,
-			SmartCached: !isProxified && (isSmartCached && smartCache != nil),
+			SmartCached: !isProxified && (isSmartCached || smartCache != nil),
 		})
 
 		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})

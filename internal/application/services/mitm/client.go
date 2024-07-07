@@ -148,7 +148,7 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
-			pr := proxified.(map[string]bool); if pr["resp"] {
+			pr := proxified.(map[string]bool); if pr["req"] {
 				return req, nil
 			}
 
@@ -176,10 +176,8 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
 					bufferLength := len(buffer)
-
 					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
 					req.ContentLength = int64(bufferLength)
-
 					req.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 				}
 			}
@@ -242,14 +240,14 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
-					bufferLength := len(buffer)
-
-					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
-					resp.ContentLength = int64(bufferLength)
-
 					for k, v := range httpHeader {
 						resp.Header.Set(k, strings.Join(v, ", "))
 					}
+
+					bufferLength := len(buffer)
+					resp.Body = io.NopCloser(bytes.NewBuffer(buffer))
+					resp.ContentLength = int64(bufferLength)
+					resp.Header.Set("Content-Length", fmt.Sprintf("%d", bufferLength))
 
 					resp.Status = http.StatusText(http.StatusOK)
 					resp.StatusCode = http.StatusOK
@@ -303,16 +301,16 @@ func runCommands(commands []string) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(len(commands))
 
-	go func() {
-		defer wg.Done()
+	for i, cmd := range commands {
+		go func(i int, cmd string) {
+			defer wg.Done()
 
-		for i, cmd := range commands {
 			args := strings.Split(cmd, " ")
 			length := len(args)
 			if length == 0 {
-				continue
+				return
 			}
 
 			var c *exec.Cmd
@@ -325,8 +323,8 @@ func runCommands(commands []string) {
 			if err := c.Run(); err != nil {
 				event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
 			}
-		}
-	}()
+		}(i, cmd)
+	}
 
 	wg.Wait()
 }

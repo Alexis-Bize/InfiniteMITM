@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/huh v0.4.2
 	github.com/charmbracelet/huh/spinner v0.0.0-20240529143420-2ae64435bd5d
 	github.com/charmbracelet/lipgloss v0.11.0
-	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
+	github.com/elazarl/goproxy v0.0.0-20240618083138-03be62527ccb
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gookit/event v1.1.2
@@ -33,7 +33,6 @@ require (
 	github.com/charmbracelet/x/windows v0.1.2 // indirect
 	github.com/dchest/jsmin v0.0.0-20220218165748-59f39799265f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20231117061959-7cc037d33fb5 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/josephspurrier/goversioninfo v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

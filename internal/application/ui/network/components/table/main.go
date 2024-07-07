@@ -46,10 +46,6 @@ type TableRowMsg   struct {
 	ContentType  string
 }
 
-const (
-	PruneRowsCommand = "ctrl+r"
-)
-
 func NewNetworkModel(height int) TableModel {
 	m := TableModel{
 		height: height,
@@ -118,7 +114,7 @@ func (m TableModel) GetRowPositionMap() map[string]int {
 	return m.rowPositionIDMap
 }
 
-func (m *TableModel) pruneRows() {
+func (m *TableModel) PruneRows() {
 	m.rowPositionIDMap = map[string]int{}
 	m.tableModel.SetRows([]table.Row{})
 	m.tableModel.SetCursor(0)
@@ -202,17 +198,6 @@ func (m TableModel) Update(msg tea.Msg) (TableModel, tea.Cmd) {
 		rows[index][0] = prefix
 		rows[index][3] = statusCode
 		rows[index][6] = contentType
-	case tea.KeyMsg:
-		if !m.ready {
-			return m, cmd
-		}
-
-		if m.focused {
-			switch msg.String() {
-			case PruneRowsCommand:
-				m.pruneRows()
-			}
-		}
 	}
 
 	if m.ready {

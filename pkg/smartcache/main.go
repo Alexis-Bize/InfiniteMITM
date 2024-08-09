@@ -232,9 +232,9 @@ func IsRequestSmartCachable(req *http.Request) bool {
 		} else if hostname == domains.DomainToHostname(domains.HaloStats) {
 			return strings.HasSuffix(path, "/stats")
 		} else if hostname == domains.DomainToHostname(domains.Authoring) {
-			return !strings.Contains(path, "/favorites") && !strings.HasSuffix(path, "/myfiles") && !strings.Contains(path, "/ratings") && !strings.HasSuffix(path, "/latest") && !strings.HasSuffix(path, "/assets")
+			return !strings.Contains(path, "/favorites") && !strings.HasSuffix(path, "/myfiles") && !strings.Contains(path, "/ratings") && !strings.HasSuffix(path, "/latest") && !strings.HasSuffix(path, "/assets") && !strings.HasSuffix(path, "/versions")
 		} else if hostname == domains.DomainToHostname(domains.Discovery) {
-			return strings.Contains(path, "/versions/") && !strings.HasSuffix(path, "/latest")
+			return strings.Contains(path, "/versions/") && !strings.HasSuffix(path, "/latest") && !strings.HasSuffix(path, "/versions")
 		}
 
 		return true

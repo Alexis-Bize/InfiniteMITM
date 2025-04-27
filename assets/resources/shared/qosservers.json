@@ -1,62 +1,70 @@
 [
   {
-    "region": "AustraliaEast",
-    "serverUrl": "pfmsqosprod2-0.australiaeast.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.australiaeast.cloudapp.azure.com",
+    "region": "AustraliaEast"
   },
   {
-    "region": "BrazilSouth",
-    "serverUrl": "pfmsqosprod2-0.brazilsouth.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.australiasoutheast.cloudapp.azure.com",
+    "region": "AustraliaSoutheast"
   },
   {
-    "region": "CentralUs",
-    "serverUrl": "pfmsqosprod2-0.centralus.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.brazilsouth.cloudapp.azure.com",
+    "region": "BrazilSouth"
   },
   {
-    "region": "EastAsia",
-    "serverUrl": "pfmsqosprod2-0.eastasia.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.centralus.cloudapp.azure.com",
+    "region": "CentralUs"
+  },
+    {
+    "serverUrl": "mpqosirprod.eastasia.cloudapp.azure.com",
+    "region": "EastAsia"
   },
   {
-    "region": "EastUs",
-    "serverUrl": "pfmsqosprod2-0.eastus.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.eastus.cloudapp.azure.com",
+    "region": "EastUs"
   },
   {
-    "region": "EastUs2",
-    "serverUrl": "pfmsqosprod2-0.eastus2.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.eastus2.cloudapp.azure.com",
+    "region": "EastUs2"
   },
   {
-    "region": "JapanEast",
-    "serverUrl": "pfmsqosprod2-0.japaneast.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.japaneast.cloudapp.azure.com",
+    "region": "JapanEast"
   },
   {
-    "region": "NorthCentralUs",
-    "serverUrl": "pfmsqosprod2-0.northcentralus.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.japanwest.cloudapp.azure.com",
+    "region": "JapanWest"
   },
   {
-    "region": "NorthEurope",
-    "serverUrl": "pfmsqosprod2-0.northeurope.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.northcentralus.cloudapp.azure.com",
+    "region": "NorthCentralUs"
   },
   {
-    "region": "SouthAfricaNorth",
-    "serverUrl": "pfmsqosprod2-0.southafricanorth.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.northeurope.cloudapp.azure.com",
+    "region": "NorthEurope"
   },
   {
-    "region": "SouthCentralUs",
-    "serverUrl": "pfmsqosprod2-0.southcentralus.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.southafricanorth.cloudapp.azure.com",
+    "region": "SouthAfricaNorth"
   },
   {
-    "region": "SoutheastAsia",
-    "serverUrl": "pfmsqosprod2-0.southeastasia.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.southcentralus.cloudapp.azure.com",
+    "region": "SouthCentralUs"
+  },
+    {
+    "serverUrl": "mpqosirprod.southeastasia.cloudapp.azure.com",
+    "region": "SoutheastAsia"
+  },
+    {
+    "serverUrl": "mpqosirprod.uaenorth.cloudapp.azure.com",
+    "region": "UaeNorth"
   },
   {
-    "region": "WestEurope",
-    "serverUrl": "pfmsqosprod2-0.westeurope.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.westeurope.cloudapp.azure.com",
+    "region": "WestEurope"
   },
   {
-    "region": "WestUs",
-    "serverUrl": "pfmsqosprod2-0.westus.cloudapp.azure.com"
-  },
-  {
-    "region": "WestUs2",
-    "serverUrl": "pfmsqosprod2-0.westus2.cloudapp.azure.com"
+    "serverUrl": "mpqosirprod.westus.cloudapp.azure.com",
+    "region": "WestUs"
   }
 ]

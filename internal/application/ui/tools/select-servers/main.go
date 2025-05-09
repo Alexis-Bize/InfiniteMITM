@@ -220,7 +220,7 @@ func (m *model) saveServers() {
     }
 
     if len(updatedServers) == 0 {
-        updatedServers = servers // Reset to defaults if nothing selected
+        updatedServers = servers
     }
 
     selectServersTool.WriteLocalQOSServers(updatedServers)

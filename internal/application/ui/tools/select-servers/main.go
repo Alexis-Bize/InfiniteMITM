@@ -180,44 +180,54 @@ func (m *model) toggleRegion() {
 }
 
 func (m *model) saveServers() {
-	if m.savingServers {
-		return
-	}
+    if m.savingServers {
+        return
+    }
 
-	m.savingServers = true
-	m.serverSaved = false
+    m.savingServers = true
+    m.serverSaved = false
 
-	var updatedServers = selectServersTool.QOSServers{}
-	if len(m.selectedRegions) != 0 {
-		minMax := selectServersTool.GetMinMax(m.pingResults)
+    var updatedServers = selectServersTool.QOSServers{}
+    
+    if len(m.selectedRegions) != 0 {
+        var bestSelectedServerURL string
+        lowestPing := int(^uint(0) >> 1)
 
-		if minMax.Min.ServerURL != "" && minMax.Max.ServerURL != "" {
-			for _, server := range servers {
-				var assignedServerURL = server.ServerURL
+        for _, result := range m.pingResults {
+            if utilities.Contains(m.selectedRegions, result.Region) && 
+               result.Ping != selectServersTool.PingErrorValue && 
+               result.Ping < lowestPing {
+                lowestPing = result.Ping
+                bestSelectedServerURL = result.ServerURL
+            }
+        }
 
-				if utilities.Contains(m.selectedRegions, server.Region) {
-					assignedServerURL = minMax.Min.ServerURL
-				} else {
-					assignedServerURL = minMax.Max.ServerURL
-				}
+        for _, server := range servers {
+            newServer := selectServersTool.QOSServer{
+                Region: server.Region,
+            }
+            
+            if utilities.Contains(m.selectedRegions, server.Region) {
+                newServer.ServerURL = server.ServerURL
+            } else if bestSelectedServerURL != "" {
+                newServer.ServerURL = bestSelectedServerURL
+            } else {
+                newServer.ServerURL = server.ServerURL
+            }
+            
+            updatedServers = append(updatedServers, newServer)
+        }
+    }
 
-				updatedServers = append(updatedServers, selectServersTool.QOSServer{
-					Region: server.Region,
-					ServerURL: assignedServerURL,
-				})
-			}
-		}
-	}
+    if len(updatedServers) == 0 {
+        updatedServers = servers
+    }
 
-	if len(updatedServers) == 0 {
-		updatedServers = servers
-	}
+    selectServersTool.WriteLocalQOSServers(updatedServers)
+    selectServersTool.WriteMITMFile()
 
-	selectServersTool.WriteLocalQOSServers(updatedServers)
-	selectServersTool.WriteMITMFile()
-
-	m.savingServers = false
-	m.serverSaved = true
+    m.savingServers = false
+    m.serverSaved = true
 }
 
 func (m *model) moveUp() {

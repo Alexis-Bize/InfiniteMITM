@@ -1,6 +1,6 @@
 name: InfiniteMITM
 description: A MITM (man-in-the-middle) CLI for Halo Infinite
-version: 0.5.5
+version: 0.5.6
 author: Alexis Bize
 repository: https://github.com/Alexis-Bize/InfiniteMITM
 proxy:

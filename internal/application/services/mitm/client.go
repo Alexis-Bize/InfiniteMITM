@@ -148,12 +148,10 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 				return req, nil
 			}
 
-			pr := proxified.(map[string]bool); if pr["req"] {
-				return req, nil
+			pr := proxified.(map[string]bool); if !pr["req"] {
+				pr["req"] = true
+				customCtx.SetUserData(context.ProxyKey, pr)
 			}
-
-			pr["req"] = true
-			customCtx.SetUserData(context.ProxyKey, pr)
 
 			body := node.Request.Body
 			matches := pattern.Match(target, request.StripPort(req.URL.String()))
@@ -213,12 +211,10 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 				return resp
 			}
 
-			pr := proxified.(map[string]bool); if pr["resp"] {
-				return resp
+			pr := proxified.(map[string]bool); if !pr["resp"] {
+				pr["resp"] = true
+				customCtx.SetUserData(context.ProxyKey, pr)
 			}
-
-			pr["resp"] = true
-			customCtx.SetUserData(context.ProxyKey, pr)
 
 			body := node.Response.Body
 			matches := pattern.Match(target, request.StripPort(resp.Request.URL.String()))

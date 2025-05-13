@@ -190,15 +190,14 @@ func (m *model) saveServers() {
     var updatedServers = selectServersTool.QOSServers{}
     
     if len(m.selectedRegions) != 0 {
-        var bestSelectedServerURL string
-        lowestPing := int(^uint(0) >> 1)
+        var worstServerURL string
+        highestPing := -1
 
         for _, result := range m.pingResults {
-            if utilities.Contains(m.selectedRegions, result.Region) && 
-               result.Ping != selectServersTool.PingErrorValue && 
-               result.Ping < lowestPing {
-                lowestPing = result.Ping
-                bestSelectedServerURL = result.ServerURL
+            if result.Ping != selectServersTool.PingErrorValue && 
+               result.Ping > highestPing {
+                highestPing = result.Ping
+                worstServerURL = result.ServerURL
             }
         }
 
@@ -209,8 +208,8 @@ func (m *model) saveServers() {
             
             if utilities.Contains(m.selectedRegions, server.Region) {
                 newServer.ServerURL = server.ServerURL
-            } else if bestSelectedServerURL != "" {
-                newServer.ServerURL = bestSelectedServerURL
+            } else if worstServerURL != "" {
+                newServer.ServerURL = worstServerURL
             } else {
                 newServer.ServerURL = server.ServerURL
             }

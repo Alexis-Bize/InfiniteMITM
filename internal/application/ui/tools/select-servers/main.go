@@ -136,7 +136,7 @@ func (m *model) pingServers() {
 				if err == nil && stats != nil && len(stats.Rtts) > 0 {
 					rtt = int(stats.AvgRtt.Milliseconds())
 				}
-			
+
 				program.Send(setPingForServerMsg{
 					ServerURL: v.ServerURL,
 					Region: v.Region,

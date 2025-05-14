@@ -130,12 +130,13 @@ func (m *model) pingServers() {
 
 			go func(v selectServersTool.QOSServer) {
 				defer wg.Done()
-				rtt := -1
-				stats, _ := selectServersTool.GetPingTime(v.ServerURL)
-				if len(stats.Rtts) > 0 {
+				rtt := selectServersTool.PingErrorValue
+				
+				stats, err := selectServersTool.GetPingTime(v.ServerURL)
+				if err == nil && stats != nil && len(stats.Rtts) > 0 {
 					rtt = int(stats.AvgRtt.Milliseconds())
 				}
-
+			
 				program.Send(setPingForServerMsg{
 					ServerURL: v.ServerURL,
 					Region: v.Region,
@@ -190,14 +191,23 @@ func (m *model) saveServers() {
     var updatedServers = selectServersTool.QOSServers{}
     
     if len(m.selectedRegions) != 0 {
+        var bestServerURL string
         var worstServerURL string
-        highestPing := -1
+
+        bestPing := int(^uint(0) >> 1) // Max int value
+        worstPing := -1
 
         for _, result := range m.pingResults {
-            if result.Ping != selectServersTool.PingErrorValue && 
-               result.Ping > highestPing {
-                highestPing = result.Ping
-                worstServerURL = result.ServerURL
+            if result.Ping != selectServersTool.PingErrorValue {
+                if result.Ping < bestPing {
+                    bestPing = result.Ping
+                    bestServerURL = result.ServerURL
+                }
+
+                if result.Ping > worstPing {
+                    worstPing = result.Ping
+                    worstServerURL = result.ServerURL
+                }
             }
         }
 
@@ -207,11 +217,9 @@ func (m *model) saveServers() {
             }
             
             if utilities.Contains(m.selectedRegions, server.Region) {
-                newServer.ServerURL = server.ServerURL
-            } else if worstServerURL != "" {
-                newServer.ServerURL = worstServerURL
+                newServer.ServerURL = bestServerURL
             } else {
-                newServer.ServerURL = server.ServerURL
+                newServer.ServerURL = worstServerURL
             }
             
             updatedServers = append(updatedServers, newServer)

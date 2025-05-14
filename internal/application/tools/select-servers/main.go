@@ -16,7 +16,6 @@ package MITMApplicationSelectServersTool
 
 import (
 	"encoding/json"
-	"fmt"
 	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
@@ -45,11 +44,6 @@ type PingResult struct {
 	Region    string
 	ServerURL string
 	Ping      int
-}
-
-type MinMax struct {
-	Min PingResult
-	Max PingResult
 }
 
 const PingErrorValue = -1
@@ -82,7 +76,6 @@ func GetPingTime(serverURL string) (*probing.Statistics, *errors.MITMError) {
 	}
 
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
@@ -91,39 +84,10 @@ func GetPingTime(serverURL string) (*probing.Statistics, *errors.MITMError) {
 
 	err = pinger.Run()
 	if err != nil {
-		fmt.Println(err.Error())
 		return nil, errors.Create(errors.ErrPingFailedException, err.Error())
 	}
 
 	return pinger.Statistics(), nil
-}
-
-func GetMinMax(pairs []PingResult) MinMax {
-	minPing := int(^uint(0) >> 1)
-	maxPing := 0
-	minRegion := ""
-	maxRegion := ""
-	minServerURL := ""
-	maxServerURL := ""
-
-	for _, pair := range pairs {
-		if pair.Ping < minPing {
-			minRegion = pair.Region
-			minServerURL = pair.ServerURL
-			minPing = pair.Ping
-		}
-
-		if pair.Ping > maxPing {
-			maxRegion = pair.Region
-			maxServerURL = pair.ServerURL
-			maxPing = pair.Ping
-		}
-	}
-
-	return MinMax{
-		Min: PingResult{Region: minRegion, ServerURL: minServerURL, Ping: minPing},
-		Max: PingResult{Region: maxRegion, ServerURL: maxServerURL, Ping: maxPing},
-	}
 }
 
 func ReadLocalQOSServers() QOSServers {

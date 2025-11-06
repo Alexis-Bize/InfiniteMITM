@@ -49,6 +49,11 @@
 -   `UseIslandGeoInMenus`
 -   `VehiclesMenuEnabled`
 -   `WeaponsMenuEnabled`
+-   `DiscordEnabled`
+-   `bughunt_validate_object_handles`
+-   `EnableDisruptorDOT`
+-   `team_selection_multi_team`
+-   `force_update_on_empty_binding_enabled`
 
 ## How to Customize Existing Flags
 

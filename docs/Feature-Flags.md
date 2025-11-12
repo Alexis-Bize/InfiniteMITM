@@ -11,11 +11,13 @@
 -   `ActiveRosterEnabled`
 -   `ArmorMenuEnabled`
 -   `AsyncComputeQueryEnabled`
+-   `background_loading_enabled`
 -   `BodyAndAIMenuEnabled`
 -   `Bot_Behavior_EnterVehiclePassenger`
 -   `Bot_EnforceCountLimit`
 -   `Bot_UseRandomMatchmaking`
 -   `Bot_UseRandomWaypointsInPaths`
+-   `bughunt_validate_object_handles`
 -   `CampaignEnabled`
 -   `challenges_post_match_enabled`
 -   `CommunityEnabled`
@@ -77,8 +79,6 @@
 -   `UseIslandGeoInMenus`
 -   `VehiclesMenuEnabled`
 -   `WeaponsMenuEnabled`
--   `background_loading_enabled`
--   `bughunt_validate_object_handles`
 
 ## How to Customize Existing Flags
 

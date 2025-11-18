@@ -19,6 +19,7 @@ import (
 	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/integrity"
 	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/pattern"
 	"infinite-mitm/pkg/resources"
@@ -47,7 +48,6 @@ type PingResult struct {
 }
 
 const PingErrorValue = -1
-const qosserversFilename = "qosservers.json"
 
 var (
 	once    sync.Once
@@ -56,7 +56,7 @@ var (
 
 func GetQOSServers() QOSServers {
 	once.Do(func() {
-		serverFilepath := path.Join("assets/resources/shared", qosserversFilename)
+		serverFilepath := path.Join("assets/resources/shared", integrity.QOSServersFilename)
 		qosservers, err := embedFS.Get().ReadFile(serverFilepath); if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
@@ -91,7 +91,7 @@ func GetPingTime(serverURL string) (*probing.Statistics, *errors.MITMError) {
 }
 
 func ReadLocalQOSServers() QOSServers {
-	serverFilepath := filepath.Join(resources.GetDirPaths()[resources.JsonDirKey], qosserversFilename)
+	serverFilepath := filepath.Join(resources.GetDirPaths()[resources.JsonDirKey], integrity.QOSServersFilename)
 	qosservers, err := os.ReadFile(serverFilepath); if err != nil {
 		return GetQOSServers()
 	}
@@ -105,15 +105,15 @@ func ReadLocalQOSServers() QOSServers {
 }
 
 func WriteLocalQOSServers(servers QOSServers) {
-	serverFilepath := filepath.Join(resources.GetDirPaths()[resources.JsonDirKey], qosserversFilename)
+	serverFilepath := filepath.Join(resources.GetDirPaths()[resources.JsonDirKey], integrity.QOSServersFilename)
 	buffer, err := json.Marshal(servers); if err == nil {
 		os.WriteFile(serverFilepath, buffer, 0644)
 	}
 }
 
 func WriteMITMFile() {
-	filePathPattern := path.Join(pattern.MITMDirPrefix, resources.ResourcesDirKey, resources.JsonDirKey, qosserversFilename)
-	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
+	filePathPattern := path.Join(pattern.MITMDirPrefix, resources.ResourcesDirKey, resources.JsonDirKey, integrity.QOSServersFilename)
+	content, err := mitm.ReadClientMITMConfig(); if err != nil {
 		return
 	}
 

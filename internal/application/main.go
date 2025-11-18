@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/errors"
+	"infinite-mitm/pkg/integrity"
 	"infinite-mitm/pkg/mitm"
 	"infinite-mitm/pkg/resources"
 	"infinite-mitm/pkg/spinner"
@@ -32,9 +33,9 @@ import (
 func Init() *errors.MITMError {
 	var mitmErr *errors.MITMError
 
-	spinner.Run("Looking for updates...")
-	updateAvailable, latest, _ := updater.CheckForUpdates()
-	if updateAvailable {
+	spinner.Run("Looking for application update...")
+	applicationUpdateAvailable, latest, _ := updater.CheckForApplicationUpdate()
+	if applicationUpdateAvailable {
 		var ignoreUpdate bool
 		huh.NewConfirm().
 			Title(fmt.Sprintf("🔥 A new version (%s) is available; would you like to download it?", latest)).
@@ -57,18 +58,45 @@ func Init() *errors.MITMError {
 		}
 	}
 
+	spinner.Run("Looking for root certificate...")
+	_, mitmErr = sysutilities.CheckForRootCertificate(configs.GetConfig().Proxy.Certificate.Name);
+	if mitmErr != nil {
+		return mitmErr
+	}
+
 	spinner.Run("Verifying local assets integrity...")
 	mitmErr = resources.CreateRootAssets(); if mitmErr != nil {
 		return mitmErr
 	}
 
-	_, mitmErr = mitm.ReadClientMITMConfig()
-	if mitmErr != nil && errors.ErrMITMYamlSchemaOutdatedException == mitmErr.Unwrap() {
-		return nil
+	spinner.Run("Looking for server list update...")
+	serverListUpdateAvailable, file, _ := updater.CheckForIntegrityFileUpdate(integrity.QOSServersFilename)
+
+	if serverListUpdateAvailable {
+		spinner.Run("Updating existing server list with latest version...")
+		data, mitmErr := sysutilities.DownloadFile(file.DownloadUrl)
+
+		if mitmErr == nil {
+			key := resources.GetDirPaths()[resources.PubDirKey]
+			sysutilities.SaveToDisk(data, key, integrity.QOSServersFilename, "application/json")
+
+			content, mitmErr := integrity.ReadIntegrityConfig();
+			if mitmErr == nil {
+				content.Files[integrity.QOSServersFilename] = integrity.FileContent{
+					Sha1: file.Sha,
+				}
+
+				integrity.WriteIntegrityConfig(content)
+
+				huh.NewConfirm().
+					Title("⚠️ The server list has been updated; you may need to reselect your preferred ones.").
+					Affirmative("Sounds good!").
+					Run()
+			}
+		}
 	}
 
-	spinner.Run("Looking for root certificate...")
-	_, mitmErr = sysutilities.CheckForRootCertificate(configs.GetConfig().Proxy.Certificate.Name);
+	_, mitmErr = mitm.ReadClientMITMConfig()
 	if mitmErr != nil {
 		return mitmErr
 	}

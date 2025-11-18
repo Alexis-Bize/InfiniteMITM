@@ -20,13 +20,11 @@ import (
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/smartcache"
-	"log"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
-
 
 type TrafficDisplay string
 type TrafficOptions struct {
@@ -60,7 +58,7 @@ var MITMConfigFilepath = filepath.Join(configs.GetConfig().Extra.ProjectDir, Con
 
 func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 	yamlFile, err := os.ReadFile(MITMConfigFilepath); if err != nil {
-		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
 	var content YAML
@@ -69,7 +67,7 @@ func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 	}
 
 	if content.Version != ConfigVersion {
-		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, all configs will be ignored", ConfigFilename))
+		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, please delete it and restart the application to fix this issue.", ConfigFilename))
 	}
 
 	return content, nil

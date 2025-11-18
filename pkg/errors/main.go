@@ -45,6 +45,7 @@ var (
 	ErrWatcherException = errors.New("watcher exception")
 	ErrIOReadException = errors.New("io read exception")
 	ErrMITMYamlSchemaOutdatedException = errors.New("mitm yaml schema outdated exception")
+	ErrIntegrityYamlSchemaOutdatedException = errors.New("integrity yaml schema outdated exception")
 	ErrPingFailedException = errors.New("ping failed exception")
 )
 

@@ -15,55 +15,55 @@
 package updater
 
 import (
-	"encoding/json"
 	"fmt"
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/errors"
-	"net/http"
-	"net/url"
-	"strings"
+
+	"infinite-mitm/pkg/github"
+
+	"infinite-mitm/pkg/integrity"
 
 	"github.com/Masterminds/semver/v3"
 )
 
-type Release struct {
-	TagName string `json:"tag_name"`
-}
-
-type Releases []Release
-
-func CheckForUpdates() (bool, string, *errors.MITMError) {
-	owner, repo := extractOwnerAndRepo()
-	if owner == "" || repo == "" {
-		return false, "", errors.Create(errors.ErrUpdaterException, "could not extract repository details")
-	}
-
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", owner, repo)
-	resp, err := http.Get(url)
+func CheckForApplicationUpdate() (bool, string, *errors.MITMError) {
+	releases, err := github.GetReleases()
 	if err != nil {
-		return false, "", errors.Create(errors.ErrHTTPRequestException, err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return false, "", errors.Create(errors.ErrHTTPCodeError, fmt.Sprintf("status code: %d", resp.StatusCode))
+		return false, "", err
 	}
 
-	var releases Releases
-	err = json.NewDecoder(resp.Body).Decode(&releases)
-	if err != nil {
-		return false, "", errors.Create(errors.ErrJSONReadException, err.Error())
-	}
-
-	latestRelease := releases[0]
-	newVersionAvailable, err := isNewVersionAvailable(configs.GetConfig().Version, latestRelease.TagName)
-	if err != nil {
-		return false, "", errors.Create(errors.ErrUpdaterException, err.Error())
+	latestRelease := (*releases)[0]
+	newVersionAvailable, versionErr := isNewVersionAvailable(configs.GetConfig().Version, latestRelease.TagName)
+	if versionErr != nil {
+		return false, "", errors.Create(errors.ErrUpdaterException, versionErr.Error())
 	} else if !newVersionAvailable {
 		return false, "", nil
 	}
 
 	return true, latestRelease.TagName, nil
+}
+
+func CheckForIntegrityFileUpdate(filename string) (bool, *github.PublicFile, *errors.MITMError) {
+	integrity, err := integrity.ReadIntegrityConfig()
+	if err != nil {
+		return false, nil, err
+	}
+
+	sha1 := integrity.Files[filename].Sha1
+	if sha1 == "" {
+		return false, nil, errors.Create(errors.ErrUpdaterException, fmt.Sprintf("filename %s not found in integrity.Files", filename))
+	}
+
+	pubFile, err := github.GetPublicFile(filename)
+	if err != nil {
+		return false, nil, err
+	}
+
+	if pubFile.Sha != sha1 {
+		return true, pubFile, nil
+	}
+
+	return false, nil, nil
 }
 
 func isNewVersionAvailable(currentVersion, latestVersion string) (bool, error) {
@@ -78,20 +78,4 @@ func isNewVersionAvailable(currentVersion, latestVersion string) (bool, error) {
 	}
 
 	return lv.Compare(cv) == 1, nil
-}
-
-func extractOwnerAndRepo() (string, string) {
-	githubURL := configs.GetConfig().Repository
-	u, err := url.Parse(githubURL)
-	if err != nil {
-		return "", ""
-	}
-
-	path := strings.TrimPrefix(u.Path, "/")
-	components := strings.Split(path, "/")
-	if len(components) != 2 {
-		return "", ""
-	}
-
-	return components[0], components[1]
 }

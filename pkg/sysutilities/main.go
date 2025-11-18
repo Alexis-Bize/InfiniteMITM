@@ -19,7 +19,9 @@ import (
 	"embed"
 	"fmt"
 	"infinite-mitm/pkg/errors"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,6 +66,21 @@ func OpenBrowser(url string) {
 	}
 }
 
+func DownloadFile(url string) ([]byte, *errors.MITMError) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, errors.Create(errors.ErrFatalException, err.Error())
+	}
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.Create(errors.ErrFatalException, err.Error())
+	}
+
+	return data, nil
+}
+
 func CopyToClipboard(data string) {
 	clipboard.WriteAll(data)
 }
@@ -91,7 +108,7 @@ func SaveToDisk(data []byte, outputDir string, filename string, contentType stri
 		extension = "bin"
 	}
 
-	filename = fmt.Sprintf("%s.%s", filename, extension)
+	filename = fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, filepath.Ext(filename)), extension)
 	filePath, err := zenity.SelectFileSave(
 		zenity.Title("Save body content"),
 		zenity.Filename(filepath.Join(outputDir, filename)),

@@ -25,6 +25,7 @@ import (
 	"infinite-mitm/pkg/sysutilities"
 	"infinite-mitm/pkg/updater"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/charmbracelet/huh"
@@ -71,14 +72,13 @@ func Init() *errors.MITMError {
 
 	spinner.Run("Looking for server list update...")
 	serverListUpdateAvailable, file, _ := updater.CheckForIntegrityFileUpdate(integrity.QOSServersFilename)
-
 	if serverListUpdateAvailable {
 		spinner.Run("Updating existing server list with latest version...")
 		data, mitmErr := sysutilities.DownloadFile(file.DownloadUrl)
 
 		if mitmErr == nil {
 			key := resources.GetDirPaths()[resources.PubDirKey]
-			sysutilities.SaveToDisk(data, key, integrity.QOSServersFilename, "application/json")
+			os.WriteFile(filepath.Join(key, integrity.QOSServersFilename), data, 0644)
 
 			content, mitmErr := integrity.ReadIntegrityConfig();
 			if mitmErr == nil {

@@ -26,6 +26,10 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
+const (
+	refBranch = "main"
+)
+
 func CheckForApplicationUpdate() (bool, string, *errors.MITMError) {
 	releases, err := github.GetReleases()
 	if err != nil {
@@ -49,17 +53,17 @@ func CheckForIntegrityFileUpdate(filename string) (bool, *github.PublicFile, *er
 		return false, nil, err
 	}
 
-	sha1 := integrity.Files[filename].Sha1
-	if sha1 == "" {
+	val, exists := integrity.Files[filename]
+	if !exists {
 		return false, nil, errors.Create(errors.ErrUpdaterException, fmt.Sprintf("filename %s not found in integrity.Files", filename))
 	}
 
-	pubFile, err := github.GetPublicFile(filename)
+	pubFile, err := github.GetPublicFile(filename, refBranch)
 	if err != nil {
 		return false, nil, err
 	}
 
-	if pubFile.Sha != sha1 {
+	if pubFile.Sha != val.Sha1 {
 		return true, pubFile, nil
 	}
 

@@ -76,13 +76,13 @@ func GetReleases() (*Releases, *errors.MITMError) {
 	return &releases, nil
 }
 
-func GetPublicFile(filename string) (*PublicFile, *errors.MITMError) {
+func GetPublicFile(filename string, ref string) (*PublicFile, *errors.MITMError) {
 	baseUrl, err := getGitHubAPIBaseUrl()
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/contents/public/%s", baseUrl, filename)
+	url := fmt.Sprintf("%s/contents/public/%s?ref=%s", baseUrl, filename, ref)
 	resp, httpErr := http.Get(url)
 	if httpErr != nil {
 		return  nil, errors.Create(errors.ErrHTTPRequestException, httpErr.Error())

@@ -91,6 +91,7 @@ func Init() *errors.MITMError {
 				huh.NewConfirm().
 					Title("⚠️ The server list has been updated; you may need to reselect your preferred ones.").
 					Affirmative("Sounds good!").
+					Negative("").
 					Run()
 			}
 		}

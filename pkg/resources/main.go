@@ -121,23 +121,23 @@ func CreateRootAssets() *errors.MITMError {
 	}
 
 	if _, err := os.Stat(outputIntegrityTemplate); os.IsNotExist(err) {
-		IntegrityTemplateFile, err := embedFS.Get().Open(sourceIntegrityTemplate)
+		integrityTemplateFile, err := embedFS.Get().Open(sourceIntegrityTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
-		defer IntegrityTemplateFile.Close()
+		defer integrityTemplateFile.Close()
 
-		IntegrityDestinationFile, err := os.Create(outputIntegrityTemplate)
+		integrityDestinationFile, err := os.Create(outputIntegrityTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
-		defer IntegrityDestinationFile.Close()
+		defer integrityDestinationFile.Close()
 
-		if _, err = io.Copy(IntegrityDestinationFile, IntegrityTemplateFile); err != nil {
+		if _, err = io.Copy(integrityDestinationFile, integrityTemplateFile); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
 
-		if err = IntegrityDestinationFile.Sync(); err != nil {
+		if err = integrityDestinationFile.Sync(); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
 	}

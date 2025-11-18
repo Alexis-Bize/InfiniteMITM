@@ -16,7 +16,6 @@ package MITMApplicationSelectServersTool
 
 import (
 	"encoding/json"
-	embedFS "infinite-mitm/internal/application/embed"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/integrity"
@@ -56,8 +55,9 @@ var (
 
 func GetQOSServers() QOSServers {
 	once.Do(func() {
-		serverFilepath := path.Join("assets/resources/shared", integrity.QOSServersFilename)
-		qosservers, err := embedFS.Get().ReadFile(serverFilepath); if err != nil {
+		key := resources.GetDirPaths()[resources.PubDirKey]
+		serverFilepath := path.Join(key, integrity.QOSServersFilename)
+		qosservers, err := os.ReadFile(serverFilepath); if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
 

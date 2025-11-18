@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	refBranch = "main"
+	refBranch = "feat/dynamic-update-servers"
 )
 
 func CheckForApplicationUpdate() (bool, string, *errors.MITMError) {

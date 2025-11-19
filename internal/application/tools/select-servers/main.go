@@ -113,7 +113,7 @@ func WriteLocalQOSServers(servers QOSServers) {
 
 func WriteMITMFile() {
 	filePathPattern := path.Join(pattern.MITMDirPrefix, resources.ResourcesDirKey, resources.JsonDirKey, integrity.QOSServersFilename)
-	content, err := mitm.ReadClientMITMConfig(); if err != nil {
+	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
 		return
 	}
 

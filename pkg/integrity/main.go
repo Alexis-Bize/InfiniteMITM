@@ -53,7 +53,7 @@ func ReadIntegrityConfig() (YAML, *errors.MITMError) {
 	}
 
 	if content.Version != IntegrityVersion {
-		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, please delete it and restart the application to fix this issue.", IntegrityFilename))
+		return YAML{}, errors.Create(errors.ErrIntegrityYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, please delete it and restart the application to fix this issue.", IntegrityFilename))
 	}
 
 	return content, nil

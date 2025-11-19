@@ -54,7 +54,7 @@ func WatchClientMITMConfig(stopChan <-chan struct{}) {
 	}
 
 	defer watcher.Close()
-	err = watcher.Add(mitm.MITMConfigFilepath)
+	err = watcher.Add(mitm.MITMFilepath)
 	if err != nil {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": errors.Create(errors.ErrWatcherException, err.Error()).String(),
@@ -70,7 +70,7 @@ func WatchClientMITMConfig(stopChan <-chan struct{}) {
 		case watchEvent, ok := <-watcher.Events:
 			if ok && watchEvent.Op&fsnotify.Write == fsnotify.Write {
 				event.MustFire(eventsService.ProxyStatusMessage, event.M{
-					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", mitm.ConfigFilename),
+					"details": fmt.Sprintf("[%s] changes detected; restarting proxy server...", mitm.MITMFilename),
 				})
 
 				time.Sleep(1 * time.Second)

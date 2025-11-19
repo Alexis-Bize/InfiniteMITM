@@ -135,5 +135,5 @@ func WriteMITMFile() {
 	})
 
 	content.Domains.Lobby = updatedLobbyDomain
-	mitm.WriteClientMITMConfig(content)
+	mitm.WriteMITMFile(content)
 }

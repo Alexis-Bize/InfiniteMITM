@@ -95,11 +95,12 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 
 		smartCacheText := "off"
 		if content.Options.SmartCache.Enabled {
-			if content.Options.SmartCache.Strategy == smartcache.Memory {
+			switch content.Options.SmartCache.Strategy {
+			case smartcache.Memory:
 				smartCacheText = "memory"
-			} else if content.Options.SmartCache.Strategy == smartcache.Persistent {
+			case smartcache.Persistent:
 				smartCacheText = "persistent"
-			} else {
+			default:
 				smartCacheText = "on"
 			}
 		}
@@ -107,7 +108,7 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{
 			"details": fmt.Sprintf(
 				"[%s] traffic display: %s | smartcache: %s | found %d %s; %d %s and %d %s",
-				mitm.ConfigFilename,
+				mitm.MITMFilename,
 				content.Options.TrafficDisplay,
 				smartCacheText,
 				totalClientHandlersCount,

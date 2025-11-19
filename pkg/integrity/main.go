@@ -15,6 +15,7 @@
 package integrity
 
 import (
+	"fmt"
 	"infinite-mitm/configs"
 	"infinite-mitm/pkg/errors"
 	"os"
@@ -27,6 +28,7 @@ const QOSServersFilename = "qosservers.json"
 
 type YAML struct {
 	Files map[string]FileContent `yaml:"files"`
+	Version int `yaml:"version"`
 }
 
 type FileContent struct {
@@ -34,13 +36,14 @@ type FileContent struct {
 }
 
 const (
-	IntegrityConfigFilename = "integrity.yaml"
+	IntegrityFilename = "integrity.yaml"
+	IntegrityVersion = 1
 )
 
-var IntegrityConfigFilepath = filepath.Join(configs.GetConfig().Extra.ProjectDir, IntegrityConfigFilename)
+var IntegrityFilepath = filepath.Join(configs.GetConfig().Extra.ProjectDir, IntegrityFilename)
 
 func ReadIntegrityConfig() (YAML, *errors.MITMError) {
-	yamlFile, err := os.ReadFile(IntegrityConfigFilepath); if err != nil {
+	yamlFile, err := os.ReadFile(IntegrityFilepath); if err != nil {
 		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
@@ -49,11 +52,15 @@ func ReadIntegrityConfig() (YAML, *errors.MITMError) {
 		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
+	if content.Version != IntegrityVersion {
+		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, please delete it and restart the application to fix this issue.", IntegrityFilename))
+	}
+
 	return content, nil
 }
 
-func WriteIntegrityConfig(content YAML) {
+func WriteIntegrityFile(content YAML) {
 	buffer, err := yaml.Marshal(content); if err == nil {
-		os.WriteFile(IntegrityConfigFilepath, buffer, 0644)
+		os.WriteFile(IntegrityFilepath, buffer, 0644)
 	}
 }

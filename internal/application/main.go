@@ -86,7 +86,7 @@ func Init() *errors.MITMError {
 					Sha1: file.Sha,
 				}
 
-				integrity.WriteIntegrityConfig(content)
+				integrity.WriteIntegrityFile(content)
 
 				huh.NewConfirm().
 					Title("⚠️ The server list has been updated; you may need to reselect your preferred ones.").

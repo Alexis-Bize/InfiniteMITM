@@ -34,7 +34,7 @@ import (
 func Init() *errors.MITMError {
 	var mitmErr *errors.MITMError
 
-	spinner.Run("Looking for application update...")
+	spinner.Run("Checking for application update...")
 	applicationUpdateAvailable, latest, _ := updater.CheckForApplicationUpdate()
 	if applicationUpdateAvailable {
 		var ignoreUpdate bool
@@ -70,7 +70,7 @@ func Init() *errors.MITMError {
 		return mitmErr
 	}
 
-	spinner.Run("Looking for server list update...")
+	spinner.Run("Checking for server list update...")
 	serverListUpdateAvailable, qosServersFile, _ := updater.CheckForIntegrityFileUpdate(integrity.QOSServersFilename)
 	if serverListUpdateAvailable {
 		spinner.Run("Updating existing server list with latest version...")

@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	refBranch = "feat/dynamic-update-servers"
+	refBranch = "main"
 )
 
 func CheckForApplicationUpdate() (bool, string, *errors.MITMError) {
@@ -67,7 +67,7 @@ func CheckForIntegrityFileUpdate(filename string) (bool, *github.PublicFile, *er
 		return true, pubFile, nil
 	}
 
-	return false, nil, nil
+	return false, pubFile, nil
 }
 
 func isNewVersionAvailable(currentVersion, latestVersion string) (bool, error) {

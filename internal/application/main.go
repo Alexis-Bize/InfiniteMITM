@@ -71,10 +71,10 @@ func Init() *errors.MITMError {
 	}
 
 	spinner.Run("Looking for server list update...")
-	serverListUpdateAvailable, file, _ := updater.CheckForIntegrityFileUpdate(integrity.QOSServersFilename)
+	serverListUpdateAvailable, qosServersFile, _ := updater.CheckForIntegrityFileUpdate(integrity.QOSServersFilename)
 	if serverListUpdateAvailable {
 		spinner.Run("Updating existing server list with latest version...")
-		data, mitmErr := sysutilities.DownloadFile(file.DownloadUrl)
+		data, mitmErr := sysutilities.DownloadFile(qosServersFile.DownloadUrl)
 
 		if mitmErr == nil {
 			key := resources.GetDirPaths()[resources.PubDirKey]
@@ -83,7 +83,7 @@ func Init() *errors.MITMError {
 			content, mitmErr := integrity.ReadIntegrityConfig();
 			if mitmErr == nil {
 				content.Files[integrity.QOSServersFilename] = integrity.FileContent{
-					Sha1: file.Sha,
+					Sha1: qosServersFile.Sha,
 				}
 
 				integrity.WriteIntegrityFile(content)

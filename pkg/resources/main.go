@@ -28,6 +28,7 @@ const (
 	SmartCacheDirKey = "smartcache"
 	DownloadsDirKey  = "downloads"
 	ResourcesDirKey  = "resources"
+	PubDirKey        = "public"
 	UGCDirKey        = "ugc"
 	UGCMapsDirKey    = "ugc-maps"
 	UGCEGVDirKey     = "ugc-egv"
@@ -49,6 +50,7 @@ func init() {
 		SmartCacheDirKey:  filepath.Join(projectDir, "cache"),
 		DownloadsDirKey:   filepath.Join(projectDir, "downloads"),
 		ResourcesDirKey:   filepath.Join(projectDir, "resources"),
+		PubDirKey:         filepath.Join(projectDir, "public"),
 		// ~/InfiniteMITM/resources/ugc
 		UGCDirKey:         filepath.Join(resourcesPath, "ugc"),
 		UGCMapsDirKey:     filepath.Join(resourcesPath, "ugc", "maps"),
@@ -87,30 +89,55 @@ func GetDownloadsDirPath() string {
 
 func CreateRootAssets() *errors.MITMError {
 	sourceMITMTemplate := "assets/resources/shared/mitm.yaml"
+	sourceIntegrityTemplate := "assets/resources/shared/integrity.yaml"
+
 	outputMITMTemplate := filepath.Join(projectDir, filepath.Base(sourceMITMTemplate))
+	outputIntegrityTemplate := filepath.Join(projectDir, filepath.Base(sourceIntegrityTemplate))
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 	}
 
 	if _, err := os.Stat(outputMITMTemplate); os.IsNotExist(err) {
-		templateFile, err := embedFS.Get().Open(sourceMITMTemplate)
+		MITMTemplateFile, err := embedFS.Get().Open(sourceMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
-		defer templateFile.Close()
+		defer MITMTemplateFile.Close()
 
-		destinationFile, err := os.Create(outputMITMTemplate)
+		MITMDestinationFile, err := os.Create(outputMITMTemplate)
 		if err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
-		defer destinationFile.Close()
+		defer MITMDestinationFile.Close()
 
-		if _, err = io.Copy(destinationFile, templateFile); err != nil {
+		if _, err = io.Copy(MITMDestinationFile, MITMTemplateFile); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
 
-		if err = destinationFile.Sync(); err != nil {
+		if err = MITMDestinationFile.Sync(); err != nil {
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		}
+	}
+
+	if _, err := os.Stat(outputIntegrityTemplate); os.IsNotExist(err) {
+		integrityTemplateFile, err := embedFS.Get().Open(sourceIntegrityTemplate)
+		if err != nil {
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		}
+		defer integrityTemplateFile.Close()
+
+		integrityDestinationFile, err := os.Create(outputIntegrityTemplate)
+		if err != nil {
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		}
+		defer integrityDestinationFile.Close()
+
+		if _, err = io.Copy(integrityDestinationFile, integrityTemplateFile); err != nil {
+			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+		}
+
+		if err = integrityDestinationFile.Sync(); err != nil {
 			log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 		}
 	}

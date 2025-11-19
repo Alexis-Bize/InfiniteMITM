@@ -20,13 +20,11 @@ import (
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/errors"
 	"infinite-mitm/pkg/smartcache"
-	"log"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
-
 
 type TrafficDisplay string
 type TrafficOptions struct {
@@ -45,8 +43,8 @@ type YAML struct {
 }
 
 const (
-	ConfigFilename = "mitm.yaml"
-	ConfigVersion = 1
+	MITMFilename = "mitm.yaml"
+	MITMVersion = 1
 )
 
 const (
@@ -56,11 +54,11 @@ const (
 	TrafficSilent     TrafficDisplay = "silent"
 )
 
-var MITMConfigFilepath = filepath.Join(configs.GetConfig().Extra.ProjectDir, ConfigFilename)
+var MITMFilepath = filepath.Join(configs.GetConfig().Extra.ProjectDir, MITMFilename)
 
 func ReadClientMITMConfig() (YAML, *errors.MITMError) {
-	yamlFile, err := os.ReadFile(MITMConfigFilepath); if err != nil {
-		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
+	yamlFile, err := os.ReadFile(MITMFilepath); if err != nil {
+		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
 	var content YAML
@@ -68,15 +66,15 @@ func ReadClientMITMConfig() (YAML, *errors.MITMError) {
 		return YAML{}, errors.Create(errors.ErrYAMLReadException, err.Error())
 	}
 
-	if content.Version != ConfigVersion {
-		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, all configs will be ignored", ConfigFilename))
+	if content.Version != MITMVersion {
+		return YAML{}, errors.Create(errors.ErrMITMYamlSchemaOutdatedException, fmt.Sprintf("your %s is outdated, please delete it and restart the application to fix this issue.", MITMFilename))
 	}
 
 	return content, nil
 }
 
-func WriteClientMITMConfig(content YAML) {
+func WriteMITMFile(content YAML) {
 	buffer, err := yaml.Marshal(content); if err == nil {
-		os.WriteFile(MITMConfigFilepath, buffer, 0644)
+		os.WriteFile(MITMFilepath, buffer, 0644)
 	}
 }

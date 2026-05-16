@@ -20,6 +20,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"hash/fnv"
 	"infinite-mitm/pkg/domains"
 	"infinite-mitm/pkg/request"
 	"infinite-mitm/pkg/resources"
@@ -62,12 +63,19 @@ const (
 const (
 	version = 2
 	defaultDuration = 7 * 24 * time.Hour
+	lockStripeCount = 64
 )
 
 var (
-	mutexes = &sync.Map{}
+	lockStripes          [lockStripeCount]sync.Mutex
 	flushSmartCacheMutex = &sync.Mutex{}
 )
+
+func keyStripe(key string) *sync.Mutex {
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return &lockStripes[h.Sum32()%lockStripeCount]
+}
 
 func init() {
 	gob.Register(http.Header{})
@@ -99,11 +107,9 @@ func Flush() {
 }
 
 func (s *SmartCache) Get(key string) *SmartCacheItem {
-	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
-	currentMutex := mutex.(*sync.Mutex)
-
-	currentMutex.Lock()
-	defer currentMutex.Unlock()
+	mutex := keyStripe(key)
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if s.strategy == Persistent {
 		target := filepath.Join(resources.GetSmartCacheDirPath(), key)
@@ -149,11 +155,9 @@ func (s *SmartCache) Get(key string) *SmartCacheItem {
 }
 
 func (s *SmartCache) Write(key string, item *SmartCacheItem) {
-	mutex, _ := mutexes.LoadOrStore(key, &sync.Mutex{})
-	currentMutex := mutex.(*sync.Mutex)
-
-	currentMutex.Lock()
-	defer currentMutex.Unlock()
+	mutex := keyStripe(key)
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	item.Created = time.Now()
 	item.Expires = time.Now().Add(s.duration)
@@ -172,7 +176,7 @@ func (s *SmartCache) Write(key string, item *SmartCacheItem) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(item); err == nil {
-		os.WriteFile(target, buf.Bytes(), 0666)
+		os.WriteFile(target, buf.Bytes(), 0644)
 	}
 }
 

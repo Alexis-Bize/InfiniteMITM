@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -63,10 +62,23 @@ const (
 	EnterCommand     = "enter"
 	PruneRowsCommand = "ctrl+r"
 )
+
+const (
+	maxStoredEntries  = 2000
+	evictionChunkSize = 500
+	uiBufferSize      = 4096
+)
+
 var (
 	once    sync.Once
 	program *tea.Program
+
+	uiMsgChan = make(chan tea.Msg, uiBufferSize)
 )
+
+func sendUI(msg tea.Msg) {
+	uiMsgChan <- msg
+}
 
 var (
 	networkDataMutex = &sync.Mutex{}
@@ -74,6 +86,7 @@ var (
 		Requests:  make(map[string]eventsService.ProxyRequestEventData),
 		Responses: make(map[string]eventsService.ProxyResponseEventData),
 	}
+	networkDataOrder = make([]string, 0, maxStoredEntries+evictionChunkSize)
 )
 
 func Create() {
@@ -92,40 +105,53 @@ func Create() {
 
 	m.networkTableModel.Focus()
 
+	program = tea.NewProgram(m)
+
 	once.Do(func() {
+		go func() {
+			for msg := range uiMsgChan {
+				if program != nil {
+					program.Send(msg)
+				}
+			}
+		}()
+
 		event.On(eventsService.ProxyRequestSent, event.ListenerFunc(func(e event.Event) error {
-			details := e.Data()["details"].(string)
-			data := eventsService.ParseRequestEventData(details)
-			go pushNetworkData(data)
+			if data, ok := e.Data()[eventsService.PayloadKey].(eventsService.ProxyRequestEventData); ok {
+				pushNetworkData(data)
+			}
 
 			return nil
 		}), event.Normal)
 
 		event.On(eventsService.ProxyResponseReceived, event.ListenerFunc(func(e event.Event) error {
-			details := e.Data()["details"].(string)
-			data := eventsService.ParseResponseEventData(details)
-			go updateNetworkData(data)
+			if data, ok := e.Data()[eventsService.PayloadKey].(eventsService.ProxyResponseEventData); ok {
+				updateNetworkData(data)
+			}
 
 			return nil
 		}), event.Normal)
 
 		event.On(eventsService.ProxyStatusMessage, event.ListenerFunc(func(e event.Event) error {
 			details := e.Data()["details"].(string)
-			go updateStatusBar(details)
+			updateStatusBar(details)
 
 			return nil
 		}), event.Normal)
 	})
 
-	program = tea.NewProgram(m)
 	if _, err := program.Run(); err != nil {
 		log.Fatalln(errors.Create(errors.ErrFatalException, err.Error()))
 	}
 }
 
 func pruneNetworkData() {
+	networkDataMutex.Lock()
+	defer networkDataMutex.Unlock()
+
 	networkData.Requests = make(map[string]eventsService.ProxyRequestEventData)
 	networkData.Responses = make(map[string]eventsService.ProxyResponseEventData)
+	networkDataOrder = networkDataOrder[:0]
 }
 
 func (m *model) setActiveElement(key activeKeyType) {
@@ -279,15 +305,27 @@ func pushNetworkData(data eventsService.ProxyRequestEventData) {
 
 	networkDataMutex.Lock()
 	networkData.Requests[data.ID] = data
+	networkDataOrder = append(networkDataOrder, data.ID)
+	if len(networkDataOrder) > maxStoredEntries {
+		for i := 0; i < evictionChunkSize; i++ {
+			evictID := networkDataOrder[i]
+			delete(networkData.Requests, evictID)
+			delete(networkData.Responses, evictID)
+		}
+
+		remaining := len(networkDataOrder) - evictionChunkSize
+		copy(networkDataOrder, networkDataOrder[evictionChunkSize:])
+		networkDataOrder = networkDataOrder[:remaining]
+	}
 	networkDataMutex.Unlock()
 
-	program.Send(details.RequestTraffic(details.RequestTraffic{
+	sendUI(details.RequestTraffic(details.RequestTraffic{
 		ID: data.ID,
 		Headers: data.Headers,
 		Body: data.Body,
 	}))
 
-	program.Send(table.TableRowMsg(table.TableRowMsg{
+	sendUI(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
@@ -329,19 +367,18 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 	networkData.Responses[data.ID] = data
 	networkDataMutex.Unlock()
 
-	program.Send(details.ResponseStatus(details.ResponseStatus{
+	sendUI(details.ResponseStatus(details.ResponseStatus{
 		ID: data.ID,
 		Status: data.Status,
 	}))
 
-	program.Send(details.ResponseTraffic(details.ResponseTraffic{
+	sendUI(details.ResponseTraffic(details.ResponseTraffic{
 		ID: data.ID,
 		Headers: data.Headers,
 		Body: data.Body,
 	}))
 
-	time.Sleep(100 * time.Millisecond)
-	program.Send(table.TableRowMsg(table.TableRowMsg{
+	sendUI(table.TableRowMsg(table.TableRowMsg{
 		ID: data.ID,
 		Prefix: prefix,
 		Method: data.Method,
@@ -353,7 +390,7 @@ func updateNetworkData(data eventsService.ProxyResponseEventData) {
 }
 
 func updateStatusBar(message string) {
-	program.Send(status.StatusBarInfoUpdate(status.StatusBarInfoUpdate{
+	sendUI(status.StatusBarInfoUpdate(status.StatusBarInfoUpdate{
 		Message: message,
 	}))
 }

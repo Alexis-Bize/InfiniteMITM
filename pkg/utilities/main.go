@@ -17,17 +17,12 @@ package utilities
 import (
 	"encoding/hex"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 func Contains(slice []string, item string) bool {
-	defer func() {
-		_ = recover();
-	}()
-
 	for _, v := range slice {
 		if v == item {
 			return true
@@ -35,27 +30,6 @@ func Contains(slice []string, item string) bool {
 	}
 
 	return false
-}
-
-func InterfaceToMap(i interface{}) map[string]string {
-	defer func() {
-		_ = recover();
-	}()
-
-	v := reflect.ValueOf(i)
-	output := make(map[string]string)
-
-	if i == nil {
-		return output
-	}
-
-	for _, key := range v.MapKeys() {
-		ckey := fmt.Sprintf("%v", key.Interface())
-		cvalue := fmt.Sprintf("%v", v.MapIndex(key).Interface())
-		output[ckey] = cvalue
-	}
-
-	return output
 }
 
 func WrapText(text string, width int) string {

@@ -28,11 +28,14 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/ncruces/zenity"
 	"golang.org/x/term"
 )
+
+var downloadClient = &http.Client{Timeout: 60 * time.Second}
 
 func GetHomeDirectory() (string, *errors.MITMError) {
 	home, err := os.UserHomeDir(); if err != nil {
@@ -67,11 +70,15 @@ func OpenBrowser(url string) {
 }
 
 func DownloadFile(url string) ([]byte, *errors.MITMError) {
-	response, err := http.Get(url)
+	response, err := downloadClient.Get(url)
 	if err != nil {
 		return nil, errors.Create(errors.ErrFatalException, err.Error())
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, errors.Create(errors.ErrHTTPCodeError, fmt.Sprintf("status code: %d", response.StatusCode))
+	}
 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -86,10 +93,6 @@ func CopyToClipboard(data string) {
 }
 
 func SaveToDisk(data []byte, outputDir string, filename string, contentType string) {
-	defer func() {
-		_ = recover();
-	}()
-
 	contentType = strings.Split(contentType, ";")[0]
 	var mimeExtensions = map[string]string{
 		"application/json":         "json",

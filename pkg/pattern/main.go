@@ -34,9 +34,10 @@ type Patterns struct {
 const MITMDirPrefix = ":mitm-dir"
 
 var (
-	mitmDirs     map[string]string
-	mitmDirsKeys []string
-	replacer     *strings.Replacer
+	mitmDirs       map[string]string
+	mitmDirsKeys   []string
+	replacer       *strings.Replacer
+	matchRefRegexp = regexp.MustCompile(`\$\d+`)
 )
 
 var MatchParameters = Patterns{
@@ -159,8 +160,8 @@ func Create(domain domains.DomainType, path string) *regexp.Regexp {
 		path = "/" + path
 	}
 
-	path = strings.Replace(path, "*", ":all", -1)
-	path = strings.Replace(path, "$", ":end", -1)
+	path = strings.ReplaceAll(path, "*", ":all")
+	path = strings.ReplaceAll(path, "$", ":end")
 	path = ReplaceParameters(escapeExceptParentheses(path))
 
 	re := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(domain) + path)
@@ -176,8 +177,7 @@ func ReplaceParameters(value string) string {
 }
 
 func ReplaceMatches(target string, matches []string) string {
-	re := regexp.MustCompile(`\$\d+`)
-	return re.ReplaceAllStringFunc(target, func(m string) string {
+	return matchRefRegexp.ReplaceAllStringFunc(target, func(m string) string {
 		index, err := strconv.Atoi(m[1:])
 		if err != nil || index < 1 || index > len(matches) {
 			return ""

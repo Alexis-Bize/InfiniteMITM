@@ -157,11 +157,8 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 			matches := pattern.Match(target, request.StripPort(req.URL.String()))
 			beforeHandlers := node.Request.Before
 
-			if len(node.Request.Headers) != 0 {
-				kv := utilities.InterfaceToMap(node.Request.Headers)
-				for key, value := range kv {
-					req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
-				}
+			for key, value := range node.Request.Headers {
+				req.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			beforeCommands := createCommands(beforeHandlers.Commands, matches)
@@ -173,6 +170,11 @@ func createRequestHandler(domain domains.DomainType, node domains.YAMLDomainNode
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid request body for %s; %s", body, err.Error()))
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
+					if req.Body != nil {
+						io.Copy(io.Discard, req.Body)
+						req.Body.Close()
+					}
+
 					bufferLength := len(buffer)
 					req.Body = io.NopCloser(bytes.NewBuffer(buffer))
 					req.ContentLength = int64(bufferLength)
@@ -220,11 +222,8 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 			matches := pattern.Match(target, request.StripPort(resp.Request.URL.String()))
 			beforeHandlers := node.Response.Before
 
-			if len(node.Response.Headers) != 0 {
-				kv := utilities.InterfaceToMap(node.Response.Headers)
-				for key, value := range kv {
-					resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
-				}
+			for key, value := range node.Response.Headers {
+				resp.Header.Set(key, pattern.ReplaceParameters(pattern.ReplaceMatches(value, matches)))
 			}
 
 			beforeCommands := createCommands(beforeHandlers.Commands, matches)
@@ -236,6 +235,11 @@ func createResponseHandler(domain domains.DomainType, node domains.YAMLDomainNod
 					mitmErr := errors.Create(errors.ErrIOReadException, fmt.Sprintf("invalid response body for %s; %s", body, err.Error()))
 					event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
 				} else if buffer != nil {
+					if resp.Body != nil {
+						io.Copy(io.Discard, resp.Body)
+						resp.Body.Close()
+					}
+
 					for k, v := range httpHeader {
 						resp.Header.Set(k, strings.Join(v, ", "))
 					}
@@ -269,29 +273,31 @@ func isURL(str string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
-func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []string) []string {
-	var commandsList []string
+func createCommands(commands []domains.YAMLDomainTrafficRunCommand, matches []string) [][]string {
+	var commandsList [][]string
 
-	if len(commands) != 0 {
-		for _, commands := range commands {
-			var runList []string
-			for _, run := range commands.Run {
-				replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
-				if !isURL(replace) {
-					replace = filepath.Clean(replace)
-				}
+	for _, command := range commands {
+		if len(command.Run) == 0 {
+			continue
+		}
 
-				runList = append(runList, replace)
+		runList := make([]string, 0, len(command.Run))
+		for _, run := range command.Run {
+			replace := pattern.ReplaceParameters(pattern.ReplaceMatches(run, matches))
+			if !isURL(replace) {
+				replace = filepath.Clean(replace)
 			}
 
-			commandsList = append(commandsList, strings.Join(runList, " "))
+			runList = append(runList, replace)
 		}
+
+		commandsList = append(commandsList, runList)
 	}
 
 	return commandsList
 }
 
-func runCommands(commands []string) {
+func runCommands(commands [][]string) {
 	if len(commands) == 0 {
 		return
 	}
@@ -299,27 +305,19 @@ func runCommands(commands []string) {
 	var wg sync.WaitGroup
 	wg.Add(len(commands))
 
-	for i, cmd := range commands {
-		go func(i int, cmd string) {
+	for i, args := range commands {
+		go func(i int, args []string) {
 			defer wg.Done()
 
-			args := strings.Split(cmd, " ")
-			length := len(args)
-			if length == 0 {
+			if len(args) == 0 {
 				return
 			}
 
-			var c *exec.Cmd
-			if length == 1 {
-				c = exec.Command(args[0])
-			} else if length >= 2 {
-				c = exec.Command(args[0], args[1:]...)
-			}
-
+			c := exec.Command(args[0], args[1:]...)
 			if err := c.Run(); err != nil {
 				event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": fmt.Sprintf("command #%d encountered an error: %s", i + 1, err.Error())})
 			}
-		}(i, cmd)
+		}(i, args)
 	}
 
 	wg.Wait()

@@ -157,7 +157,7 @@ func (m *model) setPingForRegion(result selectServersTool.PingResult) tea.Cmd {
 		m.pingFinished = true
 	}
 
-	return tea.Batch()
+	return nil
 }
 
 func (m *model) toggleRegion() {

@@ -27,6 +27,10 @@ import (
 var proxyHost = configs.GetConfig().Proxy.Host
 var proxyPort = strconv.Itoa(configs.GetConfig().Proxy.Port)
 
+const darwinFallbackService = "Wi-Fi"
+
+var darwinActiveService = darwinFallbackService
+
 func ToggleProxy(command string) *errors.MITMError {
 	if command != "on" && command != "off" {
 		return errors.Create(errors.ErrProxyToggleInvalidCommand, "invalid command")
@@ -73,16 +77,18 @@ func enableProxyWindows() error {
 }
 
 func enableProxyDarwin() error {
-	commands := []string{
-		fmt.Sprintf("networksetup -setwebproxy Wi-Fi %s %s", proxyHost, proxyPort),
-		fmt.Sprintf("networksetup -setsecurewebproxy Wi-Fi %s %s", proxyHost, proxyPort),
-		"networksetup -setwebproxystate Wi-Fi on",
-		"networksetup -setsecurewebproxystate Wi-Fi on",
+	darwinActiveService = detectDarwinActiveService()
+	service := darwinActiveService
+
+	commands := [][]string{
+		{"networksetup", "-setwebproxy", service, proxyHost, proxyPort},
+		{"networksetup", "-setsecurewebproxy", service, proxyHost, proxyPort},
+		{"networksetup", "-setwebproxystate", service, "on"},
+		{"networksetup", "-setsecurewebproxystate", service, "on"},
 	}
 
-	for _, cmd := range commands {
-		parts := strings.Fields(cmd)
-		if err := exec.Command(parts[0], parts[1:]...).Run(); err != nil {
+	for _, args := range commands {
+		if err := exec.Command(args[0], args[1:]...).Run(); err != nil {
 			return err
 		}
 	}
@@ -95,17 +101,69 @@ func disableProxyWindows() error {
 }
 
 func disableProxyDarwin() error {
-	commands := []string{
-		"networksetup -setwebproxystate Wi-Fi off",
-		"networksetup -setsecurewebproxystate Wi-Fi off",
+	service := darwinActiveService
+
+	commands := [][]string{
+		{"networksetup", "-setwebproxystate", service, "off"},
+		{"networksetup", "-setsecurewebproxystate", service, "off"},
 	}
 
-	for _, cmd := range commands {
-		parts := strings.Fields(cmd)
-		if err := exec.Command(parts[0], parts[1:]...).Run(); err != nil {
+	for _, args := range commands {
+		if err := exec.Command(args[0], args[1:]...).Run(); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func detectDarwinActiveService() string {
+	iface := defaultDarwinInterface()
+	if iface == "" {
+		return darwinFallbackService
+	}
+
+	out, err := exec.Command("networksetup", "-listnetworkserviceorder").Output()
+	if err != nil {
+		return darwinFallbackService
+	}
+
+	devSuffix := "Device: " + iface + ")"
+	lines := strings.Split(string(out), "\n")
+
+	for i := 1; i < len(lines); i++ {
+		portLine := strings.TrimSpace(lines[i])
+		if !strings.HasPrefix(portLine, "(Hardware Port:") || !strings.HasSuffix(portLine, devSuffix) {
+			continue
+		}
+
+		serviceLine := strings.TrimSpace(lines[i-1])
+		if idx := strings.Index(serviceLine, ") "); idx > 0 {
+			name := strings.TrimSpace(serviceLine[idx+2:])
+			if name != "" {
+				return name
+			}
+		}
+	}
+
+	return darwinFallbackService
+}
+
+func defaultDarwinInterface() string {
+	out, err := exec.Command("route", "-n", "get", "default").Output()
+	if err != nil {
+		return ""
+	}
+
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "interface:") {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				return parts[len(parts)-1]
+			}
+		}
+	}
+
+	return ""
 }

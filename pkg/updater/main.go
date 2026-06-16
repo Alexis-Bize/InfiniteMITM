@@ -36,6 +36,10 @@ func CheckForApplicationUpdate() (bool, string, *errors.MITMError) {
 		return false, "", err
 	}
 
+	if releases == nil || len(*releases) == 0 {
+		return false, "", nil
+	}
+
 	latestRelease := (*releases)[0]
 	newVersionAvailable, versionErr := isNewVersionAvailable(configs.GetConfig().Version, latestRelease.TagName)
 	if versionErr != nil {

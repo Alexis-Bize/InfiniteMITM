@@ -83,7 +83,8 @@ func StripPort(u string) string {
 		return u
 	}
 
-	return strings.Replace(parse.String(), fmt.Sprintf(":%s", parse.Port()), "", -1)
+	parse.Host = parse.Hostname()
+	return parse.String()
 }
 
 func HeadersToMap(header http.Header) map[string]string {

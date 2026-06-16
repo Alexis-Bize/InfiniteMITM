@@ -56,11 +56,9 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		resp.Header.Set(request.ExpiresHeaderKey, "0")
 	}
 
-	var bodyBytes []byte
+	trySmartCache := !isSmartCached && smartCache != nil
 	var smartCacheKey string
 	var smartCachedItem *smartcache.SmartCacheItem
-
-	trySmartCache := !isSmartCached && smartCache != nil
 	if trySmartCache {
 		smartCacheKey = smartCache.CreateKey(
 			request.StripPort(resp.Request.URL.String()),
@@ -71,18 +69,30 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		smartCachedItem = smartCache.Get(smartCacheKey)
 	}
 
-	if smartCachedItem != nil {
-		bodyBytes = smartCachedItem.Body
-	} else {
-		bodyBytes, _ = io.ReadAll(resp.Body)
-	}
-
 	isSmartCachable :=
 		!isProxified &&
 		trySmartCache &&
 		smartCachedItem == nil &&
 		resp.StatusCode == 200 &&
 		resp.StatusCode < 300
+
+	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
+		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
+		options.TrafficDisplay == mitm.TrafficSmartCache && !isProxified && smartCache != nil)
+
+	needBody := smartCachedItem != nil || isSmartCachable || shouldDispatch
+
+	var bodyBytes []byte
+	if smartCachedItem != nil {
+		bodyBytes = smartCachedItem.Body
+		if resp.Body != nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}
+	} else if needBody && resp.Body != nil {
+		bodyBytes, _ = io.ReadAll(resp.Body)
+		resp.Body.Close()
+	}
 
 	if isSmartCachable {
 		smartCache.Write(smartCacheKey, &smartcache.SmartCacheItem{
@@ -93,26 +103,25 @@ func HandleResponse(options mitm.TrafficOptions, resp *http.Response, ctx *gopro
 		resp.Header.Set(request.MITMCacheHeaderKey, request.MITMCacheHeaderMissValue)
 	}
 
-	shouldDispatch := options.TrafficDisplay == mitm.TrafficAll || (
-		options.TrafficDisplay == mitm.TrafficOverrides && isProxified ||
-		options.TrafficDisplay == mitm.TrafficSmartCache && !isProxified && smartCache != nil)
-
 	if shouldDispatch {
 		headersMap := request.HeadersToMap(resp.Header)
-		details := eventsService.StringifyResponseEventData(eventsService.ProxyResponseEventData{
-			ID: uuid,
-			URL: resp.Request.URL.String(),
-			Method: resp.Request.Method,
-			Status: resp.StatusCode,
-			Headers: headersMap,
-			Body: bodyBytes,
-			Proxified: isProxified,
-			SmartCached: !isProxified && (isSmartCached || smartCache != nil),
+		event.MustFire(eventsService.ProxyResponseReceived, event.M{
+			eventsService.PayloadKey: eventsService.ProxyResponseEventData{
+				ID: uuid,
+				URL: resp.Request.URL.String(),
+				Method: resp.Request.Method,
+				Status: resp.StatusCode,
+				Headers: headersMap,
+				Body: bodyBytes,
+				Proxified: isProxified,
+				SmartCached: !isProxified && (isSmartCached || smartCache != nil),
+			},
 		})
-
-		event.MustFire(eventsService.ProxyResponseReceived, event.M{"details": details})
 	}
 
-	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	if needBody {
+		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
 	return resp
 }

@@ -14,8 +14,6 @@
 
 package MITMApplicationEventsService
 
-import "encoding/json"
-
 const (
 	RestartServer = "server.restart"
 	ProxyRequestSent = "request.sent"
@@ -23,45 +21,25 @@ const (
 	ProxyStatusMessage = "proxy.status_message"
 )
 
+const PayloadKey = "data"
+
 type ProxyRequestEventData struct {
-	ID          string `json:"id"`
-	URL         string `json:"url"`
-	Method      string `json:"method"`
-	Headers     map[string]string `json:"headers"`
-	Body        []byte `json:"body"`
-	Proxified   bool `json:"proxified"`
-	SmartCached bool `json:"smart_cached"`
+	ID          string
+	URL         string
+	Method      string
+	Headers     map[string]string
+	Body        []byte
+	Proxified   bool
+	SmartCached bool
 }
 
 type ProxyResponseEventData struct {
-	ID          string `json:"id"`
-	URL         string `json:"url"`
-	Method      string `json:"method"`
-	Status      int `json:"status"`
-	Headers     map[string]string `json:"headers"`
-	Body        []byte `json:"body"`
-	Proxified   bool `json:"proxified"`
-	SmartCached bool `json:"smart_cached"`
-}
-
-func StringifyRequestEventData(data ProxyRequestEventData) string {
-	marshal, _ := json.Marshal(data)
-	return string(marshal)
-}
-
-func StringifyResponseEventData(data ProxyResponseEventData) string {
-	marshal, _ := json.Marshal(data)
-	return string(marshal)
-}
-
-func ParseRequestEventData(data string) ProxyRequestEventData {
-	var unmarshal ProxyRequestEventData
-	json.Unmarshal([]byte(data), &unmarshal)
-	return unmarshal
-}
-
-func ParseResponseEventData(data string) ProxyResponseEventData {
-	var unmarshal ProxyResponseEventData
-	json.Unmarshal([]byte(data), &unmarshal)
-	return unmarshal
+	ID          string
+	URL         string
+	Method      string
+	Status      int
+	Headers     map[string]string
+	Body        []byte
+	Proxified   bool
+	SmartCached bool
 }

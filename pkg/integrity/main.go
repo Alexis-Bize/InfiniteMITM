@@ -60,7 +60,13 @@ func ReadIntegrityConfig() (YAML, *errors.MITMError) {
 }
 
 func WriteIntegrityFile(content YAML) {
-	buffer, err := yaml.Marshal(content); if err == nil {
-		os.WriteFile(IntegrityFilepath, buffer, 0644)
+	buffer, err := yaml.Marshal(content)
+	if err != nil {
+		errors.Create(errors.ErrIOWriteException, err.Error()).Log()
+		return
+	}
+
+	if err := os.WriteFile(IntegrityFilepath, buffer, 0644); err != nil {
+		errors.Create(errors.ErrIOWriteException, err.Error()).Log()
 	}
 }

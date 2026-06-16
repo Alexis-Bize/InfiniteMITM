@@ -16,7 +16,6 @@ package MITMApplicationMITMService
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"embed"
 	"fmt"
 	"infinite-mitm/configs"
@@ -30,6 +29,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/google/uuid"
@@ -54,15 +54,19 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 		return nil, errors.Create(errors.ErrProxyCertificateException, err.Error())
 	}
 
-	CACertPool := x509.NewCertPool(); if !CACertPool.AppendCertsFromPEM(CACert) {
-		return nil, errors.Create(errors.ErrProxyCertificateException, "failed to add root CA certificate to pool")
-	}
-
 	goproxy.GoproxyCa = cert
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
 	proxy.KeepHeader = false
 	proxy.Logger = emptyLogger{}
+
+	if proxy.Tr != nil {
+		proxy.Tr.MaxIdleConns = 100
+		proxy.Tr.MaxIdleConnsPerHost = 32
+		proxy.Tr.IdleConnTimeout = 90 * time.Second
+		proxy.Tr.ResponseHeaderTimeout = 30 * time.Second
+		proxy.Tr.ExpectContinueTimeout = 1 * time.Second
+	}
 
 	content, mitmErr := mitm.ReadClientMITMConfig(); if mitmErr != nil {
 		event.MustFire(eventsService.ProxyStatusMessage, event.M{"details": mitmErr.String()})
@@ -177,11 +181,6 @@ func CreateServer(f *embed.FS) (*http.Server, *errors.MITMError) {
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%d", configs.GetConfig().Proxy.Port),
 		Handler: proxy,
-		TLSConfig: &tls.Config{
-			RootCAs: CACertPool,
-			Certificates: []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
 	}
 
 	return server, nil

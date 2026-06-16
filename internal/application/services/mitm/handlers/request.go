@@ -81,20 +81,22 @@ func HandleRequest(options mitm.TrafficOptions, req *http.Request, resp *http.Re
 		var bodyBytes []byte
 		if req.Body != nil {
 			bodyBytes, _ = io.ReadAll(req.Body)
+			req.Body.Close()
 		}
 
 		headersMap := request.HeadersToMap(req.Header)
-		details := eventsService.StringifyRequestEventData(eventsService.ProxyRequestEventData{
-			ID: uuid,
-			URL: req.URL.String(),
-			Method: req.Method,
-			Headers: headersMap,
-			Body: bodyBytes,
-			Proxified: isProxified,
-			SmartCached: !isProxified && smartCache != nil,
+		event.MustFire(eventsService.ProxyRequestSent, event.M{
+			eventsService.PayloadKey: eventsService.ProxyRequestEventData{
+				ID: uuid,
+				URL: req.URL.String(),
+				Method: req.Method,
+				Headers: headersMap,
+				Body: bodyBytes,
+				Proxified: isProxified,
+				SmartCached: !isProxified && smartCache != nil,
+			},
 		})
 
-		event.MustFire(eventsService.ProxyRequestSent, event.M{"details": details})
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
 

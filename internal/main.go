@@ -155,6 +155,10 @@ func restartServer(f *embed.FS, wg *sync.WaitGroup) {
 func stopServer() {
 	disableProxy()
 
+	if server == nil {
+		return
+	}
+
 	if err := server.Close(); err != nil {
 		errors.Create(errors.ErrProxyServerException, err.Error()).Log()
 	}

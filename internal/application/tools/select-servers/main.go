@@ -106,8 +106,14 @@ func ReadLocalQOSServers() QOSServers {
 
 func WriteLocalQOSServers(servers QOSServers) {
 	serverFilepath := filepath.Join(resources.GetDirPaths()[resources.JsonDirKey], integrity.QOSServersFilename)
-	buffer, err := json.Marshal(servers); if err == nil {
-		os.WriteFile(serverFilepath, buffer, 0644)
+	buffer, err := json.Marshal(servers)
+	if err != nil {
+		errors.Create(errors.ErrIOWriteException, err.Error()).Log()
+		return
+	}
+
+	if err := os.WriteFile(serverFilepath, buffer, 0644); err != nil {
+		errors.Create(errors.ErrIOWriteException, err.Error()).Log()
 	}
 }
 
